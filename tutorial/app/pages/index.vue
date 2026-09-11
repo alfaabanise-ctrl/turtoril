@@ -58,7 +58,8 @@
             </Container>
         </section>
     
-
+<NavigationFooter/>
+    
 </div>
 </template>
 <script setup lang="ts">

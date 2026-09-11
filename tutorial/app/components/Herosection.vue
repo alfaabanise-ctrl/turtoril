@@ -54,7 +54,7 @@ const stats = [
 
       <div  class="pointer-events-none absolute -right-40 top-20 h-[500px] w-[500px] rounded-full bg-blue-200/30 blur-3xl"  />
 
-      <div   class="relative mx-auto grid min-h-full  w-full items-center gap-16 px-6 py-10 sm:px-10 lg:grid-cols-[1.05fr_.95fr] lg:px-16" >
+      <div   class="relative mx-auto grid min-h-full  w-full items-center gap-16   lg:grid-cols-[1.05fr_.95fr] " >
         <!-- LEFT CONTENT -->
         <div class="relative z-10">
           <!-- Badge -->
@@ -123,7 +123,7 @@ const stats = [
           </div>
         </div>
         <div>
-         <img src="/images/hero.png" alt="Hero Image" class="w-full max-w-[560px] rounded-[30px]" />
+         <img src="/images/01-min.jpeg" alt="Hero Image" class="w-full max-w-[560px] rounded-[30px]" />
         </div>
        
       </div>

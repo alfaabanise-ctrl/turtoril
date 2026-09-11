@@ -1,0 +1,56 @@
+PUBLIC
+│
+├── /
+├── /login
+├── /register
+├── /forgot-password
+└── /reset-password
+
+
+SUPER ADMIN
+│
+├── /super-admin
+├── /super-admin/admins
+├── /super-admin/teachers
+├── /super-admin/ccc
+├── /super-admin/referrals
+├── /super-admin/subscriptions
+├── /super-admin/payments
+├── /super-admin/wallets
+├── /super-admin/reports
+└── /super-admin/settings
+
+
+ADMIN
+│
+├── /admin
+├── /admin/students
+├── /admin/students/[id]
+├── /admin/teachers
+├── /admin/referrals
+├── /admin/subscriptions
+├── /admin/payments
+├── /admin/wallet
+├── /admin/reports
+└── /admin/settings
+
+
+TEACHER
+│
+├── /teacher
+├── /teacher/students
+├── /teacher/students/[id]
+├── /teacher/referrals
+├── /teacher/payments
+├── /teacher/wallet
+└── /teacher/settings
+
+
+STUDENT
+│
+├── /student
+├── /student/subscription
+├── /student/payments
+├── /student/referral
+├── /student/profile
+└── /student/settings

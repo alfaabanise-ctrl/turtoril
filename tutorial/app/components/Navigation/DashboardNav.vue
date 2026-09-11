@@ -1,0 +1,92 @@
+<script setup lang="ts">
+import type { UserRole } from '~/types/nav'
+
+const props = defineProps<{ role: UserRole }>()
+
+const { getVisibleItems } = useNavItems()
+const visibleItems = computed(() => getVisibleItems(props.role))
+const route = useRoute()
+
+const isExpanded = ref(false)
+const toggleExpand = () => (isExpanded.value = !isExpanded.value)
+
+const isHidden = ref(false)
+const toggleHidden = () => (isHidden.value = !isHidden.value)
+</script>
+
+<template>
+  <!-- Trigger button: fixed, same spot always, icon crossfades between bars/x -->
+  <button
+    @click="toggleHidden"
+    class="fixed  m-5 flex items-center justify-center w-10 h-10 rounded-full bg-gray-900 border border-gray-800 text-gray-300 hover:text-white hover:bg-gray-800 shadow-xl transition-all duration-300 ease-in-out z-50"
+  >
+    <Icon
+      name="i-heroicons-bars-3"
+      class="absolute w-5 h-5 transition-all duration-300"
+      :class="isHidden ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-75 rotate-90'"
+    />
+    <Icon
+      name="i-heroicons-x-mark"
+      class="absolute w-5 h-5 transition-all duration-300"
+      :class="isHidden ? 'opacity-0 scale-75 -rotate-90' : 'opacity-100 scale-100 rotate-0'"
+    />
+  </button>
+
+  <!-- The nav itself -->
+  <aside
+    class="fixed left-3 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 rounded-3xl bg-gray-900/90 backdrop-blur-md border border-gray-800 shadow-2xl py-5 transition-all duration-300 ease-in-out z-40"
+    :class="[
+      isExpanded ? 'w-52 px-4' : 'w-16 px-2',
+      isHidden ? '-translate-x-[150%] opacity-0 pointer-events-none' : 'translate-x-0 opacity-100',
+    ]"
+  >
+    <!-- spacer so nav items don't sit under the fixed toggle button -->
+   
+
+    <!-- Expand/collapse toggle -->
+    <button
+      @click="toggleExpand"
+      class="mb-4 flex items-center justify-center w-10 h-10 rounded-full text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+      :class="isExpanded ? 'self-end' : ''"
+    >
+      <Icon
+        name="i-heroicons-chevron-right"
+        class="w-5 h-5 transition-transform duration-300"
+        :class="isExpanded ? 'rotate-180' : ''"
+      />
+    </button>
+
+    <!-- Nav items -->
+    <nav class="w-full">
+      <ul class="flex flex-col gap-2 w-full">
+        <li v-for="item in visibleItems" :key="item.to" class="group relative w-full">
+          <NuxtLink
+            :to="item.to"
+            class="flex items-center rounded-2xl text-sm font-medium transition-all duration-200 overflow-hidden"
+            :class="[
+              isExpanded ? 'gap-3 px-3 py-2.5 w-full justify-start' : 'justify-center w-11 h-11 mx-auto',
+              route.path.startsWith(item.to)
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                : 'text-gray-300 hover:bg-gray-800 hover:text-white',
+            ]"
+          >
+            <Icon :name="item.icon" class="text-xl shrink-0" />
+            <span
+              class="whitespace-nowrap transition-all duration-200"
+              :class="isExpanded ? 'opacity-100 max-w-[140px]' : 'opacity-0 max-w-0 overflow-hidden'"
+            >
+              {{ item.label }}
+            </span>
+          </NuxtLink>
+
+          <span
+            v-if="!isExpanded"
+            class="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 whitespace-nowrap rounded-md bg-gray-800 px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 z-50"
+          >
+            {{ item.label }}
+          </span>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+</template>

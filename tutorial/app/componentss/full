@@ -1,0 +1,1381 @@
+============================================================
+        JAMB PLATFORM — MVP COMPLETE PAGE CHECKLIST
+============================================================
+
+PRODUCT STRUCTURE
+------------------------------------------------------------
+
+ROLES
+[ ] Super Admin
+[ ] Admin
+[ ] Teacher
+[ ] Student
+
+CORE MVP FUNCTIONS
+[ ] Authentication
+[ ] User Management
+[ ] Student Creation
+[ ] Referral System
+[ ] Subscription Management
+[ ] Payment System
+[ ] Wallet System
+[ ] Commission System
+[ ] Reports
+[ ] Profile / Settings
+[ ] Device / Session Management
+
+
+============================================================
+1. PUBLIC PAGES
+============================================================
+
+
+------------------------------------------------------
+
+
+------------------------------------------------------------
+
+
+============================================================
+2. SUPER ADMIN
+============================================================
+
+[ ] 06. /super-admin
+     SUPER ADMIN DASHBOARD
+
+     HEADER
+     [ ] Greeting
+     [ ] Search
+     [ ] Notifications
+     [ ] User profile
+
+     STATISTICS
+     [ ] Total Students
+     [ ] Active Students
+     [ ] Total Teachers
+     [ ] Total Admins
+     [ ] Total Revenue
+     [ ] Active Subscriptions
+     [ ] Pending Payments
+     [ ] Total Referrals
+
+     QUICK ACTIONS
+     [ ] Create Admin
+     [ ] Create Teacher
+     [ ] Create Student
+     [ ] View Payments
+
+     ANALYTICS
+     [ ] Revenue chart
+     [ ] Student growth
+     [ ] Subscription growth
+     [ ] Referral performance
+
+     RECENT ACTIVITY
+     [ ] New student
+     [ ] New teacher
+     [ ] New admin
+     [ ] Payment
+     [ ] Subscription activation
+     [ ] Wallet funding
+
+
+------------------------------------------------------------
+
+[ ] 07. /super-admin/admins
+     ADMIN MANAGEMENT
+
+     HEADER
+     [ ] Page title
+     [ ] Search
+     [ ] Filter
+     [ ] Create Admin button
+
+     TABLE
+     [ ] Name
+     [ ] Email
+     [ ] Phone
+     [ ] Students
+     [ ] Revenue
+     [ ] Status
+     [ ] Date Created
+     [ ] Actions
+
+     ACTIONS
+     [ ] View
+     [ ] Edit
+     [ ] Suspend
+     [ ] Activate
+     [ ] Reset Password
+     [ ] Delete
+
+     CREATE ADMIN MODAL
+     [ ] Full Name
+     [ ] Email
+     [ ] Phone
+     [ ] Password
+     [ ] Status
+     [ ] Create
+
+
+------------------------------------------------------------
+
+[ ] 08. /super-admin/teachers
+     TEACHER MANAGEMENT
+
+     HEADER
+     [ ] Search
+     [ ] Filter
+     [ ] Create Teacher
+
+     TABLE
+     [ ] Name
+     [ ] Email
+     [ ] Phone
+     [ ] Students
+     [ ] Referrals
+     [ ] Successful Referrals
+     [ ] Commission
+     [ ] Status
+     [ ] Actions
+
+     ACTIONS
+     [ ] View
+     [ ] Edit
+     [ ] Suspend
+     [ ] Activate
+     [ ] Reset Password
+
+
+------------------------------------------------------------
+
+[ ] 09. /super-admin/students
+     STUDENT MANAGEMENT
+
+     HEADER
+     [ ] Search
+     [ ] Filter
+     [ ] Create Student
+
+     TABLE
+     [ ] Student Name
+     [ ] Email
+     [ ] Phone
+     [ ] Referred By
+     [ ] Subscription
+     [ ] Expiry
+     [ ] Payment Status
+     [ ] Account Status
+     [ ] Actions
+
+     FILTERS
+     [ ] All
+     [ ] Active
+     [ ] Expired
+     [ ] Pending
+     [ ] Suspended
+
+     ACTIONS
+     [ ] View
+     [ ] Edit
+     [ ] Activate
+     [ ] Extend
+     [ ] Suspend
+     [ ] Reset Password
+
+
+------------------------------------------------------------
+
+[ ] 10. /super-admin/referrals
+     REFERRAL MANAGEMENT
+
+     STATISTICS
+     [ ] Total Referrals
+     [ ] Successful
+     [ ] Pending
+     [ ] Cancelled
+     [ ] Total Commission
+
+     TABLE
+     [ ] Student
+     [ ] Referrer
+     [ ] Referrer Role
+     [ ] Referral Method
+     [ ] Status
+     [ ] Date
+     [ ] Commission
+
+     FILTERS
+     [ ] Admin
+     [ ] Teacher
+     [ ] Student
+     [ ] Successful
+     [ ] Pending
+     [ ] Cancelled
+
+
+------------------------------------------------------------
+
+[ ] 11. /super-admin/subscriptions
+     SUBSCRIPTION MANAGEMENT
+
+     STATISTICS
+     [ ] Active
+     [ ] Expiring Soon
+     [ ] Expired
+     [ ] Total
+
+     TABLE
+     [ ] Student
+     [ ] Plan
+     [ ] Start Date
+     [ ] Expiry Date
+     [ ] Days Remaining
+     [ ] Status
+     [ ] Activated By
+     [ ] Actions
+
+     ACTIONS
+     [ ] Activate
+     [ ] Extend
+     [ ] Cancel
+     [ ] View
+
+
+------------------------------------------------------------
+
+[ ] 12. /super-admin/payments
+     PAYMENT MANAGEMENT
+
+     STATISTICS
+     [ ] Today's Revenue
+     [ ] Weekly Revenue
+     [ ] Monthly Revenue
+     [ ] Successful
+     [ ] Pending
+     [ ] Failed
+
+     TABLE
+     [ ] Transaction Reference
+     [ ] Student
+     [ ] Amount
+     [ ] Payment Type
+     [ ] Payment Method
+     [ ] Status
+     [ ] Date
+     [ ] Actions
+
+     FILTERS
+     [ ] Date
+     [ ] Status
+     [ ] Payment Type
+
+     ACTIONS
+     [ ] View
+     [ ] Refund
+
+
+------------------------------------------------------------
+
+[ ] 13. /super-admin/wallets
+     WALLET MANAGEMENT
+
+     STATISTICS
+     [ ] Total Wallet Balance
+     [ ] Total Funded
+     [ ] Total Spent
+
+     TABLE
+     [ ] User
+     [ ] Role
+     [ ] Balance
+     [ ] Total Funded
+     [ ] Total Spent
+     [ ] Status
+     [ ] Actions
+
+     ACTIONS
+     [ ] View Wallet
+     [ ] Fund Wallet
+     [ ] Freeze Wallet
+     [ ] Unfreeze Wallet
+
+
+------------------------------------------------------------
+
+[ ] 14. /super-admin/reports
+     REPORTS
+
+     REPORT TYPES
+     [ ] Revenue
+     [ ] Students
+     [ ] Subscriptions
+     [ ] Referrals
+     [ ] Teachers
+     [ ] Admins
+     [ ] Payments
+     [ ] Wallets
+
+     FILTERS
+     [ ] Today
+     [ ] 7 Days
+     [ ] 30 Days
+     [ ] 3 Months
+     [ ] Custom Date
+
+     [ ] Charts
+     [ ] Summary cards
+     [ ] Data tables
+     [ ] Export CSV
+     [ ] Export PDF
+
+
+------------------------------------------------------------
+
+[ ] 15. /super-admin/settings
+     PLATFORM SETTINGS
+
+     GENERAL
+     [ ] Platform Name
+     [ ] Logo
+     [ ] Support Email
+     [ ] Support Phone
+
+     SUBSCRIPTION
+     [ ] 30-Day Price
+     [ ] 90-Day Price
+     [ ] 1-Year Price
+
+     PAYMENT
+     [ ] Paystack configuration
+     [ ] Currency
+     [ ] Payment settings
+
+     REFERRAL
+     [ ] Enable referrals
+     [ ] Teacher commission
+     [ ] Admin commission
+     [ ] Student commission
+     [ ] Minimum withdrawal
+
+     SECURITY
+     [ ] Session duration
+     [ ] Device limit
+     [ ] Login security
+
+
+============================================================
+3. ADMIN
+============================================================
+
+[ ] 16. /admin
+     ADMIN DASHBOARD
+
+     STATISTICS
+     [ ] My Students
+     [ ] Active Students
+     [ ] Expired Students
+     [ ] Pending Students
+     [ ] Wallet Balance
+     [ ] Revenue
+     [ ] Referrals
+
+     QUICK ACTIONS
+     [ ] Create Student
+     [ ] Create Teacher
+     [ ] Fund Wallet
+     [ ] Activate Student
+
+     [ ] Recent Students
+     [ ] Recent Payments
+     [ ] Referral Performance
+     [ ] Recent Activity
+
+
+------------------------------------------------------------
+
+[ ] 17. /admin/students
+     STUDENTS
+
+     [ ] Search
+     [ ] Filters
+     [ ] Create Student
+
+     TABLE
+     [ ] Name
+     [ ] Email
+     [ ] Phone
+     [ ] Subscription
+     [ ] Expiry
+     [ ] Status
+     [ ] Created
+     [ ] Actions
+
+     ACTIONS
+     [ ] View
+     [ ] Edit
+     [ ] Activate
+     [ ] Extend
+     [ ] Suspend
+     [ ] Reset Password
+
+
+------------------------------------------------------------
+
+[ ] 18. /admin/students/[id]
+     STUDENT DETAILS
+
+     PROFILE
+     [ ] Avatar
+     [ ] Full Name
+     [ ] Email
+     [ ] Phone
+     [ ] Account Status
+
+     SUBSCRIPTION
+     [ ] Plan
+     [ ] Status
+     [ ] Start Date
+     [ ] Expiry Date
+     [ ] Days Remaining
+     [ ] Activate
+     [ ] Extend
+
+     REFERRAL
+     [ ] Referred By
+     [ ] Referral Method
+
+     PAYMENTS
+     [ ] Payment History
+
+     ACCOUNT
+     [ ] Created Date
+     [ ] Last Login
+     [ ] Device
+
+     ACTIONS
+     [ ] Edit
+     [ ] Suspend
+     [ ] Reset Password
+
+
+------------------------------------------------------------
+
+[ ] 19. /admin/teachers
+     TEACHERS
+
+     [ ] Search
+     [ ] Filter
+     [ ] Create Teacher
+
+     TABLE
+     [ ] Name
+     [ ] Email
+     [ ] Students
+     [ ] Referrals
+     [ ] Commission
+     [ ] Status
+     [ ] Actions
+
+     ACTIONS
+     [ ] View
+     [ ] Edit
+     [ ] Suspend
+     [ ] Activate
+
+
+------------------------------------------------------------
+
+[ ] 20. /admin/referrals
+     REFERRALS
+
+     STATISTICS
+     [ ] Total
+     [ ] Successful
+     [ ] Pending
+     [ ] Commission
+
+     TABLE
+     [ ] Student
+     [ ] Referrer
+     [ ] Method
+     [ ] Status
+     [ ] Date
+     [ ] Commission
+
+
+------------------------------------------------------------
+
+[ ] 21. /admin/subscriptions
+     SUBSCRIPTIONS
+
+     STATISTICS
+     [ ] Active
+     [ ] Expiring Soon
+     [ ] Expired
+
+     TABLE
+     [ ] Student
+     [ ] Plan
+     [ ] Start
+     [ ] Expiry
+     [ ] Status
+     [ ] Activated By
+
+     ACTIONS
+     [ ] Activate
+     [ ] Extend
+     [ ] Cancel
+
+
+------------------------------------------------------------
+
+[ ] 22. /admin/payments
+     PAYMENTS
+
+     STATISTICS
+     [ ] Revenue
+     [ ] Successful
+     [ ] Pending
+     [ ] Failed
+
+     TABLE
+     [ ] Reference
+     [ ] Student
+     [ ] Amount
+     [ ] Status
+     [ ] Method
+     [ ] Date
+
+     ACTIONS
+     [ ] View
+
+
+------------------------------------------------------------
+
+[ ] 23. /admin/wallet
+     WALLET
+
+     BALANCE
+     [ ] Current Balance
+
+     ACTIONS
+     [ ] Fund Wallet
+
+     FUND WALLET
+     [ ] Amount
+     [ ] Payment Method
+     [ ] Continue Payment
+
+     TRANSACTIONS
+     [ ] Date
+     [ ] Description
+     [ ] Amount
+     [ ] Balance
+     [ ] Status
+
+
+------------------------------------------------------------
+
+[ ] 24. /admin/reports
+     REPORTS
+
+     [ ] Student Growth
+     [ ] Revenue
+     [ ] Subscriptions
+     [ ] Referrals
+     [ ] Teacher Performance
+
+     [ ] Date Filter
+     [ ] Charts
+     [ ] Tables
+     [ ] Export
+
+
+------------------------------------------------------------
+
+[ ] 25. /admin/settings
+     SETTINGS
+
+     [ ] Profile
+     [ ] Notifications
+     [ ] Security
+     [ ] Password
+
+
+============================================================
+4. TEACHER
+============================================================
+
+[ ] 26. /teacher
+     TEACHER DASHBOARD
+
+     STATISTICS
+     [ ] My Students
+     [ ] Active Students
+     [ ] Expired Students
+     [ ] Pending Students
+     [ ] Total Referrals
+     [ ] Successful Referrals
+     [ ] Commission
+
+     QUICK ACTIONS
+     [ ] Add Student
+     [ ] Copy Referral Link
+     [ ] View Students
+
+     [ ] Recent Students
+     [ ] Recent Referrals
+     [ ] Recent Payments
+
+
+------------------------------------------------------------
+
+[ ] 27. /teacher/students
+     MY STUDENTS
+
+     [ ] Search
+     [ ] Filter
+     [ ] Add Student
+
+     TABLE
+     [ ] Student
+     [ ] Email
+     [ ] Subscription
+     [ ] Expiry
+     [ ] Status
+     [ ] Actions
+
+     ACTIONS
+     [ ] View
+     [ ] Edit
+     [ ] Activate
+     [ ] Extend
+
+
+------------------------------------------------------------
+
+[ ] 28. /teacher/students/[id]
+     STUDENT DETAILS
+
+     [ ] Student Name
+     [ ] Email
+     [ ] Phone
+     [ ] Status
+
+     SUBSCRIPTION
+     [ ] Plan
+     [ ] Status
+     [ ] Expiry
+
+     REFERRAL
+     [ ] Referred By
+     [ ] Referral Date
+
+     PAYMENT
+     [ ] Payment Status
+     [ ] Payment History
+
+     ACTIONS
+     [ ] Activate
+     [ ] Extend
+     [ ] View
+
+
+------------------------------------------------------------
+
+[ ] 29. /teacher/referrals
+     REFERRAL CENTER
+
+     REFERRAL CODE
+     [ ] Code
+     [ ] Copy Code
+
+     REFERRAL LINK
+     [ ] Link
+     [ ] Copy Link
+     [ ] Share
+
+     STATISTICS
+     [ ] Total Referrals
+     [ ] Successful
+     [ ] Pending
+     [ ] Commission
+
+     HISTORY
+     [ ] Student
+     [ ] Date
+     [ ] Status
+     [ ] Commission
+
+
+------------------------------------------------------------
+
+[ ] 30. /teacher/payments
+     PAYMENTS
+
+     STATISTICS
+     [ ] Total Generated
+     [ ] Successful
+     [ ] Commission
+
+     TABLE
+     [ ] Student
+     [ ] Amount
+     [ ] Status
+     [ ] Date
+     [ ] Commission
+
+
+------------------------------------------------------------
+
+[ ] 31. /teacher/wallet
+     WALLET
+
+     BALANCE
+     [ ] Current Balance
+
+     ACTION
+     [ ] Fund Wallet
+
+     TRANSACTIONS
+     [ ] Date
+     [ ] Description
+     [ ] Amount
+     [ ] Balance
+     [ ] Status
+
+     NOTE:
+     If teachers ONLY refer students and don't activate
+     students themselves, REMOVE THIS PAGE.
+
+
+------------------------------------------------------------
+
+[ ] 32. /teacher/settings
+     SETTINGS
+
+     PROFILE
+     [ ] Full Name
+     [ ] Email
+     [ ] Phone
+     [ ] Avatar
+
+     REFERRAL
+     [ ] Referral Code
+     [ ] Referral Link
+
+     NOTIFICATIONS
+     [ ] Payment Notifications
+     [ ] Student Notifications
+     [ ] Referral Notifications
+
+     SECURITY
+     [ ] Change Password
+     [ ] Logout
+
+
+============================================================
+5. STUDENT
+============================================================
+
+[ ] 33. /student
+     STUDENT DASHBOARD
+
+     WELCOME
+     [ ] Greeting
+     [ ] User Name
+     [ ] Notifications
+     [ ] Profile
+
+     SUBSCRIPTION CARD
+     [ ] Product
+     [ ] Active / Expired
+     [ ] Start Date
+     [ ] Expiry Date
+     [ ] Days Remaining
+
+     ACTIONS
+     [ ] View Subscription
+     [ ] Renew
+
+     PAYMENT SUMMARY
+     [ ] Last Payment
+     [ ] Amount
+     [ ] Date
+     [ ] Status
+
+     ACCOUNT
+     [ ] Email
+     [ ] Phone
+
+     REFERRAL
+     [ ] Referred By
+
+
+------------------------------------------------------------
+
+[ ] 34. /student/subscription
+     MY SUBSCRIPTION
+
+     [ ] Product Name
+     [ ] Plan
+     [ ] Price
+     [ ] Status
+     [ ] Start Date
+     [ ] Expiry Date
+     [ ] Days Remaining
+
+     ACTIONS
+     [ ] Renew
+     [ ] Change Plan
+
+     IF EXPIRED:
+
+     [ ] Expired message
+     [ ] Renew button
+
+
+------------------------------------------------------------
+
+[ ] 35. /student/payments
+     PAYMENT HISTORY
+
+     [ ] Search
+     [ ] Filter
+
+     TABLE
+     [ ] Reference
+     [ ] Amount
+     [ ] Purpose
+     [ ] Payment Method
+     [ ] Status
+     [ ] Date
+
+     ACTION
+     [ ] View Payment
+
+
+------------------------------------------------------------
+
+[ ] 36. /student/referral
+     REFER A FRIEND
+
+     [ ] Referral Code
+     [ ] Copy Code
+
+     [ ] Referral Link
+     [ ] Copy Link
+     [ ] Share
+
+     STATISTICS
+     [ ] Friends Referred
+     [ ] Successful
+     [ ] Pending
+
+     IF REWARD SYSTEM EXISTS:
+
+     [ ] Total Rewards
+     [ ] Available Rewards
+
+
+------------------------------------------------------------
+
+[ ] 37. /student/profile
+     MY PROFILE
+
+     PROFILE
+     [ ] Avatar
+     [ ] Full Name
+     [ ] Email
+     [ ] Phone
+
+     [ ] Edit Profile
+
+     ACCOUNT
+     [ ] Status
+     [ ] Member Since
+
+     SECURITY
+     [ ] Change Password
+
+     [ ] Logout
+
+
+------------------------------------------------------------
+
+[ ] 38. /student/settings
+     SETTINGS
+
+     NOTIFICATIONS
+     [ ] Payment Notifications
+     [ ] Subscription Notifications
+     [ ] Important Updates
+
+     SECURITY
+     [ ] Change Password
+     [ ] Active Device
+     [ ] Last Login
+     [ ] Logout
+
+
+============================================================
+6. SHARED COMPONENTS
+============================================================
+
+These aren't pages, but you should build them because
+almost every page will use them.
+
+[ ] Dashboard Header
+[ ] Floating Sidebar
+[ ] User Profile Menu
+[ ] Notification Dropdown
+[ ] Search
+[ ] DataTable
+[ ] Pagination
+[ ] Filter Dropdown
+[ ] Date Range Picker
+[ ] Confirmation Modal
+[ ] Create User Modal
+[ ] Edit User Modal
+[ ] Student Details Drawer/Modal
+[ ] Activate Subscription Modal
+[ ] Extend Subscription Modal
+[ ] Fund Wallet Modal
+[ ] Payment Modal
+[ ] Success Modal
+[ ] Error Modal
+[ ] Loading Skeleton
+[ ] Empty State
+[ ] Error State
+[ ] Toast Notification
+[ ] Avatar
+[ ] Status Badge
+[ ] Stat Card
+[ ] Chart Card
+
+
+============================================================
+7. IMPORTANT BUSINESS MODALS
+============================================================
+
+These should generally be MODALS rather than separate pages.
+
+[ ] Create Admin
+[ ] Create Teacher
+[ ] Create Student
+[ ] Edit User
+[ ] Activate Student
+[ ] Extend Subscription
+[ ] Fund Wallet
+[ ] Confirm Payment
+[ ] Confirm Suspension
+[ ] Confirm Deletion
+[ ] Reset Password
+[ ] View Transaction
+[ ] View Referral
+
+
+============================================================
+8. PAYMENT FLOW
+============================================================
+
+STUDENT DIRECT PAYMENT:
+
+[ ] Student chooses plan
+        ↓
+[ ] Checkout
+        ↓
+[ ] Paystack
+        ↓
+[ ] Payment successful
+        ↓
+[ ] Transaction created
+        ↓
+[ ] Subscription created
+        ↓
+[ ] Student activated
+        ↓
+[ ] Confirmation
+
+
+ADMIN / TEACHER WALLET PAYMENT:
+
+[ ] Admin/Teacher funds wallet
+        ↓
+[ ] Paystack
+        ↓
+[ ] Wallet credited
+        ↓
+[ ] Admin/Teacher selects student
+        ↓
+[ ] Select plan
+        ↓
+[ ] Confirm activation
+        ↓
+[ ] Wallet debited
+        ↓
+[ ] Subscription activated
+        ↓
+[ ] Transaction recorded
+
+
+============================================================
+9. REFERRAL FLOW
+============================================================
+
+METHOD 1 — REFERRAL LINK
+
+Teacher:
+
+[ ] Generate referral code
+[ ] Generate referral link
+[ ] Copy link
+[ ] Share link
+
+Student:
+
+[ ] Opens referral link
+[ ] Registers
+[ ] System stores referrer
+[ ] Student pays
+[ ] Payment successful
+[ ] Referral becomes successful
+[ ] Commission calculated
+
+
+METHOD 2 — DIRECT STUDENT CREATION
+
+Teacher/Admin:
+
+[ ] Click Create Student
+[ ] Enter student details
+[ ] Create account
+[ ] System automatically records creator
+[ ] Student appears under creator
+[ ] Student can be activated
+
+
+============================================================
+10. SUBSCRIPTION STATUS
+============================================================
+
+EVERY STUDENT SHOULD HAVE:
+
+[ ] Pending
+[ ] Active
+[ ] Expiring Soon
+[ ] Expired
+[ ] Suspended
+[ ] Cancelled
+
+EXAMPLE:
+
+ACTIVE
+    ↓
+EXPIRING SOON
+    ↓
+EXPIRED
+
+OR
+
+ACTIVE
+    ↓
+CANCELLED
+
+
+============================================================
+11. USER STATUS
+============================================================
+
+ADMIN / TEACHER / STUDENT:
+
+[ ] Active
+[ ] Suspended
+[ ] Pending
+
+SUPER ADMIN:
+
+[ ] Active
+[ ] Suspended
+
+
+============================================================
+12. TRANSACTION TYPES
+============================================================
+
+[ ] Subscription Payment
+[ ] Subscription Renewal
+[ ] Wallet Funding
+[ ] Wallet Debit
+[ ] Referral Commission
+[ ] Refund
+
+
+============================================================
+13. ROLE PERMISSIONS
+============================================================
+
+SUPER ADMIN
+------------------------------------------------------------
+
+[✓] Manage Admins
+[✓] Manage Teachers
+[✓] Manage Students
+[✓] View All Referrals
+[✓] Manage Subscriptions
+[✓] View All Payments
+[✓] Manage Wallets
+[✓] View Reports
+[✓] Platform Settings
+
+
+ADMIN
+------------------------------------------------------------
+
+[✓] Create Students
+[✓] Manage Students
+[✓] Create Teachers
+[✓] View Teachers
+[✓] Activate Students
+[✓] Manage Subscriptions
+[✓] View Payments
+[✓] Manage Own Wallet
+[✓] View Own Reports
+[✗] Manage Admins
+[✗] Platform Settings
+
+
+TEACHER
+------------------------------------------------------------
+
+[✓] Create Students
+[✓] View Own Students
+[✓] Refer Students
+[✓] View Own Referrals
+[✓] View Own Payments
+[✓] View Commission
+
+IF SELLING DIRECTLY:
+
+[✓] Wallet
+[✓] Activate Students
+
+[✗] Create Admins
+[✗] Manage Teachers
+[✗] Platform Settings
+
+
+STUDENT
+------------------------------------------------------------
+
+[✓] View Own Account
+[✓] View Subscription
+[✓] Pay
+[✓] Renew
+[✓] View Own Payments
+[✓] Referral (optional)
+[✗] Manage Users
+[✗] Manage Wallet
+[✗] Manage Subscriptions
+[✗] Reports
+
+
+============================================================
+14. FINAL NUXT PAGE STRUCTURE
+============================================================
+
+pages/
+
+├── index.vue
+│
+├── login.vue
+├── register.vue
+├── forgot-password.vue
+├── reset-password.vue
+│
+├── super-admin/
+│   ├── index.vue
+│   ├── admins.vue
+│   ├── teachers.vue
+│   ├── students.vue
+│   ├── referrals.vue
+│   ├── subscriptions.vue
+│   ├── payments.vue
+│   ├── wallets.vue
+│   ├── reports.vue
+│   └── settings.vue
+│
+├── admin/
+│   ├── index.vue
+│   ├── students/
+│   │   ├── index.vue
+│   │   └── [id].vue
+│   ├── teachers.vue
+│   ├── referrals.vue
+│   ├── subscriptions.vue
+│   ├── payments.vue
+│   ├── wallet.vue
+│   ├── reports.vue
+│   └── settings.vue
+│
+├── teacher/
+│   ├── index.vue
+│   ├── students/
+│   │   ├── index.vue
+│   │   └── [id].vue
+│   ├── referrals.vue
+│   ├── payments.vue
+│   ├── wallet.vue
+│   └── settings.vue
+│
+└── student/
+    ├── index.vue
+    ├── subscription.vue
+    ├── payments.vue
+    ├── referral.vue
+    ├── profile.vue
+    └── settings.vue
+
+
+============================================================
+15. MVP DEVELOPMENT ORDER
+============================================================
+
+BUILD IN THIS ORDER:
+
+PHASE 1 — FOUNDATION
+[ ] Authentication
+[ ] Login
+[ ] Register
+[ ] Forgot Password
+[ ] Reset Password
+[ ] Role-based routing
+[ ] Role-based permissions
+
+PHASE 2 — SUPER ADMIN
+[ ] Super Admin Dashboard
+[ ] Admin Management
+[ ] Teacher Management
+[ ] Student Management
+[ ] Subscription Management
+[ ] Payment Management
+
+PHASE 3 — ADMIN
+[ ] Admin Dashboard
+[ ] Student Management
+[ ] Teacher Management
+[ ] Subscriptions
+[ ] Payments
+[ ] Wallet
+
+PHASE 4 — TEACHER
+[ ] Teacher Dashboard
+[ ] Students
+[ ] Student Details
+[ ] Referrals
+[ ] Payments
+[ ] Wallet (if required)
+
+PHASE 5 — STUDENT
+[ ] Student Dashboard
+[ ] Subscription
+[ ] Payments
+[ ] Referral
+[ ] Profile
+[ ] Settings
+
+PHASE 6 — BUSINESS LOGIC
+[ ] Paystack
+[ ] Wallet
+[ ] Subscription activation
+[ ] Subscription expiry
+[ ] Referral tracking
+[ ] Commission calculation
+[ ] Transaction records
+
+PHASE 7 — POLISH
+[ ] Notifications
+[ ] Toasts
+[ ] Loading states
+[ ] Empty states
+[ ] Error states
+[ ] Responsive mobile UI
+[ ] Device/session management
+[ ] Reports
+[ ] Export
+
+
+============================================================
+                 MVP COMPLETE
+============================================================
+
+TOTAL CORE PAGES:
+
+PUBLIC                  5
+SUPER ADMIN             10
+ADMIN                   10
+TEACHER                  7
+STUDENT                  6
+                        ───
+                         38
+
+PLUS:
+
+[ ] Shared components
+[ ] Modals
+[ ] Payment system
+[ ] Referral system
+[ ] Subscription engine
+[ ] Wallet engine
+[ ] Commission engine
+[ ] Authentication
+[ ] Role permissions
+[ ] Device/session control
+
+
+IMPORTANT:
+------------------------------------------------------------
+
+DO NOT BUILD YET:
+
+[ ] CBT
+[ ] Lessons
+[ ] Subjects
+[ ] Topics
+[ ] Question Bank
+[ ] Classes
+[ ] Attendance
+[ ] Timetable
+[ ] School Management
+[ ] Complex LMS
+[ ] Teacher Classroom
+[ ] Student Classroom
+
+Those can be plugged into the Student side later.
+
+THE MVP'S CORE IS:
+
+USER
+  ↓
+REFERRAL / CREATION
+  ↓
+STUDENT
+  ↓
+PAYMENT
+  ↓
+SUBSCRIPTION
+  ↓
+ACCESS
+  ↓
+RENEWAL
+
+And around that:
+
+ADMIN
+TEACHER
+SUPER ADMIN
+WALLET
+REFERRALS
+COMMISSIONS
+REPORTS
