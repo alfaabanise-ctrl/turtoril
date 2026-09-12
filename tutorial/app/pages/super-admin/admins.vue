@@ -1,201 +1,181 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref } from "vue";
 
 definePageMeta({
-  layout: 'super-admin',
-})
+  layout: "nav",
+});
 
 interface Admin {
-  id: string
-  name: string
-  email: string
-  phone: string
-  image: string | null
-
-  totalTeachers: number
-  totalStudents: number
-  subscribedStudents: number
-
-  dateJoined: string
-  lastLogin: string
-
-  status: 'Active' | 'Suspended' | 'Inactive'
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  image: string | null;
+  totalTeachers: number;
+  totalStudents: number;
+  subscribedStudents: number;
+  dateJoined: string;
+  lastLogin: string;
+  status: "Active" | "Suspended" | "Inactive";
 }
 
 interface AdminSummary {
-  totalAdmins: number
-  totalTeachers: number
-  totalStudents: number
-  subscribedStudents: number
+  totalAdmins: number;
+  totalTeachers: number;
+  totalStudents: number;
+  subscribedStudents: number;
 }
-
-/*
-|--------------------------------------------------------------------------
-| Backend Data
-|--------------------------------------------------------------------------
-|
-| These values should eventually come directly from your API.
-| The frontend does NOT calculate teacher/student totals.
-|
-*/
 
 const summary = ref<AdminSummary>({
   totalAdmins: 12,
   totalTeachers: 186,
   totalStudents: 3840,
   subscribedStudents: 2914,
-})
+});
 
 const admins = ref<Admin[]>([
   {
-    id: 'ADM-001',
-    name: 'John Admin',
-    email: 'john@example.com',
-    phone: '08012345678',
+    id: "ADM-001",
+    name: "John Admin",
+    email: "john@example.com",
+    phone: "08012345678",
     image: null,
-
     totalTeachers: 24,
     totalStudents: 486,
     subscribedStudents: 378,
-
-    dateJoined: '12 January 2026',
-    lastLogin: '11 September 2026, 06:42 PM',
-
-    status: 'Active',
+    dateJoined: "12 January 2026",
+    lastLogin: "11 September 2026 06:42 PM",
+    status: "Active",
   },
-
   {
-    id: 'ADM-002',
-    name: 'Sarah Williams',
-    email: 'sarah@example.com',
-    phone: '08023456789',
+    id: "ADM-002",
+    name: "Sarah Williams",
+    email: "sarah@example.com",
+    phone: "08023456789",
     image: null,
-
     totalTeachers: 18,
     totalStudents: 352,
     subscribedStudents: 291,
-
-    dateJoined: '20 January 2026',
-    lastLogin: '11 September 2026, 05:18 PM',
-
-    status: 'Active',
+    dateJoined: "20 January 2026",
+    lastLogin: "11 September 2026 05:18 PM",
+    status: "Active",
   },
-
   {
-    id: 'ADM-003',
-    name: 'David Anderson',
-    email: 'david@example.com',
-    phone: '08034567890',
+    id: "ADM-003",
+    name: "David Anderson",
+    email: "david@example.com",
+    phone: "08034567890",
     image: null,
-
     totalTeachers: 31,
     totalStudents: 624,
     subscribedStudents: 487,
-
-    dateJoined: '03 February 2026',
-    lastLogin: '10 September 2026, 09:12 PM',
-
-    status: 'Active',
+    dateJoined: "03 February 2026",
+    lastLogin: "10 September 2026 09:12 PM",
+    status: "Active",
   },
-
   {
-    id: 'ADM-004',
-    name: 'Michael Brown',
-    email: 'michael@example.com',
-    phone: '08045678901',
+    id: "ADM-004",
+    name: "Michael Brown",
+    email: "michael@example.com",
+    phone: "08045678901",
     image: null,
-
     totalTeachers: 14,
     totalStudents: 218,
     subscribedStudents: 164,
-
-    dateJoined: '15 February 2026',
-    lastLogin: '09 September 2026, 04:37 PM',
-
-    status: 'Active',
+    dateJoined: "15 February 2026",
+    lastLogin: "09 September 2026 04:37 PM",
+    status: "Active",
   },
-
   {
-    id: 'ADM-005',
-    name: 'Elizabeth Johnson',
-    email: 'elizabeth@example.com',
-    phone: '08056789012',
+    id: "ADM-005",
+    name: "Elizabeth Johnson",
+    email: "elizabeth@example.com",
+    phone: "08056789012",
     image: null,
-
     totalTeachers: 27,
     totalStudents: 531,
     subscribedStudents: 419,
-
-    dateJoined: '28 February 2026',
-    lastLogin: '11 September 2026, 01:24 PM',
-
-    status: 'Active',
+    dateJoined: "28 February 2026",
+    lastLogin: "11 September 2026 01:24 PM",
+    status: "Active",
   },
-
   {
-    id: 'ADM-006',
-    name: 'Daniel Smith',
-    email: 'daniel@example.com',
-    phone: '08067890123',
+    id: "ADM-006",
+    name: "Daniel Smith",
+    email: "daniel@example.com",
+    phone: "08067890123",
     image: null,
-
     totalTeachers: 11,
     totalStudents: 193,
     subscribedStudents: 142,
-
-    dateJoined: '09 March 2026',
-    lastLogin: '08 September 2026, 11:05 AM',
-
-    status: 'Inactive',
+    dateJoined: "09 March 2026",
+    lastLogin: "08 September 2026 11:05 AM",
+    status: "Inactive",
   },
-
   {
-    id: 'ADM-007',
-    name: 'James Wilson',
-    email: 'james@example.com',
-    phone: '08078901234',
+    id: "ADM-007",
+    name: "James Wilson",
+    email: "james@example.com",
+    phone: "08078901234",
     image: null,
-
     totalTeachers: 22,
     totalStudents: 407,
     subscribedStudents: 318,
-
-    dateJoined: '19 March 2026',
-    lastLogin: '11 September 2026, 03:52 PM',
-
-    status: 'Active',
+    dateJoined: "19 March 2026",
+    lastLogin: "11 September 2026 03:52 PM",
+    status: "Active",
   },
-
   {
-    id: 'ADM-008',
-    name: 'Grace Thompson',
-    email: 'grace@example.com',
-    phone: '08089012345',
+    id: "ADM-008",
+    name: "Grace Thompson",
+    email: "grace@example.com",
+    phone: "08089012345",
     image: null,
-
     totalTeachers: 16,
     totalStudents: 294,
     subscribedStudents: 227,
-
-    dateJoined: '02 April 2026',
-    lastLogin: '10 September 2026, 08:15 PM',
-
-    status: 'Active',
+    dateJoined: "02 April 2026",
+    lastLogin: "10 September 2026 08:15 PM",
+    status: "Active",
   },
-])
+]);
 
-/*
-|--------------------------------------------------------------------------
-| Search & Filters
-|--------------------------------------------------------------------------
-*/
+const search = ref("");
+const statusFilter = ref("All");
+const isLoading = ref(false);
 
-const search = ref('')
-const statusFilter = ref('All')
-const isLoading = ref(false)
+const selectedAdmin = ref<Admin | null>(null);
+const activeModal = ref<"view" | "edit" | "suspend" | null>(null);
+
+const columns = [
+  {
+    key: "name",
+    label: "Administrator",
+  },
+  {
+    key: "totalTeachers",
+    label: "Teachers",
+  },
+  {
+    key: "students",
+    label: "Students / Paid",
+  },
+  {
+    key: "dateJoined",
+    label: "Date Joined",
+  },
+  {
+    key: "lastLogin",
+    label: "Last Login",
+  },
+  {
+    key: "status",
+    label: "Status",
+  },
+];
 
 const filteredAdmins = computed(() => {
-  const query = search.value.trim().toLowerCase()
+  const query = search.value.trim().toLowerCase();
 
   return admins.value.filter((admin) => {
     const matchesSearch =
@@ -203,911 +183,560 @@ const filteredAdmins = computed(() => {
       admin.name.toLowerCase().includes(query) ||
       admin.email.toLowerCase().includes(query) ||
       admin.id.toLowerCase().includes(query) ||
-      admin.phone.includes(query)
+      admin.phone.includes(query);
 
     const matchesStatus =
-      statusFilter.value === 'All' ||
-      admin.status === statusFilter.value
+      statusFilter.value === "All" || admin.status === statusFilter.value;
 
-    return matchesSearch && matchesStatus
-  })
-})
+    return matchesSearch && matchesStatus;
+  });
+});
 
-/*
-|--------------------------------------------------------------------------
-| Table Columns
-|--------------------------------------------------------------------------
-*/
+const activeAdmins = computed(
+  () => admins.value.filter((admin) => admin.status === "Active").length
+);
 
-const columns = [
+const suspendedAdmins = computed(
+  () => admins.value.filter((admin) => admin.status === "Suspended").length
+);
+
+const inactiveAdmins = computed(
+  () => admins.value.filter((admin) => admin.status === "Inactive").length
+);
+
+const subscriptionRate = computed(() => {
+  if (!summary.value.totalStudents) return 0;
+
+  return Math.round(
+    (summary.value.subscribedStudents / summary.value.totalStudents) * 100
+  );
+});
+
+const stats = computed(() => [
   {
-    key: 'name',
-    label: 'Admin',
+    label: "Total Admins",
+    value: summary.value.totalAdmins,
+    icon: "i-heroicons-users",
+    description: "Registered administrators",
   },
   {
-    key: 'totalTeachers',
-    label: 'Total Teachers',
+    label: "Active Admins",
+    value: activeAdmins.value,
+    icon: "i-heroicons-check-circle",
+    description: "Currently active",
   },
   {
-    key: 'totalStudents',
-    label: 'Total Students',
+    label: "Total Teachers",
+    value: summary.value.totalTeachers,
+    icon: "i-heroicons-academic-cap",
+    description: "Managed teachers",
   },
   {
-    key: 'subscribedStudents',
-    label: 'Subscribed Students',
+    label: "Total Students",
+    value: summary.value.totalStudents,
+    icon: "i-heroicons-user-group",
+    description: `${subscriptionRate.value}% paid`,
   },
-  {
-    key: 'dateJoined',
-    label: 'Date Joined',
-  },
-  {
-    key: 'lastLogin',
-    label: 'Last Login',
-  },
-  {
-    key: 'status',
-    label: 'Status',
-  },
-]
+]);
 
-/*
-|--------------------------------------------------------------------------
-| Actions
-|--------------------------------------------------------------------------
-*/
+const statusStyles: Record<Admin["status"], string> = {
+  Active: "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400",
 
-const selectedAdmin = ref<Admin | null>(null)
+  Suspended: "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
 
-const showViewModal = ref(false)
-const showEditModal = ref(false)
-const showSuspendModal = ref(false)
+  Inactive: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
+};
 
-function viewAdmin(admin: Admin) {
-  selectedAdmin.value = admin
-  showViewModal.value = true
-}
+const statusDots: Record<Admin["status"], string> = {
+  Active: "bg-green-500",
+  Suspended: "bg-rose-500",
+  Inactive: "bg-gray-400",
+};
 
-function editAdmin(admin: Admin) {
-  selectedAdmin.value = admin
-  showEditModal.value = true
-}
+const avatarColors = [
+  "bg-indigo-500",
+  "bg-emerald-500",
+  "bg-amber-500",
+  "bg-rose-500",
+  "bg-sky-500",
+  "bg-violet-500",
+  "bg-cyan-500",
+  "bg-orange-500",
+];
 
-function suspendAdmin(admin: Admin) {
-  selectedAdmin.value = admin
-  showSuspendModal.value = true
-}
-
-function closeModals() {
-  showViewModal.value = false
-  showEditModal.value = false
-  showSuspendModal.value = false
-  selectedAdmin.value = null
-}
-
-function confirmSuspend() {
-  if (!selectedAdmin.value) return
-
-  /*
-   * In production:
-   * await $fetch(`/api/admins/${selectedAdmin.value.id}/suspend`, {
-   *   method: 'POST'
-   * })
-   */
-
-  const admin = admins.value.find(
-    (item) => item.id === selectedAdmin.value?.id,
-  )
-
-  if (admin) {
-    admin.status =
-      admin.status === 'Suspended'
-        ? 'Active'
-        : 'Suspended'
-  }
-
-  closeModals()
-}
-
-function getInitials(name: string) {
+function initials(name: string) {
   return name
-    .split(' ')
-    .map((word) => word.charAt(0))
+    .split(" ")
+    .map((word) => word[0])
     .slice(0, 2)
-    .join('')
-    .toUpperCase()
+    .join("")
+    .toUpperCase();
 }
 
-function statusClass(status: Admin['status']) {
-  switch (status) {
-    case 'Active':
-      return 'bg-emerald-50 text-emerald-600'
+function avatarColor(name: string) {
+  const sum = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
 
-    case 'Suspended':
-      return 'bg-red-50 text-red-600'
+  return avatarColors[sum % avatarColors.length];
+}
 
-    case 'Inactive':
-      return 'bg-slate-100 text-slate-500'
+function paidPercentage(admin: Admin) {
+  if (!admin.totalStudents) return 0;
 
-    default:
-      return 'bg-slate-100 text-slate-500'
-  }
+  return Math.round((admin.subscribedStudents / admin.totalStudents) * 100);
+}
+
+function openModal(type: "view" | "edit" | "suspend", admin: Admin) {
+  selectedAdmin.value = admin;
+  activeModal.value = type;
+}
+
+function closeModal() {
+  activeModal.value = null;
+}
+
+function statusDot(status: Admin["status"]) {
+  return statusDots[status];
 }
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50/50 px-4 py-6 font-[Poppins] sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-[1600px] space-y-6">
-
-      <!-- ========================================================= -->
-      <!-- PAGE HEADER -->
-      <!-- ========================================================= -->
-
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <div class="mb-1 flex items-center gap-2">
-            <NuxtLink
-              to="/super-admin"
-              class="text-sm font-medium text-slate-400 transition hover:text-slate-700"
-            >
-              Dashboard
-            </NuxtLink>
-
-            <Icon
-              name="lucide:chevron-right"
-              class="h-4 w-4 text-slate-300"
-            />
-
-            <span class="text-sm font-medium text-slate-700">
-              Admins
-            </span>
+  <Container class="mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
+    <!-- Header -->
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <div class="flex items-center gap-2">
+          <div
+            class="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
+          >
+            <Icon name="i-heroicons-shield-check" class="h-5 w-5" />
           </div>
 
-          <h1 class="text-2xl font-semibold tracking-tight text-slate-900">
-            Admins
-          </h1>
+          <span
+            class="text-xs font-medium uppercase tracking-wider text-indigo-600 dark:text-indigo-400"
+          >
+            Administration
+          </span>
+        </div>
 
-          <p class="mt-1 text-sm text-slate-500">
-            Manage platform administrators and monitor their activity.
+        <h1
+          class="mt-2 text-2xl font-semibold tracking-tight text-gray-900 dark:text-white sm:text-3xl"
+        >
+          Admins
+        </h1>
+
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Manage administrators, teachers, students and platform activity.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700"
+      >
+        <Icon name="i-heroicons-user-plus" class="h-4 w-4" />
+
+        Add Admin
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div
+        v-for="stat in stats"
+        :key="stat.label"
+        class="group rounded-2xl border border-gray-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg hover:shadow-gray-200/40 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-indigo-500/30"
+      >
+        <div class="flex items-start justify-between">
+          <div
+            class="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 transition group-hover:bg-indigo-600 group-hover:text-white dark:bg-indigo-500/10 dark:text-indigo-400 dark:group-hover:bg-indigo-500"
+          >
+            <Icon :name="stat.icon" class="h-5 w-5" />
+          </div>
+
+          <div
+            class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-50 text-gray-400 dark:bg-gray-800"
+          >
+            <Icon name="i-heroicons-arrow-trending-up" class="h-3.5 w-3.5" />
+          </div>
+        </div>
+
+        <div class="mt-5">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+            {{ stat.label }}
+          </p>
+
+          <p
+            class="mt-1 text-2xl font-semibold tracking-tight text-gray-900 dark:text-white"
+          >
+            {{ stat.value.toLocaleString() }}
+          </p>
+
+          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+            {{ stat.description }}
           </p>
         </div>
-
-        <button
-          type="button"
-          class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800 active:scale-[0.98]"
-        >
-          <Icon
-            name="lucide:plus"
-            class="h-4 w-4"
-          />
-
-          Create Admin
-        </button>
-      </div>
-
-      <!-- ========================================================= -->
-      <!-- SUMMARY CARDS -->
-      <!-- ========================================================= -->
-
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-
-        <!-- Total Admins -->
-        <div
-          class="rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-[0_4px_20px_rgba(15,23,42,0.03)]"
-        >
-          <div class="flex items-start justify-between">
-            <div>
-              <p class="text-sm font-medium text-slate-500">
-                Total Admins
-              </p>
-
-              <p class="mt-2 text-2xl font-semibold text-slate-900">
-                {{ summary.totalAdmins.toLocaleString() }}
-              </p>
-
-              <p class="mt-1 text-xs text-slate-400">
-                Platform administrators
-              </p>
-            </div>
-
-            <div
-              class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100"
-            >
-              <Icon
-                name="lucide:shield-check"
-                class="h-5 w-5 text-slate-700"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Total Teachers -->
-        <div
-          class="rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-[0_4px_20px_rgba(15,23,42,0.03)]"
-        >
-          <div class="flex items-start justify-between">
-            <div>
-              <p class="text-sm font-medium text-slate-500">
-                Total Teachers
-              </p>
-
-              <p class="mt-2 text-2xl font-semibold text-slate-900">
-                {{ summary.totalTeachers.toLocaleString() }}
-              </p>
-
-              <p class="mt-1 text-xs text-slate-400">
-                Across all admins
-              </p>
-            </div>
-
-            <div
-              class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50"
-            >
-              <Icon
-                name="lucide:graduation-cap"
-                class="h-5 w-5 text-blue-600"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Total Students -->
-        <div
-          class="rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-[0_4px_20px_rgba(15,23,42,0.03)]"
-        >
-          <div class="flex items-start justify-between">
-            <div>
-              <p class="text-sm font-medium text-slate-500">
-                Total Students
-              </p>
-
-              <p class="mt-2 text-2xl font-semibold text-slate-900">
-                {{ summary.totalStudents.toLocaleString() }}
-              </p>
-
-              <p class="mt-1 text-xs text-slate-400">
-                Registered students
-              </p>
-            </div>
-
-            <div
-              class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50"
-            >
-              <Icon
-                name="lucide:users"
-                class="h-5 w-5 text-violet-600"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Subscribed Students -->
-        <div
-          class="rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-[0_4px_20px_rgba(15,23,42,0.03)]"
-        >
-          <div class="flex items-start justify-between">
-            <div>
-              <p class="text-sm font-medium text-slate-500">
-                Subscribed Students
-              </p>
-
-              <p class="mt-2 text-2xl font-semibold text-slate-900">
-                {{ summary.subscribedStudents.toLocaleString() }}
-              </p>
-
-              <p class="mt-1 text-xs text-slate-400">
-                Currently subscribed
-              </p>
-            </div>
-
-            <div
-              class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50"
-            >
-              <Icon
-                name="lucide:badge-check"
-                class="h-5 w-5 text-emerald-600"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ========================================================= -->
-      <!-- ADMIN LIST -->
-      <!-- ========================================================= -->
-
-      <div
-        class="overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-[0_4px_20px_rgba(15,23,42,0.03)]"
-      >
-
-        <!-- List Header -->
-        <div
-          class="flex flex-col gap-4 border-b border-slate-100 px-5 py-5 lg:flex-row lg:items-center lg:justify-between"
-        >
-          <div>
-            <h2 class="text-base font-semibold text-slate-900">
-              All Administrators
-            </h2>
-
-            <p class="mt-1 text-sm text-slate-500">
-              View and manage all platform administrators.
-            </p>
-          </div>
-
-          <div class="flex flex-col gap-3 sm:flex-row">
-
-            <!-- Search -->
-            <div class="relative">
-              <Icon
-                name="lucide:search"
-                class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-              />
-
-              <input
-                v-model="search"
-                type="text"
-                placeholder="Search admins..."
-                class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white sm:w-[240px]"
-              />
-            </div>
-
-            <!-- Status Filter -->
-            <div class="relative">
-              <Icon
-                name="lucide:filter"
-                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-              />
-
-              <select
-                v-model="statusFilter"
-                class="h-10 appearance-none rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-9 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white"
-              >
-                <option value="All">
-                  All Status
-                </option>
-
-                <option value="Active">
-                  Active
-                </option>
-
-                <option value="Inactive">
-                  Inactive
-                </option>
-
-                <option value="Suspended">
-                  Suspended
-                </option>
-              </select>
-
-              <Icon
-                name="lucide:chevron-down"
-                class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- ======================================================= -->
-        <!-- YOUR EXISTING UiDataList -->
-        <!-- ======================================================= -->
-
-        <UiDataList
-          :items="filteredAdmins"
-          :columns="columns"
-          :loading="isLoading"
-          empty-title="No admins found"
-          empty-description="There are no administrators matching your current search or filter."
-        >
-
-          <!-- Admin -->
-          <template #name="{ item }">
-            <div class="flex min-w-[220px] items-center gap-3">
-
-              <div
-                class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100"
-              >
-                <img
-                  v-if="item.image"
-                  :src="item.image"
-                  :alt="item.name"
-                  class="h-full w-full object-cover"
-                />
-
-                <span
-                  v-else
-                  class="text-xs font-semibold text-slate-600"
-                >
-                  {{ getInitials(item.name) }}
-                </span>
-              </div>
-
-              <div class="min-w-0">
-                <p class="truncate text-sm font-semibold text-slate-800">
-                  {{ item.name }}
-                </p>
-
-                <p class="truncate text-xs text-slate-400">
-                  {{ item.email }}
-                </p>
-
-                <p class="mt-0.5 text-[11px] text-slate-400">
-                  {{ item.id }}
-                </p>
-              </div>
-            </div>
-          </template>
-
-          <!-- Teachers -->
-          <template #totalTeachers="{ item }">
-            <span class="text-sm font-medium text-slate-700">
-              {{ item.totalTeachers.toLocaleString() }}
-            </span>
-          </template>
-
-          <!-- Students -->
-          <template #totalStudents="{ item }">
-            <span class="text-sm font-medium text-slate-700">
-              {{ item.totalStudents.toLocaleString() }}
-            </span>
-          </template>
-
-          <!-- Subscribed Students -->
-          <template #subscribedStudents="{ item }">
-            <span class="text-sm font-medium text-emerald-600">
-              {{ item.subscribedStudents.toLocaleString() }}
-            </span>
-          </template>
-
-          <!-- Date Joined -->
-          <template #dateJoined="{ item }">
-            <span class="whitespace-nowrap text-sm text-slate-600">
-              {{ item.dateJoined }}
-            </span>
-          </template>
-
-          <!-- Last Login -->
-          <template #lastLogin="{ item }">
-            <span class="whitespace-nowrap text-sm text-slate-500">
-              {{ item.lastLogin }}
-            </span>
-          </template>
-
-          <!-- Status -->
-          <template #status="{ item }">
-            <span
-              class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
-              :class="statusClass(item.status)"
-            >
-              <span
-                class="mr-1.5 h-1.5 w-1.5 rounded-full bg-current"
-              />
-
-              {{ item.status }}
-            </span>
-          </template>
-
-          <!-- Actions -->
-          <template #actions="{ item }">
-            <div class="flex items-center justify-end gap-1">
-
-              <button
-                type="button"
-                title="View Admin"
-                class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                @click="viewAdmin(item)"
-              >
-                <Icon
-                  name="lucide:eye"
-                  class="h-4 w-4"
-                />
-              </button>
-
-              <button
-                type="button"
-                title="Edit Admin"
-                class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                @click="editAdmin(item)"
-              >
-                <Icon
-                  name="lucide:pencil"
-                  class="h-4 w-4"
-                />
-              </button>
-
-              <button
-                type="button"
-                :title="
-                  item.status === 'Suspended'
-                    ? 'Activate Admin'
-                    : 'Suspend Admin'
-                "
-                class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
-                @click="suspendAdmin(item)"
-              >
-                <Icon
-                  :name="
-                    item.status === 'Suspended'
-                      ? 'lucide:check-circle'
-                      : 'lucide:ban'
-                  "
-                  class="h-4 w-4"
-                />
-              </button>
-
-            </div>
-          </template>
-
-        </UiDataList>
       </div>
     </div>
 
-    <!-- =========================================================== -->
-    <!-- VIEW ADMIN MODAL -->
-    <!-- =========================================================== -->
+    <!-- Quick Overview -->
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <!-- Paid Students -->
+      <div
+        class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900"
+      >
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Paid Students
+            </p>
 
-    <Teleport to="body">
-      <Transition name="fade">
+            <p class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">
+              {{ summary.subscribedStudents.toLocaleString() }}
+              <span class="text-sm font-normal text-gray-400">
+                /
+                {{ summary.totalStudents.toLocaleString() }}
+              </span>
+            </p>
+          </div>
 
-        <div
-          v-if="showViewModal && selectedAdmin"
-          class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm"
-          @click.self="closeModals"
-        >
           <div
-            class="w-full max-w-lg overflow-hidden rounded-[24px] bg-white shadow-2xl"
+            class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
           >
-
-            <!-- Modal Header -->
-            <div
-              class="flex items-center justify-between border-b border-slate-100 px-6 py-5"
-            >
-              <div>
-                <h3 class="text-lg font-semibold text-slate-900">
-                  Admin Details
-                </h3>
-
-                <p class="mt-1 text-sm text-slate-500">
-                  Administrator account information.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                class="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                @click="closeModals"
-              >
-                <Icon
-                  name="lucide:x"
-                  class="h-5 w-5"
-                />
-              </button>
-            </div>
-
-            <!-- Profile -->
-            <div class="space-y-6 p-6">
-
-              <div class="flex items-center gap-4">
-                <div
-                  class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-slate-100"
-                >
-                  <img
-                    v-if="selectedAdmin.image"
-                    :src="selectedAdmin.image"
-                    :alt="selectedAdmin.name"
-                    class="h-full w-full object-cover"
-                  />
-
-                  <span
-                    v-else
-                    class="text-lg font-semibold text-slate-600"
-                  >
-                    {{ getInitials(selectedAdmin.name) }}
-                  </span>
-                </div>
-
-                <div>
-                  <h4 class="text-lg font-semibold text-slate-900">
-                    {{ selectedAdmin.name }}
-                  </h4>
-
-                  <p class="text-sm text-slate-500">
-                    {{ selectedAdmin.email }}
-                  </p>
-
-                  <span
-                    class="mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium"
-                    :class="statusClass(selectedAdmin.status)"
-                  >
-                    {{ selectedAdmin.status }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Information -->
-              <div class="grid grid-cols-2 gap-4">
-
-                <div class="rounded-2xl bg-slate-50 p-4">
-                  <p class="text-xs text-slate-400">
-                    Admin ID
-                  </p>
-
-                  <p class="mt-1 text-sm font-semibold text-slate-800">
-                    {{ selectedAdmin.id }}
-                  </p>
-                </div>
-
-                <div class="rounded-2xl bg-slate-50 p-4">
-                  <p class="text-xs text-slate-400">
-                    Phone
-                  </p>
-
-                  <p class="mt-1 text-sm font-semibold text-slate-800">
-                    {{ selectedAdmin.phone }}
-                  </p>
-                </div>
-
-                <div class="rounded-2xl bg-slate-50 p-4">
-                  <p class="text-xs text-slate-400">
-                    Teachers
-                  </p>
-
-                  <p class="mt-1 text-sm font-semibold text-slate-800">
-                    {{ selectedAdmin.totalTeachers.toLocaleString() }}
-                  </p>
-                </div>
-
-                <div class="rounded-2xl bg-slate-50 p-4">
-                  <p class="text-xs text-slate-400">
-                    Students
-                  </p>
-
-                  <p class="mt-1 text-sm font-semibold text-slate-800">
-                    {{ selectedAdmin.totalStudents.toLocaleString() }}
-                  </p>
-                </div>
-
-                <div class="rounded-2xl bg-slate-50 p-4">
-                  <p class="text-xs text-slate-400">
-                    Subscribed Students
-                  </p>
-
-                  <p class="mt-1 text-sm font-semibold text-emerald-600">
-                    {{ selectedAdmin.subscribedStudents.toLocaleString() }}
-                  </p>
-                </div>
-
-                <div class="rounded-2xl bg-slate-50 p-4">
-                  <p class="text-xs text-slate-400">
-                    Date Joined
-                  </p>
-
-                  <p class="mt-1 text-sm font-semibold text-slate-800">
-                    {{ selectedAdmin.dateJoined }}
-                  </p>
-                </div>
-
-              </div>
-
-              <div class="rounded-2xl border border-slate-100 p-4">
-                <div class="flex items-center justify-between">
-                  <span class="text-sm text-slate-500">
-                    Last Login
-                  </span>
-
-                  <span class="text-sm font-medium text-slate-800">
-                    {{ selectedAdmin.lastLogin }}
-                  </span>
-                </div>
-              </div>
-
-            </div>
-
-            <!-- Footer -->
-            <div
-              class="flex justify-end border-t border-slate-100 px-6 py-4"
-            >
-              <button
-                type="button"
-                class="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
-                @click="closeModals"
-              >
-                Close
-              </button>
-            </div>
-
+            <Icon name="i-heroicons-check-badge" class="h-5 w-5" />
           </div>
         </div>
 
-      </Transition>
-    </Teleport>
+        <div class="mt-4">
+          <div class="mb-2 flex items-center justify-between text-xs">
+            <span class="text-gray-400"> Payment rate </span>
 
-    <!-- =========================================================== -->
-    <!-- EDIT ADMIN MODAL PLACEHOLDER -->
-    <!-- =========================================================== -->
+            <span class="font-semibold text-emerald-600"> {{ subscriptionRate }}% </span>
+          </div>
 
-    <Teleport to="body">
-      <Transition name="fade">
+          <div class="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+            <div
+              class="h-full rounded-full bg-emerald-500 transition-all"
+              :style="{
+                width: `${subscriptionRate}%`,
+              }"
+            />
+          </div>
+        </div>
+      </div>
 
-        <div
-          v-if="showEditModal && selectedAdmin"
-          class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm"
-          @click.self="closeModals"
-        >
+      <!-- Active Admins -->
+      <div
+        class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900"
+      >
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Active Administrators
+            </p>
+
+            <p class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">
+              {{ activeAdmins }}
+            </p>
+          </div>
+
           <div
-            class="w-full max-w-md rounded-[24px] bg-white p-6 shadow-2xl"
+            class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
           >
-
-            <div class="flex items-center justify-between">
-              <div>
-                <h3 class="text-lg font-semibold text-slate-900">
-                  Edit Admin
-                </h3>
-
-                <p class="mt-1 text-sm text-slate-500">
-                  Update administrator information.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                class="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100"
-                @click="closeModals"
-              >
-                <Icon
-                  name="lucide:x"
-                  class="h-5 w-5"
-                />
-              </button>
-            </div>
-
-            <div class="mt-6 space-y-4">
-
-              <div>
-                <label class="mb-1.5 block text-sm font-medium text-slate-700">
-                  Full Name
-                </label>
-
-                <input
-                  :value="selectedAdmin.name"
-                  type="text"
-                  class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
-                />
-              </div>
-
-              <div>
-                <label class="mb-1.5 block text-sm font-medium text-slate-700">
-                  Email Address
-                </label>
-
-                <input
-                  :value="selectedAdmin.email"
-                  type="email"
-                  class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
-                />
-              </div>
-
-              <div>
-                <label class="mb-1.5 block text-sm font-medium text-slate-700">
-                  Phone Number
-                </label>
-
-                <input
-                  :value="selectedAdmin.phone"
-                  type="text"
-                  class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
-                />
-              </div>
-
-            </div>
-
-            <div class="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                class="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
-                @click="closeModals"
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                class="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
-                @click="closeModals"
-              >
-                Save Changes
-              </button>
-            </div>
-
+            <Icon name="i-heroicons-bolt" class="h-5 w-5" />
           </div>
         </div>
 
-      </Transition>
-    </Teleport>
+        <div class="mt-4 flex flex-wrap items-center gap-4 text-xs">
+          <span class="inline-flex items-center gap-1.5 text-emerald-600">
+            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            {{ activeAdmins }} Active
+          </span>
 
-    <!-- =========================================================== -->
-    <!-- SUSPEND / ACTIVATE MODAL -->
-    <!-- =========================================================== -->
+          <span class="inline-flex items-center gap-1.5 text-rose-500">
+            <span class="h-1.5 w-1.5 rounded-full bg-rose-500" />
+            {{ suspendedAdmins }} Suspended
+          </span>
+        </div>
+      </div>
 
-    <Teleport to="body">
-      <Transition name="fade">
+      <!-- Account Health -->
+      <div
+        class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900"
+      >
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Account Health
+            </p>
 
-        <div
-          v-if="showSuspendModal && selectedAdmin"
-          class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm"
-          @click.self="closeModals"
-        >
+            <p class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">
+              {{ inactiveAdmins }}
+
+              <span class="text-sm font-normal text-gray-400"> inactive </span>
+            </p>
+          </div>
+
           <div
-            class="w-full max-w-md rounded-[24px] bg-white p-6 shadow-2xl"
+            class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400"
           >
+            <Icon name="i-heroicons-chart-bar" class="h-5 w-5" />
+          </div>
+        </div>
 
-            <div
-              class="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50"
-            >
+        <p class="mt-4 text-xs text-gray-400 dark:text-gray-500">
+          Keep administrator accounts active and secure.
+        </p>
+      </div>
+    </div>
+
+    <!-- Admin Table -->
+    <UiDataList
+      :items="filteredAdmins"
+      :columns="columns"
+      row-key="id"
+      :loading="isLoading"
+      empty-text="No administrators found"
+    >
+      <!-- Filters -->
+      <template #filters>
+        <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <div class="relative w-full sm:w-72">
+            <Icon
+              name="i-heroicons-magnifying-glass"
+              class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+            />
+
+            <input
+              v-model="search"
+              type="text"
+              placeholder="Search admins..."
+              class="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-700 outline-none transition placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+            />
+          </div>
+
+          <select
+            v-model="statusFilter"
+            class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+          >
+            <option value="All">All Status</option>
+
+            <option value="Active">Active</option>
+
+            <option value="Suspended">Suspended</option>
+
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+      </template>
+
+      <!-- Administrator -->
+      <template #cell-name="{ item }">
+        <div class="flex min-w-[250px] items-center gap-3">
+          <!-- Avatar -->
+          <div
+            v-if="item.image"
+            class="h-10 w-10 shrink-0 overflow-hidden rounded-full ring-2 ring-white dark:ring-gray-900"
+          >
+            <img :src="item.image" :alt="item.name" class="h-full w-full object-cover" />
+          </div>
+
+          <div
+            v-else
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white shadow-sm ring-2 ring-white dark:ring-gray-900"
+            :class="avatarColor(item.name)"
+          >
+            {{ initials(item.name) }}
+          </div>
+
+          <!-- Admin Details -->
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <p class="truncate font-semibold text-gray-900 dark:text-white">
+                {{ item.name }}
+              </p>
+
+              <span
+                v-if="item.id === 'ADM-001'"
+                class="hidden rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600 sm:inline-flex dark:bg-indigo-500/10 dark:text-indigo-400"
+              >
+                You
+              </span>
+            </div>
+
+            <!-- Email -->
+            <div class="mt-0.5 flex items-center gap-1.5">
               <Icon
-                :name="
-                  selectedAdmin.status === 'Suspended'
-                    ? 'lucide:check-circle'
-                    : 'lucide:ban'
-                "
-                class="h-5 w-5 text-red-600"
+                name="i-heroicons-envelope"
+                class="h-3.5 w-3.5 shrink-0 text-gray-400"
+              />
+
+              <p class="truncate text-xs text-gray-400 dark:text-gray-500">
+                {{ item.email }}
+              </p>
+            </div>
+
+            <!-- Phone -->
+            <div class="mt-0.5 flex items-center gap-1.5">
+              <Icon name="i-heroicons-phone" class="h-3.5 w-3.5 shrink-0 text-gray-400" />
+
+              <p class="text-xs text-gray-400 dark:text-gray-500">
+                {{ item.phone }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Teachers -->
+      <template #cell-totalTeachers="{ item }">
+        <div class="flex min-w-[100px] items-center gap-2">
+          <div
+            class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
+          >
+            <Icon name="i-heroicons-academic-cap" class="h-4 w-4" />
+          </div>
+
+          <div>
+            <p class="font-semibold text-gray-900 dark:text-white">
+              {{ item.totalTeachers }}
+            </p>
+
+            <p class="text-[10px] text-gray-400">Teachers</p>
+          </div>
+        </div>
+      </template>
+
+      <!-- Students / Paid -->
+      <template #cell-students="{ item }">
+        <div class="min-w-[150px]">
+          <div class="flex items-center gap-2">
+            <div
+              class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400"
+            >
+              <Icon name="i-heroicons-user-group" class="h-4 w-4" />
+            </div>
+
+            <div class="flex items-center gap-1.5">
+              <span class="font-semibold text-gray-900 dark:text-white">
+                {{ item.totalStudents }}
+              </span>
+
+              <span class="text-gray-400"> / </span>
+
+              <span class="font-semibold text-emerald-600 dark:text-emerald-400">
+                {{ item.subscribedStudents }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Progress -->
+          <div class="mt-2 flex items-center gap-2">
+            <div
+              class="h-1.5 w-20 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800"
+            >
+              <div
+                class="h-full rounded-full bg-emerald-500 transition-all"
+                :style="{
+                  width: `${paidPercentage(item)}%`,
+                }"
               />
             </div>
 
-            <h3 class="mt-5 text-lg font-semibold text-slate-900">
-              {{
-                selectedAdmin.status === 'Suspended'
-                  ? 'Activate Admin?'
-                  : 'Suspend Admin?'
-              }}
-            </h3>
-
-            <p class="mt-2 text-sm leading-6 text-slate-500">
-              {{
-                selectedAdmin.status === 'Suspended'
-                  ? `This will restore ${selectedAdmin.name}'s access to the platform.`
-                  : `This will prevent ${selectedAdmin.name} from accessing the platform until the account is activated again.`
-              }}
-            </p>
-
-            <div class="mt-6 flex justify-end gap-3">
-
-              <button
-                type="button"
-                class="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-                @click="closeModals"
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                class="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
-                @click="confirmSuspend"
-              >
-                {{
-                  selectedAdmin.status === 'Suspended'
-                    ? 'Activate Admin'
-                    : 'Suspend Admin'
-                }}
-              </button>
-
-            </div>
-
+            <span class="text-[10px] font-medium text-emerald-600">
+              {{ paidPercentage(item) }}%
+            </span>
           </div>
-        </div>
 
-      </Transition>
-    </Teleport>
-  </div>
+          <p class="mt-1 text-[10px] text-gray-400">Students / Paid</p>
+        </div>
+      </template>
+
+      <!-- Date Joined -->
+      <template #cell-dateJoined="{ item }">
+        <div class="flex items-center gap-2">
+          <div
+            class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-50 dark:bg-gray-800"
+          >
+            <Icon name="i-heroicons-calendar-days" class="h-4 w-4 text-gray-400" />
+          </div>
+
+          <span class="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+            {{ item.dateJoined }}
+          </span>
+        </div>
+      </template>
+
+      <!-- Last Login -->
+      <template #cell-lastLogin="{ item }">
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+
+            <span class="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+              {{ item.lastLogin }}
+            </span>
+          </div>
+
+          <p class="mt-1 pl-3 text-[10px] text-gray-400">Last activity</p>
+        </div>
+      </template>
+
+      <!-- Status -->
+      <template #cell-status="{ item }">
+        <span
+          class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
+          :class="statusStyles[item.status]"
+        >
+          <span class="h-1.5 w-1.5 rounded-full" :class="statusDot(item.status)" />
+
+          {{ item.status }}
+        </span>
+      </template>
+
+      <!-- Actions -->
+      <template #actions_row="{ item }">
+        <div class="flex items-center justify-end gap-1">
+          <button
+            type="button"
+            title="View admin"
+            class="rounded-lg p-1.5 text-gray-400 transition hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400"
+            @click="openModal('view', item)"
+          >
+            <Icon name="i-heroicons-eye" class="h-4 w-4" />
+          </button>
+
+          <button
+            type="button"
+            title="Edit admin"
+            class="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+            @click="openModal('edit', item)"
+          >
+            <Icon name="i-heroicons-pencil-square" class="h-4 w-4" />
+          </button>
+
+          <button
+            type="button"
+            title="Suspend admin"
+            class="rounded-lg p-1.5 text-gray-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400"
+            @click="openModal('suspend', item)"
+          >
+            <Icon name="i-heroicons-no-symbol" class="h-4 w-4" />
+          </button>
+        </div>
+      </template>
+    </UiDataList>
+  </Container>
 </template>
 
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+  transform: translateY(8px) scale(0.98);
 }
 </style>

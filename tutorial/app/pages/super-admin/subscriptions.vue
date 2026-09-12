@@ -5,245 +5,305 @@ definePageMeta({
   layout: "nav",
 });
 
-interface Student {
+interface Subscription {
   id: number;
-  name: string;
+  student: string;
   email: string;
   phone: string;
+  plan: "Monthly" | "Quarterly" | "Yearly";
+  amount: number;
   paid: boolean;
-  examYear: string;
-  subjectsCombo: string;
-  status: "Active" | "Pending" | "Expired";
   referredBy: string;
   admin: string;
-  mockScore?: number;
-  joinedAt: string;
+  startedAt: string;
+  expiresAt: string;
+  status: "Active" | "Pending" | "Expired" | "Cancelled";
 }
 
-const students = ref<Student[]>([
+const subscriptions = ref<Subscription[]>([
   {
     id: 1,
-    name: "Amaka Obi",
+    student: "Amaka Obi",
     email: "amaka@gmail.com",
     phone: "0803 123 4567",
+    plan: "Yearly",
+    amount: 25000,
     paid: true,
-    examYear: "2027 JAMB",
-    subjectsCombo: "Physics, Chemistry, Biology",
-    status: "Active",
     referredBy: "Mr. Okafor",
     admin: "John Admin",
-    mockScore: 248,
-    joinedAt: "2026-08-12",
+    startedAt: "12 August 2026",
+    expiresAt: "12 August 2027",
+    status: "Active",
   },
   {
     id: 2,
-    name: "Tunde Bello",
+    student: "Tunde Bello",
     email: "tunde@gmail.com",
     phone: "0805 987 6543",
+    plan: "Monthly",
+    amount: 3000,
     paid: false,
-    examYear: "2027 JAMB",
-    subjectsCombo: "Economics, Government, Literature",
-    status: "Pending",
     referredBy: "Mrs. Adaeze",
     admin: "Sarah Williams",
-    joinedAt: "2026-09-01",
+    startedAt: "01 September 2026",
+    expiresAt: "01 October 2026",
+    status: "Pending",
   },
   {
     id: 3,
-    name: "Chiamaka Eze",
+    student: "Chiamaka Eze",
     email: "chiamaka@gmail.com",
     phone: "0812 456 7890",
+    plan: "Yearly",
+    amount: 25000,
     paid: true,
-    examYear: "2026 JAMB",
-    subjectsCombo: "Physics, Chemistry, Mathematics",
-    status: "Active",
     referredBy: "Mr. Okafor",
     admin: "John Admin",
-    mockScore: 289,
-    joinedAt: "2026-07-20",
+    startedAt: "20 July 2026",
+    expiresAt: "20 July 2027",
+    status: "Active",
   },
   {
     id: 4,
-    name: "David Okon",
+    student: "David Okon",
     email: "david@gmail.com",
     phone: "0701 222 3344",
+    plan: "Quarterly",
+    amount: 8500,
     paid: false,
-    examYear: "2026 JAMB",
-    subjectsCombo: "Government, CRS, Literature",
-    status: "Expired",
     referredBy: "Admin Bello",
     admin: "Michael Brown",
-    mockScore: 190,
-    joinedAt: "2026-05-15",
+    startedAt: "15 May 2026",
+    expiresAt: "15 August 2026",
+    status: "Expired",
   },
   {
     id: 5,
-    name: "Blessing Johnson",
+    student: "Blessing Johnson",
     email: "blessing@gmail.com",
     phone: "0806 456 7812",
+    plan: "Yearly",
+    amount: 25000,
     paid: true,
-    examYear: "2027 JAMB",
-    subjectsCombo: "Biology, Chemistry, Mathematics",
-    status: "Active",
     referredBy: "Mr. Adewale",
     admin: "Sarah Williams",
-    mockScore: 274,
-    joinedAt: "2026-08-24",
+    startedAt: "24 August 2026",
+    expiresAt: "24 August 2027",
+    status: "Active",
   },
   {
     id: 6,
-    name: "Ibrahim Musa",
+    student: "Ibrahim Musa",
     email: "ibrahim@gmail.com",
     phone: "0814 678 9012",
+    plan: "Quarterly",
+    amount: 8500,
     paid: true,
-    examYear: "2027 JAMB",
-    subjectsCombo: "Physics, Mathematics, Chemistry",
-    status: "Active",
     referredBy: "Mr. Yusuf",
     admin: "David Anderson",
-    mockScore: 231,
-    joinedAt: "2026-08-29",
+    startedAt: "29 August 2026",
+    expiresAt: "29 November 2026",
+    status: "Active",
   },
   {
     id: 7,
-    name: "Sarah James",
+    student: "Sarah James",
     email: "sarah@gmail.com",
     phone: "0705 234 5678",
+    plan: "Monthly",
+    amount: 3000,
     paid: false,
-    examYear: "2026 JAMB",
-    subjectsCombo: "English, Literature, Government",
-    status: "Pending",
     referredBy: "Mrs. Adaeze",
     admin: "John Admin",
-    mockScore: 176,
-    joinedAt: "2026-09-03",
+    startedAt: "03 September 2026",
+    expiresAt: "03 October 2026",
+    status: "Pending",
   },
   {
     id: 8,
-    name: "Daniel Okafor",
+    student: "Daniel Okafor",
     email: "daniel@gmail.com",
     phone: "0809 345 6789",
+    plan: "Yearly",
+    amount: 25000,
     paid: true,
-    examYear: "2027 JAMB",
-    subjectsCombo: "Physics, Chemistry, Biology",
-    status: "Active",
     referredBy: "Mr. Okafor",
     admin: "Michael Brown",
-    mockScore: 301,
-    joinedAt: "2026-08-18",
+    startedAt: "18 August 2026",
+    expiresAt: "18 August 2027",
+    status: "Active",
+  },
+  {
+    id: 9,
+    student: "Grace Thompson",
+    email: "grace@gmail.com",
+    phone: "0802 456 7890",
+    plan: "Monthly",
+    amount: 3000,
+    paid: true,
+    referredBy: "Mr. Adewale",
+    admin: "Sarah Williams",
+    startedAt: "25 August 2026",
+    expiresAt: "25 September 2026",
+    status: "Active",
+  },
+  {
+    id: 10,
+    student: "Emeka Nwosu",
+    email: "emeka@gmail.com",
+    phone: "0816 789 0123",
+    plan: "Quarterly",
+    amount: 8500,
+    paid: false,
+    referredBy: "Mr. Yusuf",
+    admin: "David Anderson",
+    startedAt: "10 June 2026",
+    expiresAt: "10 September 2026",
+    status: "Cancelled",
   },
 ]);
 
 const columns = [
-  { key: "name", label: "Student" },
+  { key: "student", label: "Student" },
+  { key: "plan", label: "Plan" },
+  { key: "amount", label: "Amount" },
   { key: "paid", label: " " },
-  { key: "subjectsCombo", label: "Subjects" },
-  { key: "examYear", label: "Exam Year" },
-  { key: "mockScore", label: "Last Mock" },
   { key: "referredBy", label: "Agent / Teacher" },
   { key: "admin", label: "Admin" },
-  { key: "status", label: "Token Status" },
+  { key: "startedAt", label: "Started" },
+  { key: "expiresAt", label: "Expires" },
+  { key: "status", label: "Status" },
 ];
 
-const selectedYear = ref("All Years");
-const selectedStatus = ref("All Status");
 const search = ref("");
+const selectedPlan = ref("All Plans");
+const selectedStatus = ref("All Status");
+const selectedPayment = ref("All Payments");
 
-const years = ["All Years", "2026 JAMB", "2027 JAMB", "2028 JAMB"];
+const plans = ["All Plans", "Monthly", "Quarterly", "Yearly"];
 
-const statuses = ["All Status", "Active", "Pending", "Expired"];
+const statuses = ["All Status", "Active", "Pending", "Expired", "Cancelled"];
 
-const filteredStudents = computed(() => {
+const paymentFilters = ["All Payments", "Paid", "Unpaid"];
+
+const filteredSubscriptions = computed(() => {
   const query = search.value.trim().toLowerCase();
 
-  return students.value.filter((student) => {
+  return subscriptions.value.filter((subscription) => {
     const matchesSearch =
       !query ||
-      student.name.toLowerCase().includes(query) ||
-      student.email.toLowerCase().includes(query) ||
-      student.phone.toLowerCase().includes(query) ||
-      student.referredBy.toLowerCase().includes(query) ||
-      student.admin.toLowerCase().includes(query);
+      subscription.student.toLowerCase().includes(query) ||
+      subscription.email.toLowerCase().includes(query) ||
+      subscription.phone.toLowerCase().includes(query) ||
+      subscription.referredBy.toLowerCase().includes(query) ||
+      subscription.admin.toLowerCase().includes(query);
 
-    const matchesYear =
-      selectedYear.value === "All Years" || student.examYear === selectedYear.value;
+    const matchesPlan =
+      selectedPlan.value === "All Plans" || subscription.plan === selectedPlan.value;
 
     const matchesStatus =
-      selectedStatus.value === "All Status" || student.status === selectedStatus.value;
+      selectedStatus.value === "All Status" ||
+      subscription.status === selectedStatus.value;
 
-    return matchesSearch && matchesYear && matchesStatus;
+    const matchesPayment =
+      selectedPayment.value === "All Payments" ||
+      (selectedPayment.value === "Paid" && subscription.paid) ||
+      (selectedPayment.value === "Unpaid" && !subscription.paid);
+
+    return matchesSearch && matchesPlan && matchesStatus && matchesPayment;
   });
 });
 
 const activeCount = computed(
-  () => students.value.filter((student) => student.status === "Active").length
+  () =>
+    subscriptions.value.filter((subscription) => subscription.status === "Active").length
 );
 
 const pendingCount = computed(
-  () => students.value.filter((student) => student.status === "Pending").length
+  () =>
+    subscriptions.value.filter((subscription) => subscription.status === "Pending").length
 );
 
 const expiredCount = computed(
-  () => students.value.filter((student) => student.status === "Expired").length
+  () =>
+    subscriptions.value.filter((subscription) => subscription.status === "Expired").length
 );
 
-const paidCount = computed(() => students.value.filter((student) => student.paid).length);
+const cancelledCount = computed(
+  () =>
+    subscriptions.value.filter((subscription) => subscription.status === "Cancelled")
+      .length
+);
+
+const paidCount = computed(
+  () => subscriptions.value.filter((subscription) => subscription.paid).length
+);
 
 const unpaidCount = computed(
-  () => students.value.filter((student) => !student.paid).length
+  () => subscriptions.value.filter((subscription) => !subscription.paid).length
 );
 
-const averageScore = computed(() => {
-  const scoredStudents = students.value.filter(
-    (student) => student.mockScore !== undefined
-  );
+const totalRevenue = computed(() =>
+  subscriptions.value
+    .filter((subscription) => subscription.paid)
+    .reduce((total, subscription) => total + subscription.amount, 0)
+);
 
-  if (!scoredStudents.length) return 0;
-
-  const total = scoredStudents.reduce(
-    (sum, student) => sum + (student.mockScore || 0),
-    0
-  );
-
-  return Math.round(total / scoredStudents.length);
-});
+const pendingRevenue = computed(() =>
+  subscriptions.value
+    .filter((subscription) => !subscription.paid && subscription.status === "Pending")
+    .reduce((total, subscription) => total + subscription.amount, 0)
+);
 
 const paymentRate = computed(() => {
-  if (!students.value.length) return 0;
+  if (!subscriptions.value.length) return 0;
 
-  return Math.round((paidCount.value / students.value.length) * 100);
+  return Math.round((paidCount.value / subscriptions.value.length) * 100);
 });
 
 const stats = computed(() => [
   {
-    label: "Total Students",
-    value: students.value.length,
-    icon: "i-heroicons-user-group",
+    label: "Total Subscriptions",
+    value: subscriptions.value.length,
+    icon: "i-heroicons-credit-card",
   },
   {
-    label: "Active Tokens",
+    label: "Active",
     value: activeCount.value,
-    icon: "i-heroicons-key",
-  },
-  {
-    label: "Paid Students",
-    value: paidCount.value,
     icon: "i-heroicons-check-circle",
   },
   {
-    label: "Pending Payment",
-    value: pendingCount.value,
-    icon: "i-heroicons-clock",
+    label: "Paid",
+    value: paidCount.value,
+    icon: "i-heroicons-banknotes",
+  },
+  {
+    label: "Revenue",
+    value: formatCurrency(totalRevenue.value),
+    icon: "i-heroicons-chart-bar",
   },
 ]);
 
-const statusStyles: Record<Student["status"], string> = {
+const statusStyles: Record<Subscription["status"], string> = {
   Active:
     "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10 dark:bg-emerald-500/10 dark:text-emerald-400",
+
   Pending:
     "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/10 dark:bg-amber-500/10 dark:text-amber-400",
+
   Expired:
     "bg-gray-100 text-gray-600 ring-1 ring-inset ring-gray-500/10 dark:bg-gray-800 dark:text-gray-400",
+
+  Cancelled:
+    "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-600/10 dark:bg-rose-500/10 dark:text-rose-400",
+};
+
+const planStyles: Record<Subscription["plan"], string> = {
+  Monthly: "bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400",
+
+  Quarterly: "bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400",
+
+  Yearly: "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400",
 };
 
 const avatarColors = [
@@ -272,27 +332,23 @@ function avatarColor(name: string) {
   return avatarColors[sum % avatarColors.length];
 }
 
-function scoreColor(score?: number) {
-  if (score === undefined) return "text-gray-400";
-
-  if (score >= 250) {
-    return "text-emerald-600 dark:text-emerald-400";
-  }
-
-  if (score >= 180) {
-    return "text-amber-600 dark:text-amber-400";
-  }
-
-  return "text-rose-500 dark:text-rose-400";
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  }).format(amount);
 }
 
-function scoreLabel(score?: number) {
-  if (score === undefined) return "No attempt";
+function statusDot(status: Subscription["status"]) {
+  const dots: Record<Subscription["status"], string> = {
+    Active: "bg-emerald-500",
+    Pending: "bg-amber-500",
+    Expired: "bg-gray-400",
+    Cancelled: "bg-rose-500",
+  };
 
-  if (score >= 250) return "Excellent";
-  if (score >= 180) return "Average";
-
-  return "Needs improvement";
+  return dots[status];
 }
 </script>
 
@@ -305,27 +361,29 @@ function scoreLabel(score?: number) {
           <span
             class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 text-xs font-medium dark:bg-indigo-500/10 dark:text-indigo-400"
           >
-            <Icon name="i-heroicons-user-group" class="w-3.5 h-3.5" />
-            Student Management
+            <Icon name="i-heroicons-credit-card" class="w-3.5 h-3.5" />
+
+            Billing & Subscriptions
           </span>
         </div>
 
         <h1
           class="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white tracking-tight"
         >
-          Students
+          Subscriptions
         </h1>
 
         <p class="text-sm text-gray-400 mt-1">
-          Manage students, payments, agents, teachers and administrators.
+          Manage student subscriptions, payments and access periods.
         </p>
       </div>
 
       <button
         class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
       >
-        <Icon name="i-heroicons-user-plus" class="w-4 h-4" />
-        Add Student
+        <Icon name="i-heroicons-plus" class="w-4 h-4" />
+
+        Add Subscription
       </button>
     </div>
 
@@ -342,7 +400,9 @@ function scoreLabel(score?: number) {
               {{ stat.label }}
             </p>
 
-            <p class="text-2xl font-semibold text-gray-900 dark:text-white mt-1">
+            <p
+              class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mt-1"
+            >
               {{ stat.value }}
             </p>
           </div>
@@ -356,9 +416,9 @@ function scoreLabel(score?: number) {
       </div>
     </div>
 
-    <!-- Quick overview -->
+    <!-- Overview -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-      <!-- Payment -->
+      <!-- Payment overview -->
       <div
         class="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
       >
@@ -374,7 +434,7 @@ function scoreLabel(score?: number) {
           <div
             class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center"
           >
-            <Icon name="i-heroicons-credit-card" class="w-4.5 h-4.5 text-emerald-500" />
+            <Icon name="i-heroicons-banknotes" class="w-4.5 h-4.5 text-emerald-500" />
           </div>
         </div>
 
@@ -394,13 +454,13 @@ function scoreLabel(score?: number) {
         </div>
       </div>
 
-      <!-- Token status -->
+      <!-- Subscription status -->
       <div
         class="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
       >
         <div class="flex items-center justify-between mb-3">
           <div>
-            <p class="text-xs font-medium text-gray-400">Token Status</p>
+            <p class="text-xs font-medium text-gray-400">Subscription Status</p>
 
             <p class="text-lg font-semibold text-gray-900 dark:text-white mt-1">
               {{ activeCount }} Active
@@ -410,12 +470,12 @@ function scoreLabel(score?: number) {
           <div
             class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center"
           >
-            <Icon name="i-heroicons-key" class="w-4.5 h-4.5 text-indigo-500" />
+            <Icon name="i-heroicons-signal" class="w-4.5 h-4.5 text-indigo-500" />
           </div>
         </div>
 
-        <div class="flex items-center gap-4 text-xs">
-          <span class="flex items-center gap-1.5 text-amber-600">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+          <span class="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
             <span class="w-1.5 h-1.5 rounded-full bg-amber-500" />
             {{ pendingCount }} Pending
           </span>
@@ -424,41 +484,47 @@ function scoreLabel(score?: number) {
             <span class="w-1.5 h-1.5 rounded-full bg-gray-400" />
             {{ expiredCount }} Expired
           </span>
+
+          <span class="flex items-center gap-1.5 text-rose-500">
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            {{ cancelledCount }} Cancelled
+          </span>
         </div>
       </div>
 
-      <!-- Mock performance -->
+      <!-- Revenue -->
       <div
         class="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
       >
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-xs font-medium text-gray-400">Average Mock Score</p>
+            <p class="text-xs font-medium text-gray-400">Revenue</p>
 
             <p class="text-2xl font-semibold text-gray-900 dark:text-white mt-1">
-              {{ averageScore }}
-              <span class="text-xs font-normal text-gray-400">/ 400</span>
+              {{ formatCurrency(totalRevenue) }}
             </p>
           </div>
 
           <div
-            class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center"
+            class="w-9 h-9 rounded-xl bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center"
           >
-            <Icon name="i-heroicons-chart-bar" class="w-4.5 h-4.5 text-amber-500" />
+            <Icon name="i-heroicons-chart-bar" class="w-4.5 h-4.5 text-violet-500" />
           </div>
         </div>
 
-        <p class="text-xs text-gray-400 mt-2">Based on students with mock attempts</p>
+        <p class="text-xs text-gray-400 mt-2">
+          {{ formatCurrency(pendingRevenue) }} pending payment
+        </p>
       </div>
     </div>
 
-    <!-- Table -->
+    <!-- Subscription table -->
     <UiDataList
-      :items="filteredStudents"
+      :items="filteredSubscriptions"
       :columns="columns"
       row-key="id"
       :stats="stats"
-      empty-text="No students found"
+      empty-text="No subscriptions found"
     >
       <!-- Filters -->
       <template #filters>
@@ -473,18 +539,28 @@ function scoreLabel(score?: number) {
             <input
               v-model="search"
               type="text"
-              placeholder="Search students..."
+              placeholder="Search subscriptions..."
               class="w-full text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-9 pr-3 py-2.5 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
             />
           </div>
 
-          <!-- Year -->
+          <!-- Plan -->
           <select
-            v-model="selectedYear"
+            v-model="selectedPlan"
             class="text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
           >
-            <option v-for="year in years" :key="year">
-              {{ year }}
+            <option v-for="plan in plans" :key="plan">
+              {{ plan }}
+            </option>
+          </select>
+
+          <!-- Payment -->
+          <select
+            v-model="selectedPayment"
+            class="text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
+          >
+            <option v-for="payment in paymentFilters" :key="payment">
+              {{ payment }}
             </option>
           </select>
 
@@ -501,18 +577,18 @@ function scoreLabel(score?: number) {
       </template>
 
       <!-- Student -->
-      <template #cell-name="{ item }">
+      <template #cell-student="{ item }">
         <div class="flex items-center gap-3 min-w-[260px]">
           <div
             class="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0 shadow-sm"
-            :class="avatarColor(item.name)"
+            :class="avatarColor(item.student)"
           >
-            {{ initials(item.name) }}
+            {{ initials(item.student) }}
           </div>
 
           <div class="min-w-0">
             <p class="font-semibold text-gray-900 dark:text-white truncate">
-              {{ item.name }}
+              {{ item.student }}
             </p>
 
             <div class="flex items-center gap-1.5 mt-0.5">
@@ -537,6 +613,29 @@ function scoreLabel(score?: number) {
         </div>
       </template>
 
+      <!-- Plan -->
+      <template #cell-plan="{ item }">
+        <span
+          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+          :class="planStyles[item.plan]"
+        >
+          <Icon name="i-heroicons-sparkles" class="w-3.5 h-3.5" />
+
+          {{ item.plan }}
+        </span>
+      </template>
+
+      <!-- Amount -->
+      <template #cell-amount="{ item }">
+        <div class="min-w-[100px]">
+          <p class="font-semibold text-gray-900 dark:text-white">
+            {{ formatCurrency(item.amount) }}
+          </p>
+
+          <p class="text-[11px] text-gray-400 mt-0.5">{{ item.plan }} plan</p>
+        </div>
+      </template>
+
       <!-- Paid -->
       <template #cell-paid="{ item }">
         <div class="flex items-center justify-center">
@@ -555,43 +654,6 @@ function scoreLabel(score?: number) {
           >
             <Icon name="i-heroicons-minus" class="w-4 h-4 text-gray-400" />
           </span>
-        </div>
-      </template>
-
-      <!-- Subjects -->
-      <template #cell-subjectsCombo="{ item }">
-        <div class="min-w-[180px] max-w-[230px]">
-          <p class="text-sm text-gray-600 dark:text-gray-300 leading-5">
-            {{ item.subjectsCombo }}
-          </p>
-        </div>
-      </template>
-
-      <!-- Exam year -->
-      <template #cell-examYear="{ item }">
-        <span
-          class="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-300 whitespace-nowrap"
-        >
-          <Icon name="i-heroicons-calendar-days" class="w-4 h-4 text-gray-400" />
-
-          {{ item.examYear }}
-        </span>
-      </template>
-
-      <!-- Mock score -->
-      <template #cell-mockScore="{ item }">
-        <div class="min-w-[100px]">
-          <template v-if="item.mockScore !== undefined">
-            <p class="font-semibold" :class="scoreColor(item.mockScore)">
-              {{ item.mockScore }}/400
-            </p>
-
-            <p class="text-[11px] mt-0.5" :class="scoreColor(item.mockScore)">
-              {{ scoreLabel(item.mockScore) }}
-            </p>
-          </template>
-
-          <span v-else class="text-gray-300 dark:text-gray-600 text-sm"> — </span>
         </div>
       </template>
 
@@ -633,20 +695,35 @@ function scoreLabel(score?: number) {
         </div>
       </template>
 
+      <!-- Started -->
+      <template #cell-startedAt="{ item }">
+        <span
+          class="inline-flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap"
+        >
+          <Icon name="i-heroicons-calendar-days" class="w-4 h-4 text-gray-400" />
+
+          {{ item.startedAt }}
+        </span>
+      </template>
+
+      <!-- Expires -->
+      <template #cell-expiresAt="{ item }">
+        <span
+          class="inline-flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap"
+        >
+          <Icon name="i-heroicons-calendar" class="w-4 h-4 text-gray-400" />
+
+          {{ item.expiresAt }}
+        </span>
+      </template>
+
       <!-- Status -->
       <template #cell-status="{ item }">
         <span
           class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap"
           :class="statusStyles[item.status]"
         >
-          <span
-            class="w-1.5 h-1.5 rounded-full"
-            :class="{
-              'bg-emerald-500': item.status === 'Active',
-              'bg-amber-500': item.status === 'Pending',
-              'bg-gray-400': item.status === 'Expired',
-            }"
-          />
+          <span class="w-1.5 h-1.5 rounded-full" :class="statusDot(item.status)" />
 
           {{ item.status }}
         </span>
@@ -656,16 +733,23 @@ function scoreLabel(score?: number) {
       <template #actions_row="{ item }">
         <button
           class="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
-          title="Edit student"
+          title="View subscription"
+        >
+          <Icon name="i-heroicons-eye" class="w-4 h-4" />
+        </button>
+
+        <button
+          class="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors ml-1"
+          title="Edit subscription"
         >
           <Icon name="i-heroicons-pencil-square" class="w-4 h-4" />
         </button>
 
         <button
           class="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors ml-1"
-          title="Delete student"
+          title="Cancel subscription"
         >
-          <Icon name="i-heroicons-trash" class="w-4 h-4" />
+          <Icon name="i-heroicons-x-circle" class="w-4 h-4" />
         </button>
       </template>
     </UiDataList>

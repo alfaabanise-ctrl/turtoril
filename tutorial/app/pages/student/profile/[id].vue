@@ -116,11 +116,14 @@ const viewAdmin = () => {
     <div class="mx-auto max-w-[1600px] space-y-6 p-4 md:p-6 lg:p-8">
       <!-- Header -->
       <div
-        class="flex flex-col gap-4 rounded-[24px] border border-slate-100 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between">
+        class="flex flex-col gap-4 rounded-[24px] border border-slate-100 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between"
+      >
         <div class="flex items-center gap-3">
-          <button type="button"
+          <button
+            type="button"
             class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:bg-slate-50"
-            @click="goBack">
+            @click="goBack"
+          >
             <Icon name="lucide:arrow-left" class="h-5 w-5" />
           </button>
 
@@ -128,8 +131,10 @@ const viewAdmin = () => {
             <div class="flex items-center gap-2">
               <h1 class="text-xl font-semibold text-slate-900">Student Details</h1>
 
-              <span class="rounded-full border px-2.5 py-1 text-[11px] font-medium"
-                :class="getStatusClass(student.status)">
+              <span
+                class="rounded-full border px-2.5 py-1 text-[11px] font-medium"
+                :class="getStatusClass(student.status)"
+              >
                 {{ student.status }}
               </span>
             </div>
@@ -141,17 +146,21 @@ const viewAdmin = () => {
         </div>
 
         <div class="flex items-center gap-2">
-          <button type="button"
+          <button
+            type="button"
             class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            @click="editStudent">
+            @click="editStudent"
+          >
             <Icon name="lucide:pencil" class="h-4 w-4" />
 
             Edit Student
           </button>
 
-          <button type="button"
+          <button
+            type="button"
             class="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
-            @click="manageSubscription">
+            @click="manageSubscription"
+          >
             <Icon name="lucide:calendar-plus" class="h-4 w-4" />
 
             Manage Subscription
@@ -160,7 +169,9 @@ const viewAdmin = () => {
       </div>
 
       <!-- Student Profile -->
-      <section class="rounded-[24px] border border-slate-100 bg-white p-5 shadow-sm md:p-6">
+      <section
+        class="rounded-[24px] border border-slate-100 bg-white p-5 shadow-sm md:p-6"
+      >
         <div class="mb-6 flex items-center justify-between">
           <div>
             <h2 class="text-base font-semibold text-slate-900">Student Profile</h2>
@@ -174,8 +185,15 @@ const viewAdmin = () => {
         <div class="grid gap-6 lg:grid-cols-[auto_1fr]">
           <!-- Student Image -->
           <div class="flex justify-center lg:justify-start">
-            <div class="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[28px] bg-slate-100">
-              <img v-if="student.image" :src="student.image" :alt="student.name" class="h-full w-full object-cover" />
+            <div
+              class="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[28px] bg-slate-100"
+            >
+              <img
+                v-if="student.image"
+                :src="student.image"
+                :alt="student.name"
+                class="h-full w-full object-cover"
+              />
 
               <span v-else class="text-2xl font-semibold text-slate-500">
                 {{ getInitials(student.name) }}
@@ -236,8 +254,10 @@ const viewAdmin = () => {
             <div>
               <p class="text-xs text-slate-400">Account Status</p>
 
-              <span class="mt-1 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium"
-                :class="getStatusClass(student.status)">
+              <span
+                class="mt-1 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium"
+                :class="getStatusClass(student.status)"
+              >
                 {{ student.status }}
               </span>
             </div>
@@ -246,7 +266,9 @@ const viewAdmin = () => {
       </section>
 
       <!-- Profile Completion -->
-      <section class="rounded-[24px] border border-slate-100 bg-white p-5 shadow-sm md:p-6">
+      <section
+        class="rounded-[24px] border border-slate-100 bg-white p-5 shadow-sm md:p-6"
+      >
         <div class="mb-6 flex items-center justify-between">
           <div>
             <h2 class="text-base font-semibold text-slate-900">Profile Completion</h2>
@@ -266,9 +288,12 @@ const viewAdmin = () => {
         </div>
 
         <div class="h-2.5 overflow-hidden rounded-full bg-slate-100">
-          <div class="h-full rounded-full bg-slate-900 transition-all" :style="{
-            width: `${student.profileCompletion}%`,
-          }" />
+          <div
+            class="h-full rounded-full bg-slate-900 transition-all"
+            :style="{
+              width: `${student.profileCompletion}%`,
+            }"
+          />
         </div>
 
         <div class="mt-4 flex items-center justify-between">
@@ -281,8 +306,12 @@ const viewAdmin = () => {
       </section>
 
       <!-- Subscription -->
-      <section class="rounded-[24px] border border-slate-100 bg-white p-5 shadow-sm md:p-6">
-        <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <section
+        class="rounded-[24px] border border-slate-100 bg-white p-5 shadow-sm md:p-6"
+      >
+        <div
+          class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+        >
           <div>
             <h2 class="text-base font-semibold text-slate-900">Subscription</h2>
 
@@ -291,8 +320,10 @@ const viewAdmin = () => {
             </p>
           </div>
 
-          <span class="inline-flex w-fit rounded-full border px-3 py-1 text-[11px] font-medium"
-            :class="getStatusClass(student.subscription.status)">
+          <span
+            class="inline-flex w-fit rounded-full border px-3 py-1 text-[11px] font-medium"
+            :class="getStatusClass(student.subscription.status)"
+          >
             {{ student.subscription.status }}
           </span>
         </div>
@@ -301,7 +332,9 @@ const viewAdmin = () => {
           <!-- Plan -->
           <div class="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
             <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-600">
+              <div
+                class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-600"
+              >
                 <Icon name="lucide:badge-check" class="h-5 w-5" />
               </div>
 
@@ -318,7 +351,9 @@ const viewAdmin = () => {
           <!-- Start Date -->
           <div class="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
             <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-600">
+              <div
+                class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-600"
+              >
                 <Icon name="lucide:calendar-days" class="h-5 w-5" />
               </div>
 
@@ -335,7 +370,9 @@ const viewAdmin = () => {
           <!-- End Date -->
           <div class="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
             <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-600">
+              <div
+                class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-600"
+              >
                 <Icon name="lucide:calendar-clock" class="h-5 w-5" />
               </div>
 
@@ -352,7 +389,9 @@ const viewAdmin = () => {
           <!-- Last Subscription -->
           <div class="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
             <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-600">
+              <div
+                class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-600"
+              >
                 <Icon name="lucide:history" class="h-5 w-5" />
               </div>
 
@@ -369,7 +408,9 @@ const viewAdmin = () => {
       </section>
 
       <!-- Registration -->
-      <section class="rounded-[24px] border border-slate-100 bg-white p-5 shadow-sm md:p-6">
+      <section
+        class="rounded-[24px] border border-slate-100 bg-white p-5 shadow-sm md:p-6"
+      >
         <div class="mb-6">
           <h2 class="text-base font-semibold text-slate-900">Registration</h2>
 
@@ -383,7 +424,9 @@ const viewAdmin = () => {
           <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-5">
             <div class="mb-5 flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-slate-500">
+                <div
+                  class="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-slate-500"
+                >
                   <Icon name="lucide:user-round-plus" class="h-4 w-4" />
                 </div>
 
@@ -396,16 +439,25 @@ const viewAdmin = () => {
                 </div>
               </div>
 
-              <button type="button" class="text-xs font-medium text-slate-500 transition hover:text-slate-900"
-                @click="viewTeacher">
+              <button
+                type="button"
+                class="text-xs font-medium text-slate-500 transition hover:text-slate-900"
+                @click="viewTeacher"
+              >
                 View
               </button>
             </div>
 
             <div class="flex items-center gap-4">
-              <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white">
-                <img v-if="student.registeredByTeacher.image" :src="student.registeredByTeacher.image"
-                  :alt="student.registeredByTeacher.name" class="h-full w-full object-cover" />
+              <div
+                class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white"
+              >
+                <img
+                  v-if="student.registeredByTeacher.image"
+                  :src="student.registeredByTeacher.image"
+                  :alt="student.registeredByTeacher.name"
+                  class="h-full w-full object-cover"
+                />
 
                 <span v-else class="text-sm font-semibold text-slate-500">
                   {{ getInitials(student.registeredByTeacher.name) }}
@@ -451,7 +503,9 @@ const viewAdmin = () => {
           <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-5">
             <div class="mb-5 flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-slate-500">
+                <div
+                  class="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-slate-500"
+                >
                   <Icon name="lucide:shield-check" class="h-4 w-4" />
                 </div>
 
@@ -462,16 +516,25 @@ const viewAdmin = () => {
                 </div>
               </div>
 
-              <button type="button" class="text-xs font-medium text-slate-500 transition hover:text-slate-900"
-                @click="viewAdmin">
+              <button
+                type="button"
+                class="text-xs font-medium text-slate-500 transition hover:text-slate-900"
+                @click="viewAdmin"
+              >
                 View
               </button>
             </div>
 
             <div class="flex items-center gap-4">
-              <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white">
-                <img v-if="student.registeredByAdmin.image" :src="student.registeredByAdmin.image"
-                  :alt="student.registeredByAdmin.name" class="h-full w-full object-cover" />
+              <div
+                class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white"
+              >
+                <img
+                  v-if="student.registeredByAdmin.image"
+                  :src="student.registeredByAdmin.image"
+                  :alt="student.registeredByAdmin.name"
+                  class="h-full w-full object-cover"
+                />
 
                 <span v-else class="text-sm font-semibold text-slate-500">
                   {{ getInitials(student.registeredByAdmin.name) }}
@@ -496,7 +559,7 @@ const viewAdmin = () => {
 
             <div class="mt-5">
               <div class="rounded-xl bg-white px-4 py-3">
-                <p class="text-[11px] text-slate-400">Date Registered</p>
+                <p class="text-[11px] text-slate-400">Dates Registered</p>
 
                 <p class="mt-1 text-xs font-medium text-slate-700">
                   {{ student.registeredByAdmin.dateRegistered }}
@@ -508,7 +571,9 @@ const viewAdmin = () => {
       </section>
 
       <!-- Account Activity -->
-      <section class="rounded-[24px] border border-slate-100 bg-white p-5 shadow-sm md:p-6">
+      <section
+        class="rounded-[24px] border border-slate-100 bg-white p-5 shadow-sm md:p-6"
+      >
         <div class="mb-6">
           <h2 class="text-base font-semibold text-slate-900">Account Activity</h2>
 
@@ -521,7 +586,9 @@ const viewAdmin = () => {
           <!-- Account Created -->
           <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
             <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500">
+              <div
+                class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500"
+              >
                 <Icon name="lucide:user-plus" class="h-5 w-5" />
               </div>
 
@@ -538,7 +605,9 @@ const viewAdmin = () => {
           <!-- Last Login -->
           <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
             <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500">
+              <div
+                class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500"
+              >
                 <Icon name="lucide:log-in" class="h-5 w-5" />
               </div>
 
@@ -555,7 +624,9 @@ const viewAdmin = () => {
           <!-- Profile Update -->
           <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
             <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500">
+              <div
+                class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500"
+              >
                 <Icon name="lucide:user-round-pen" class="h-5 w-5" />
               </div>
 
@@ -572,7 +643,9 @@ const viewAdmin = () => {
           <!-- Subscription -->
           <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
             <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500">
+              <div
+                class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500"
+              >
                 <Icon name="lucide:calendar-check-2" class="h-5 w-5" />
               </div>
 
