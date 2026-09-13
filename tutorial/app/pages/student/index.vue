@@ -227,27 +227,6 @@ onMounted(() => {
   <div class="min-h-screen bg-gray-50 dark:bg-gray-950">
     <div class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
       <!-- ==========================================
-           WARNING BANNERS
-           ========================================== -->
-
-      <div
-        class="mb-4 flex items-center justify-between rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
-      >
-        <div class="flex items-center gap-2">
-          <Icon name="heroicons:exclamation-circle" class="h-5 w-5" />
-
-          <span>Payment portal has not opened yet.</span>
-        </div>
-
-        <button
-          type="button"
-          class="text-red-400 transition hover:text-red-600 dark:hover:text-red-300"
-        >
-          <Icon name="heroicons:x-mark" class="h-5 w-5" />
-        </button>
-      </div>
-
-      <!-- ==========================================
            MOBILE APP ACCESS TOKEN
            ========================================== -->
 
@@ -369,7 +348,7 @@ onMounted(() => {
               </span>
 
               <NuxtLink
-                to="/student/profile"
+                to="/student/setting"
                 class="inline-flex h-9 items-center justify-center rounded-lg bg-indigo-100 px-4 text-sm font-medium text-indigo-700 transition hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50"
               >
                 Update Profile
@@ -378,7 +357,7 @@ onMounted(() => {
           </div>
 
           <div class="absolute bottom-0 right-0 z-0 h-32 w-32 opacity-80">
-            <Icon name="iconscout:rocket-3d" class="h-32 tex text-4xl w-32" />
+          <img src="/images/pricing.png" alt="" srcset="">
           </div>
         </div>
 
@@ -460,13 +439,11 @@ onMounted(() => {
           </div>
 
           <div class="absolute bottom-0 left-0 right-0 h-16 w-full">
-            <svg class="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-              <path
-                d="M0,50 C20,80 40,20 60,50 C80,80 100,30 100,30 L100,100 L0,100 Z"
-                fill="currentColor"
-                class="text-indigo-50 dark:text-indigo-900/20"
-              />
-            </svg>
+            <img
+              src="/images/calendar.svg"
+              alt="Calendar Illustration"
+              class="h-full w-full object-cover opacity-80"
+            />
           </div>
         </div>
       </div>
@@ -494,16 +471,12 @@ onMounted(() => {
             <!-- Request Payment -->
             <button
               type="button"
-              class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
-              @click="
-                requestPayment(
-                  payments.find((payment) => payment.status === 'Pending') || payments[0]
-                )
-              "
+              class="mt-4 inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:mt-0 sm:w-auto"
+              @click="generateCode"
             >
-              <Icon name="heroicons:arrow-up-right" class="h-4 w-4" />
+              <Icon name="heroicons:credit-card" class="h-4 w-4" />
 
-              Request Payment
+              Pay & Generate Code
             </button>
           </div>
         </div>
