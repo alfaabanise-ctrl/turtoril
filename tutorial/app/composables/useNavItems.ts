@@ -151,18 +151,8 @@ export const useNavItems = () => {
     to: "/student/payments",
     roles: ["student"],
   },
-  {
-    label: "Profile",
-    icon: "heroicons:user-circle",
-    to: "/student/profile",
-    roles: ["student"],
-  },
-  {
-    label: "Settings",
-    icon: "heroicons:cog-6-tooth",
-    to: "/settings",
-    roles: ["student"],
-  },
+ 
+
 
   
 
