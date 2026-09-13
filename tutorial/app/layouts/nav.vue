@@ -13,7 +13,7 @@ const user = {
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-950">
     <!-- Floating navigation -->
-    <NavigationDashboardNav :role="'teacher'" />
+    <NavigationDashboardNav :role="'student'" />
     <!-- Main area0-->
     <main class="min-h-screen">
       <!-- Top header -->

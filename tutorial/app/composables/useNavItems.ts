@@ -98,8 +98,7 @@ export const useNavItems = () => {
       roles: ['admin'],
     },
 
-
-      {
+{
     label: 'Dashboard',
     icon: 'i-heroicons-squares-2x2',
     to: '/teacher',
@@ -108,29 +107,15 @@ export const useNavItems = () => {
 
   {
     label: 'Students',
-    icon: 'i-heroicons-user-group',
+    icon: 'i-heroicons-users',
     to: '/teacher/students',
     roles: ['teacher'],
   },
 
   {
-    label: 'Performance',
-    icon: 'i-heroicons-chart-bar-square',
-    to: '/teacher/performance',
-    roles: ['teacher'],
-  },
-
-  {
-    label: 'Reports',
-    icon: 'i-heroicons-document-chart-bar',
-    to: '/teacher/reports',
-    roles: ['teacher'],
-  },
-
-  {
-    label: 'Access',
-    icon: 'i-heroicons-key',
-    to: '/teacher/access',
+    label: 'Subscriptions',
+    icon: 'i-heroicons-credit-card',
+    to: '/teacher/subscriptions',
     roles: ['teacher'],
   },
 
@@ -148,20 +133,47 @@ export const useNavItems = () => {
     roles: ['teacher'],
   },
 
+    {
+    label: "Dashboard",
+    icon: "heroicons:squares-2x2",
+    to: "/student",
+    roles: ["student"],
+  },
   {
-    label: 'Referrals',
-    icon: 'i-heroicons-user-plus',
-    to: '/teacher/referrals',
-    roles: ['teacher'],
+    label: "Subscription",
+    icon: "heroicons:credit-card",
+    to: "/student/subscription",
+    roles: ["student"],
+  },
+  {
+    label: "Payments",
+    icon: "heroicons:banknotes",
+    to: "/student/payments",
+    roles: ["student"],
+  },
+  {
+    label: "Profile",
+    icon: "heroicons:user-circle",
+    to: "/student/profile",
+    roles: ["student"],
+  },
+  {
+    label: "Settings",
+    icon: "heroicons:cog-6-tooth",
+    to: "/settings",
+    roles: ["student"],
   },
 
-  {
-    label: 'Profile',
-    icon: 'i-heroicons-user-circle',
-    to: '/teacher/profile',
-    roles: ['teacher'],
-  },
+  
 
+
+
+  {
+  label: "Settings",
+  icon: "heroicons:cog-6-tooth",
+  to: "/settings",
+  roles: ["student", "teacher", "admin"]
+  }
   ]
 
   const getVisibleItems = (role: UserRole): NavItem[] => {

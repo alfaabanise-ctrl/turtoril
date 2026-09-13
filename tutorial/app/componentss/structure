@@ -51,6 +51,5 @@ STUDENT
 ├── /student
 ├── /student/subscription
 ├── /student/payments
-├── /student/referral
 ├── /student/profile
 └── /student/settings
