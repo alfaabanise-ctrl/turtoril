@@ -37,7 +37,7 @@ const studentName =
 
 const studentLevel =
   ref("100L, HASS");
-
+const auth = useAuth()
 // ============================================================
 // PAYMENT STATE
 // ============================================================
@@ -242,10 +242,10 @@ const loadPaymentHistory =
               `PAY-${index + 1}`,
 
             description:
-              item.description ||
-              item.paymentPurpose ||
-              item.subscriptionType ||
-              "Student Payment",
+              
+              item.paymentType ||
+              item.subscriptionType ,
+              
 
             amount:
               Number(
@@ -387,11 +387,11 @@ const requestPayment = async (
           },
         }
       );
-        console.log(response, 'dssssssssssdddddddddddddddsssssssssssssssssss');
+       
         
-    // if (response?.success) {
-    //   await loadPaymentHistory();
-    // }
+    if (response?.success) {
+      await loadPaymentHistory();
+    }
   } catch (error) {
     console.error(
       "Payment verification error:",
@@ -657,7 +657,7 @@ onMounted(async () => {
               class="text-xl font-bold text-gray-900 dark:text-white"
             >
               Welcome back,
-              {{ studentName }}! 👋
+              {{ auth.user.firstName }}! 👋
             </h2>
 
             <p
@@ -676,7 +676,7 @@ onMounted(async () => {
               </span>
 
               <NuxtLink
-                to="/student/setting"
+                to="/settings"
                 class="inline-flex h-9 items-center justify-center rounded-lg bg-indigo-100 px-4 text-sm font-medium text-indigo-700 transition hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
               >
                 Update Profile
@@ -841,7 +841,7 @@ onMounted(async () => {
             <div
               class="w-full sm:w-auto"
             >
-              <PaystackPayment
+              <PaymentPaystackPayment
                 :amount="5000"
                 :email="''"
                 payment-purpose="TOKEN_PURCHASE"
@@ -947,7 +947,7 @@ onMounted(async () => {
                 <td
                   class="whitespace-nowrap px-6 py-4 text-gray-600 dark:text-gray-400"
                 >
-                  {{ payment.description }}
+                  JAMB CBT Subscription
                 </td>
 
                 <td

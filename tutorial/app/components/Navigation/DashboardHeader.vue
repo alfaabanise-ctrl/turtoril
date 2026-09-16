@@ -2,7 +2,7 @@
 import type { UserRole } from "~/types/nav";
 
 const props = defineProps<{
-    role: UserRole;
+    role: string;
     user?: {
         firstName?: string;
         lastName?: string;
@@ -314,7 +314,7 @@ onUnmounted(() => {
                             <!-- Menu -->
 
                             <div class="p-2">
-                                <NuxtLink to="/profile"
+                                <NuxtLink to="/settings"
                                     class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                                     @click="closeUserMenu">
                                     <Icon name="heroicons:user-circle" class="h-5 w-5 text-gray-400" />

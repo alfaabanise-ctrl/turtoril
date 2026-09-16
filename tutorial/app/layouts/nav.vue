@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { UserRole } from "~/types/nav";
 const auth = useAuth()
-const role: UserRole = "superadmin";
+
 
 const user = {
   firstName: "Alfa",
@@ -18,7 +18,7 @@ const user = {
     <!-- Main area0-->
     <main class="min-h-screen">
       <!-- Top header -->
-      <NavigationDashboardHeader :role="role || 'admin'" :user="auth.user || user" />
+      <NavigationDashboardHeader :role="auth?.user?.role || 'admin'" :user="auth.user " />
 
       <!-- Page content -->
       <Container class="px-4 py-6 sm:px-6 lg:px-8">

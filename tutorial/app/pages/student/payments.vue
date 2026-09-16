@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, onMounted, watch } from "vue";
 
 definePageMeta({
   layout: "nav",
@@ -11,17 +11,36 @@ definePageMeta({
 
 type PaymentStatus = "Successful" | "Pending" | "Failed" | "Refunded";
 
-type PaymentMethod = "Paystack" | "Card" | "Bank Transfer" | "USSD";
+type PaymentMethod =
+  | "Paystack"
+  | "Card"
+  | "Bank Transfer"
+  | "USSD"
+  | "Scratch Card";
+
+type PaymentType =
+  | "GENERAL_PAYMENT"
+  | "PIN_PURCHASE"
+  | "SCRATCH_CARD"
+  | "SUBSCRIPTION";
 
 interface Payment {
-  id: number;
+  id: string;
   reference: string;
   description: string;
-  amount: number;
+  amount: number; // Naira
   paymentMethod: PaymentMethod;
+  paymentType: PaymentType | string;
   date: string;
   status: PaymentStatus;
+  raw?: any; // original server payload for detail/retry
 }
+
+/* --------------------------------------------------
+ * Composables
+ * -------------------------------------------------- */
+
+const { pay } = usePaystack();
 
 /* --------------------------------------------------
  * State
@@ -30,66 +49,180 @@ interface Payment {
 const search = ref("");
 const selectedStatus = ref<"All" | PaymentStatus>("All");
 
+const payments = ref<Payment[]>([]);
+const loading = ref(false);
+const errorMessage = ref("");
+const processingRef = ref<string | null>(null);
+
+const page = ref(1);
+const limit = ref(20);
+const total = ref(0);
+const totalPages = ref(0);
+
 /* --------------------------------------------------
- * Payment Data
+ * Mappers
  * -------------------------------------------------- */
 
-const payments = ref<Payment[]>([
-  {
-    id: 1,
-    reference: "PAY-2026-001",
-    description: "JAMB CBT Subscription",
-    amount: 15000,
-    paymentMethod: "Paystack",
-    date: "12 September 2026",
-    status: "Successful",
-  },
-  {
-    id: 2,
-    reference: "PAY-2026-002",
-    description: "Mobile App Access",
-    amount: 5000,
-    paymentMethod: "Card",
-    date: "10 September 2026",
-    status: "Pending",
-  },
-  {
-    id: 3,
-    reference: "PAY-2026-003",
-    description: "Practice Package",
-    amount: 7500,
-    paymentMethod: "Bank Transfer",
-    date: "05 September 2026",
-    status: "Successful",
-  },
-  {
-    id: 4,
-    reference: "PAY-2026-004",
-    description: "Subscription Renewal",
-    amount: 10000,
-    paymentMethod: "USSD",
-    date: "28 August 2026",
-    status: "Failed",
-  },
-  {
-    id: 5,
-    reference: "PAY-2026-005",
-    description: "JAMB Past Questions",
-    amount: 8000,
-    paymentMethod: "Paystack",
-    date: "20 August 2026",
-    status: "Successful",
-  },
-  {
-    id: 6,
-    reference: "PAY-2026-006",
-    description: "Mobile App Access",
-    amount: 5000,
-    paymentMethod: "Card",
-    date: "15 August 2026",
-    status: "Refunded",
-  },
-]);
+function mapStatus(raw: string): PaymentStatus {
+  const value = String(raw || "").toUpperCase();
+
+  switch (value) {
+    case "SUCCESS":
+    case "SUCCESSFUL":
+    case "COMPLETED":
+    case "PAID":
+      return "Successful";
+
+    case "PENDING":
+    case "PROCESSING":
+    case "CREATED":
+      return "Pending";
+
+    case "FAILED":
+    case "CANCELLED":
+    case "EXPIRED":
+    case "DECLINED":
+      return "Failed";
+
+    case "REFUNDED":
+    case "PARTIALLY_REFUNDED":
+      return "Refunded";
+
+    default:
+      return "Pending";
+  }
+}
+
+function mapMethod(raw: string | null | undefined): PaymentMethod {
+  const value = String(raw || "").toUpperCase();
+
+  if (value.includes("SCRATCH")) return "Scratch Card";
+  if (value.includes("CARD")) return "Card";
+  if (value.includes("TRANSFER")) return "Bank Transfer";
+  if (value.includes("USSD")) return "USSD";
+
+  return "Paystack";
+}
+
+function buildDescription(raw: any): string {
+  const type =
+    raw?.metadata?.paymentType ||
+    raw?.metadata?.purpose ||
+    raw?.paymentType ||
+    "Payment";
+
+  const labels: Record<string, string> = {
+    GENERAL_PAYMENT: "General Payment",
+    PIN_PURCHASE: "PIN Purchase",
+    SCRATCH_CARD: "Scratch Card Purchase",
+    SUBSCRIPTION: "Subscription",
+    JAMB_CBT: "JAMB CBT Subscription",
+  };
+
+  if (labels[type]) return labels[type];
+
+  return String(type)
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatDate(raw: string | Date | undefined): string {
+  if (!raw) return "—";
+
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return date.toLocaleDateString("en-NG", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function mapPayment(raw: any): Payment {
+  const amountKobo = Number(raw.amount || 0);
+
+  return {
+    id: String(raw._id || raw.id || raw.txRef),
+    reference: raw.txRef || raw.reference || "—",
+    description: buildDescription(raw),
+    amount: amountKobo / 100,
+    paymentMethod: mapMethod(
+      raw.paymentMethod || raw.gateway || raw.metadata?.paymentMethod
+    ),
+    paymentType:
+      raw.metadata?.paymentType || raw.paymentType || "GENERAL_PAYMENT",
+    date: formatDate(raw.paidAt || raw.createdAt),
+    status: mapStatus(raw.status),
+    raw,
+  };
+}
+
+/* --------------------------------------------------
+ * API
+ * -------------------------------------------------- */
+
+async function fetchPayments() {
+  loading.value = true;
+  errorMessage.value = "";
+
+  try {
+    const query: Record<string, any> = {
+      page: page.value,
+      limit: limit.value,
+    };
+
+    if (selectedStatus.value !== "All") {
+      const statusMap: Record<PaymentStatus, string> = {
+        Successful: "SUCCESS",
+        Pending: "PENDING",
+        Failed: "FAILED",
+        Refunded: "REFUNDED",
+      };
+      query.status = statusMap[selectedStatus.value];
+    }
+
+    const response = await useApiFetch("/payments/history", {
+      method: "GET",
+      query,
+    });
+
+    if (!response?.success) {
+      throw new Error(
+        response?.message || "Unable to load payment history."
+      );
+    }
+
+    // Server response shape:
+    // { success, message, data: { success, page, limit, total, totalPages, payments: [...] } }
+    const payload = response.data?.data ?? response.data ?? {};
+    const list = Array.isArray(payload.payments)
+      ? payload.payments
+      : Array.isArray(payload)
+        ? payload
+        : [];
+
+    payments.value = list.map(mapPayment);
+    total.value = payload.total ?? list.length;
+    totalPages.value = payload.totalPages ?? 1;
+  } catch (error: any) {
+    console.error("fetchPayments error:", error);
+    errorMessage.value =
+      error?.data?.message ||
+      error?.message ||
+      "Unable to load payment history.";
+    payments.value = [];
+  } finally {
+    loading.value = false;
+  }
+}
+
+/* --------------------------------------------------
+ * Lifecycle
+ * -------------------------------------------------- */
+
+onMounted(fetchPayments);
 
 /* --------------------------------------------------
  * Computed
@@ -98,7 +231,7 @@ const payments = ref<Payment[]>([
 const totalPaid = computed(() =>
   payments.value
     .filter((payment) => payment.status === "Successful")
-    .reduce((total, payment) => total + payment.amount, 0)
+    .reduce((sum, payment) => sum + payment.amount, 0)
 );
 
 const pendingPayments = computed(() =>
@@ -106,11 +239,15 @@ const pendingPayments = computed(() =>
 );
 
 const totalPending = computed(() =>
-  pendingPayments.value.reduce((total, payment) => total + payment.amount, 0)
+  pendingPayments.value.reduce((sum, payment) => sum + payment.amount, 0)
 );
 
 const failedPayments = computed(() =>
   payments.value.filter((payment) => payment.status === "Failed")
+);
+
+const scratchCardPayments = computed(() =>
+  payments.value.filter((payment) => payment.paymentMethod === "Scratch Card")
 );
 
 const filteredPayments = computed(() => {
@@ -136,30 +273,12 @@ const filteredPayments = computed(() => {
  * -------------------------------------------------- */
 
 const columns = [
-  {
-    key: "reference",
-    label: "Reference",
-  },
-  {
-    key: "description",
-    label: "Description",
-  },
-  {
-    key: "amount",
-    label: "Amount",
-  },
-  {
-    key: "paymentMethod",
-    label: "Payment Method",
-  },
-  {
-    key: "date",
-    label: "Date",
-  },
-  {
-    key: "status",
-    label: "Status",
-  },
+  { key: "reference", label: "Reference" },
+  { key: "description", label: "Description" },
+  { key: "amount", label: "Amount" },
+  { key: "paymentMethod", label: "Payment Method" },
+  { key: "date", label: "Date" },
+  { key: "status", label: "Status" },
 ];
 
 /* --------------------------------------------------
@@ -178,6 +297,12 @@ const stats = computed(() => [
     value: formatCurrency(totalPending.value),
     icon: "heroicons:clock",
     color: "amber",
+  },
+  {
+    label: "Scratch Cards",
+    value: scratchCardPayments.value.length,
+    icon: "heroicons:ticket",
+    color: "violet",
   },
   {
     label: "Failed",
@@ -209,13 +334,10 @@ function statusClass(status: PaymentStatus) {
   switch (status) {
     case "Successful":
       return "bg-green-50 text-green-700 ring-green-600/20 dark:bg-green-900/30 dark:text-green-400 dark:ring-green-400/20";
-
     case "Pending":
       return "bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-900/30 dark:text-amber-400 dark:ring-amber-400/20";
-
     case "Failed":
       return "bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-900/30 dark:text-rose-400 dark:ring-rose-400/20";
-
     case "Refunded":
       return "bg-gray-100 text-gray-700 ring-gray-500/20 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-400/20";
   }
@@ -225,15 +347,27 @@ function statusIcon(status: PaymentStatus) {
   switch (status) {
     case "Successful":
       return "heroicons:check-circle";
-
     case "Pending":
       return "heroicons:clock";
-
     case "Failed":
       return "heroicons:x-circle";
-
     case "Refunded":
       return "heroicons:arrow-uturn-left";
+  }
+}
+
+function methodIcon(method: PaymentMethod) {
+  switch (method) {
+    case "Scratch Card":
+      return "heroicons:ticket";
+    case "Card":
+      return "heroicons:credit-card";
+    case "Bank Transfer":
+      return "heroicons:building-library";
+    case "USSD":
+      return "heroicons:device-phone-mobile";
+    default:
+      return "heroicons:bolt";
   }
 }
 
@@ -243,24 +377,93 @@ function statusIcon(status: PaymentStatus) {
 
 function viewPayment(payment: Payment) {
   console.log("View payment:", payment);
-
-  // Add your payment details action/API here.
+  // Hook up a modal or navigate to /payments/:reference
 }
 
 async function requestPayment(payment: Payment) {
   if (payment.status !== "Pending") return;
 
-  console.log("Request pending payment:", payment);
+  const raw = payment.raw || {};
+  const reference = raw.txRef || raw.reference;
 
-  // Connect your API here:
-  //
-  // await $fetch("/api/student/payments/request", {
-  //   method: "POST",
-  //   body: {
-  //     paymentId: payment.id,
-  //   },
-  // });
+  if (!reference) {
+    errorMessage.value = "Payment reference is missing.";
+    return;
+  }
+
+  const amountInKobo = Number(raw.amount || 0);
+  if (!Number.isFinite(amountInKobo) || amountInKobo <= 0) {
+    errorMessage.value = "Invalid payment amount.";
+    return;
+  }
+
+  const customerEmail = raw.email || raw.payer?.email || "";
+  if (!customerEmail) {
+    errorMessage.value = "Customer email is required.";
+    return;
+  }
+
+  processingRef.value = reference;
+  errorMessage.value = "";
+
+  try {
+    await pay({
+      email: customerEmail,
+      amount: amountInKobo, // Paystack inline expects KOBO
+      reference,
+      metadata: {
+        ...(raw.metadata || {}),
+        paymentId: raw._id || raw.id,
+        paymentType: raw.metadata?.paymentType || "GENERAL_PAYMENT",
+      },
+
+      async onSuccess(transaction: any) {
+        try {
+          const verification = await useApiFetch("/payments/verify", {
+            method: "POST",
+            body: { ref: transaction.reference },
+          });
+
+          if (!verification?.success) {
+            throw new Error(
+              verification?.message || "Payment verification failed."
+            );
+          }
+
+          await fetchPayments();
+        } catch (error: any) {
+          console.error("Verification error:", error);
+          errorMessage.value =
+            error?.data?.message ||
+            error?.message ||
+            "Unable to verify payment.";
+        } finally {
+          processingRef.value = null;
+        }
+      },
+
+      onCancel() {
+        processingRef.value = null;
+      },
+    });
+  } catch (error: any) {
+    console.error("requestPayment error:", error);
+    errorMessage.value =
+      error?.data?.message ||
+      error?.message ||
+      "Unable to process payment.";
+    processingRef.value = null;
+  }
 }
+
+/* --------------------------------------------------
+ * Watchers
+ * -------------------------------------------------- */
+
+watch(selectedStatus, () => {
+  page.value = 1;
+  fetchPayments();
+});
 </script>
 
 <template>
@@ -274,7 +477,6 @@ async function requestPayment(payment: Payment) {
         class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
       >
         <div>
-          <!-- Breadcrumb -->
           <div class="flex items-center gap-2">
             <NuxtLink
               to="/student"
@@ -299,16 +501,56 @@ async function requestPayment(payment: Payment) {
           </p>
         </div>
 
-        <!-- Request Pending Payment -->
-        <button
-          v-if="pendingPayments.length"
-          type="button"
-          class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
-          @click="requestPayment(pendingPayments[0])"
-        >
-          <Icon name="heroicons:arrow-up-right" class="h-4 w-4" />
+        <div class="flex items-center gap-2">
+          <!-- Refresh -->
+          <button
+            type="button"
+            class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="loading"
+            @click="fetchPayments"
+          >
+            <Icon
+              name="heroicons:arrow-path"
+              class="h-4 w-4"
+              :class="{ 'animate-spin': loading }"
+            />
+            Refresh
+          </button>
 
-          Request Payment
+          <!-- Complete Pending Payment -->
+          <button
+            v-if="pendingPayments.length"
+            type="button"
+            class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="!!processingRef"
+            @click="requestPayment(pendingPayments[0])"
+          >
+            <Icon
+              name="heroicons:arrow-path"
+              class="h-4 w-4"
+              :class="{ 'animate-spin': !!processingRef }"
+            />
+            Complete Pending Payment
+          </button>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           ERROR BANNER
+           ========================================== -->
+
+      <div
+        v-if="errorMessage"
+        class="mb-4 flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-400"
+      >
+        <Icon name="heroicons:exclamation-triangle" class="mt-0.5 h-4 w-4" />
+        <span class="flex-1">{{ errorMessage }}</span>
+        <button
+          type="button"
+          class="text-rose-500 hover:text-rose-700 dark:hover:text-rose-300"
+          @click="errorMessage = ''"
+        >
+          <Icon name="heroicons:x-mark" class="h-4 w-4" />
         </button>
       </div>
 
@@ -324,7 +566,7 @@ async function requestPayment(payment: Payment) {
         subtitle="Your complete payment history."
         searchable
         :search-keys="['reference', 'description', 'paymentMethod', 'status']"
-        empty-text="No payments found"
+        :empty-text="loading ? 'Loading payments…' : 'No payments found'"
         :stats="stats"
         show-total-stat
       >
@@ -342,13 +584,9 @@ async function requestPayment(payment: Payment) {
                 class="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
               >
                 <option value="All">All Status</option>
-
                 <option value="Successful">Successful</option>
-
                 <option value="Pending">Pending</option>
-
                 <option value="Failed">Failed</option>
-
                 <option value="Refunded">Refunded</option>
               </select>
             </div>
@@ -370,9 +608,19 @@ async function requestPayment(payment: Payment) {
              ======================================== -->
 
         <template #cell-description="{ item }">
-          <span class="text-gray-700 dark:text-gray-300">
-            {{ item.description }}
-          </span>
+          <div class="flex items-center gap-2">
+            <span class="text-gray-700 dark:text-gray-300">
+              {{ item.description }}
+            </span>
+
+            <span
+              v-if="item.paymentMethod === 'Scratch Card'"
+              class="inline-flex items-center gap-1 rounded-md bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700 ring-1 ring-inset ring-violet-600/20 dark:bg-violet-900/30 dark:text-violet-400 dark:ring-violet-400/20"
+            >
+              <Icon name="heroicons:ticket" class="h-3 w-3" />
+              Scratch
+            </span>
+          </div>
         </template>
 
         <!-- ========================================
@@ -390,7 +638,10 @@ async function requestPayment(payment: Payment) {
              ======================================== -->
 
         <template #cell-paymentMethod="{ item }">
-          <span class="text-gray-600 dark:text-gray-400">
+          <span
+            class="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-400"
+          >
+            <Icon :name="methodIcon(item.paymentMethod)" class="h-4 w-4" />
             {{ item.paymentMethod }}
           </span>
         </template>
@@ -415,7 +666,6 @@ async function requestPayment(payment: Payment) {
             :class="statusClass(item.status)"
           >
             <Icon :name="statusIcon(item.status)" class="h-3.5 w-3.5" />
-
             {{ item.status }}
           </span>
         </template>
@@ -436,16 +686,22 @@ async function requestPayment(payment: Payment) {
               <Icon name="heroicons:eye" class="h-4 w-4" />
             </button>
 
-            <!-- Request Pending -->
+            <!-- Complete Pending -->
             <button
               v-if="item.status === 'Pending'"
               type="button"
-              class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50"
+              class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50"
+              :disabled="processingRef === item.reference"
               @click="requestPayment(item)"
             >
-              <Icon name="heroicons:arrow-up-right" class="h-3.5 w-3.5" />
-
-              Request
+              <Icon
+                name="heroicons:arrow-path"
+                class="h-3.5 w-3.5"
+                :class="{
+                  'animate-spin': processingRef === item.reference,
+                }"
+              />
+              {{ processingRef === item.reference ? "Processing…" : "Complete" }}
             </button>
           </div>
         </template>

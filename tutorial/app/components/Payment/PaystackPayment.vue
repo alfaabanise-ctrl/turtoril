@@ -10,7 +10,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  paymentPurpose: "GENERAL_PAYMENT",
+  paymentPurpose: "PIN_PURCHASE",
   metadata: () => ({}),
   label: "Pay Now",
   loadingLabel: "Processing...",
