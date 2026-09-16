@@ -14,12 +14,6 @@ interface UserForm {
   password: string;
 }
 
-interface VerificationData {
-  email: string;
-  code: string;
-  type: UserType;
-}
-
 /* =========================================================
  * PROPS
  * ========================================================= */
@@ -27,82 +21,48 @@ interface VerificationData {
 const props = withDefaults(
   defineProps<{
     type: UserType;
-
-    /* Trigger button */
     buttonText?: string;
     buttonIcon?: string;
     buttonIconClass?: string;
     buttonClass?: string;
-
-    /* Existing user / edit mode */
-    user?: Partial<UserForm>;
-
-    /* Email verification */
-    requireEmailVerification?: boolean;
-
-    /* Optional custom texts */
-    modalTitle?: string;
-    modalDescription?: string;
   }>(),
   {
     buttonText: "Create User",
-
     buttonIcon: "lucide:plus",
-
     buttonIconClass: "h-5 w-5",
-
     buttonClass:
-      "inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 active:scale-[0.98]",
-
-    requireEmailVerification: true,
-
-    modalTitle: "",
-
-    modalDescription: "",
-  }
+      "inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700",
+  },
 );
 
 /* =========================================================
- * EVENTS
+ * NUXT
  * ========================================================= */
 
-const emit = defineEmits<{
-  submit: [data: UserForm & { type: UserType }];
-
-  "send-verification": [
-    data: {
-      email: string;
-      type: UserType;
-    }
-  ];
-
-  "verify-email": [data: VerificationData];
-
-  "resend-verification": [
-    data: {
-      email: string;
-      type: UserType;
-    }
-  ];
-}>();
+const config = useRuntimeConfig();
+const { $toast } = useNuxtApp();
 
 /* =========================================================
- * STATE
+ * MODAL
  * ========================================================= */
 
 const isOpen = ref(false);
 
+/* =========================================================
+ * LOADING
+ * ========================================================= */
+
 const loading = ref(false);
+const verifying = ref(false);
+const resending = ref(false);
 
-const verificationLoading = ref(false);
+/* =========================================================
+ * VERIFICATION
+ * ========================================================= */
 
-const resendLoading = ref(false);
-
-const verificationError = ref("");
-
+const verificationStep = ref(false);
 const verificationCode = ref("");
-
-const showVerification = ref(false);
+const verificationError = ref("");
 
 /* =========================================================
  * FORM
@@ -116,7 +76,7 @@ const form = reactive<UserForm>({
 });
 
 /* =========================================================
- * DYNAMIC USER TYPE
+ * DYNAMIC LABELS
  * ========================================================= */
 
 const typeLabel = computed(() => {
@@ -129,21 +89,21 @@ const typeLabel = computed(() => {
   return labels[props.type];
 });
 
-const description = computed(() => {
+const modalTitle = computed(() => {
+  return `Add ${typeLabel.value}`;
+});
+
+const modalDescription = computed(() => {
   const descriptions: Record<UserType, string> = {
     student: "Create a JAMB student account.",
     teacher: "Create a teacher account for managing students.",
     admin: "Create an administrator account.",
   };
 
-  return props.modalDescription || descriptions[props.type];
+  return descriptions[props.type];
 });
 
-const defaultModalTitle = computed(() => {
-  return props.modalTitle || `Create ${typeLabel.value}`;
-});
-
-const placeholderEmail = computed(() => {
+const emailPlaceholder = computed(() => {
   const placeholders: Record<UserType, string> = {
     student: "student@example.com",
     teacher: "teacher@example.com",
@@ -153,8 +113,14 @@ const placeholderEmail = computed(() => {
   return placeholders[props.type];
 });
 
-const submitText = computed(() => {
-  return `Create ${typeLabel.value}`;
+const roleIcon = computed(() => {
+  const icons: Record<UserType, string> = {
+    student: "lucide:graduation-cap",
+    teacher: "lucide:book-open",
+    admin: "lucide:shield-check",
+  };
+
+  return icons[props.type];
 });
 
 /* =========================================================
@@ -164,10 +130,9 @@ const submitText = computed(() => {
 const openModal = () => {
   resetForm();
 
+  verificationStep.value = false;
   verificationCode.value = "";
   verificationError.value = "";
-
-  showVerification.value = false;
 
   isOpen.value = true;
 };
@@ -177,16 +142,16 @@ const openModal = () => {
  * ========================================================= */
 
 const closeModal = () => {
-  if (loading.value || verificationLoading.value) {
+  if (loading.value || verifying.value || resending.value) {
     return;
   }
 
   isOpen.value = false;
 
-  showVerification.value = false;
+  resetForm();
 
+  verificationStep.value = false;
   verificationCode.value = "";
-
   verificationError.value = "";
 };
 
@@ -195,93 +160,155 @@ const closeModal = () => {
  * ========================================================= */
 
 const resetForm = () => {
-  form.fullName = props.user?.fullName || "";
-  form.email = props.user?.email || "";
-  form.phone = props.user?.phone || "";
+  form.fullName = "";
+  form.email = "";
+  form.phone = "";
   form.password = "";
 };
 
 /* =========================================================
- * WATCH USER
+ * VALIDATE FORM
  * ========================================================= */
 
-watch(
-  () => props.user,
-  () => {
-    if (isOpen.value && !showVerification.value) {
-      resetForm();
-    }
-  },
-  {
-    deep: true,
-  }
-);
-
-/* =========================================================
- * SUBMIT USER
- * ========================================================= */
-
-const submit = async () => {
-  if (loading.value) return;
-
-  /* Basic validation */
+const validateForm = () => {
   if (!form.fullName.trim()) {
-    return;
+    $toast?.error?.("Please enter the full name.");
+    return false;
   }
 
   if (!form.email.trim()) {
-    return;
+    $toast?.error?.("Please enter an email address.");
+    return false;
   }
 
   if (!form.phone.trim()) {
-    return;
+    $toast?.error?.("Please enter a phone number.");
+    return false;
   }
 
   if (!form.password.trim()) {
-    return;
+    $toast?.error?.("Please enter a password.");
+    return false;
   }
+
+  if (form.password.length < 6) {
+    $toast?.error?.("Password must be at least 6 characters.");
+    return false;
+  }
+
+  return true;
+};
+
+/* =========================================================
+ * SPLIT FULL NAME
+ *
+ * "John Peter Doe"
+ *
+ * firstName = John
+ * lastName  = Peter Doe
+ * ========================================================= */
+
+const splitFullName = (fullName: string) => {
+  const parts = fullName.trim().split(/\s+/);
+
+  const firstName = parts.shift() || "";
+
+  const lastName = parts.join(" ");
+
+  return {
+    firstName,
+    lastName,
+  };
+};
+
+/* =========================================================
+ * GET API ERROR MESSAGE
+ * ========================================================= */
+
+const getErrorMessage = (error: any) => {
+  return (
+    error?.data?.message ||
+    error?.data?.error ||
+    error?.message ||
+    "Something went wrong. Please try again."
+  );
+};
+
+/* =========================================================
+ * CREATE USER
+ * ========================================================= */
+
+const createUser = async () => {
+  if (loading.value) return;
+
+  if (!validateForm()) return;
 
   loading.value = true;
 
   try {
-    const data = {
-      fullName: form.fullName.trim(),
+    const { firstName, lastName } = splitFullName(form.fullName);
+
+    /*
+     * The exact payload sent to your backend.
+     */
+
+    const payload = {
+      firstName,
+      lastName,
       email: form.email.trim(),
       phone: form.phone.trim(),
       password: form.password,
-      type: props.type,
+
+      /*
+       * student | teacher | admin
+       */
+      role: props.type,
     };
 
-    /*
-     * Tell parent to create/send verification.
-     *
-     * Parent can call:
-     *
-     * POST /auth/register
-     * POST /auth/send-verification
-     */
-    emit("submit", data);
+    console.log("CREATE USER URL:", `${config.public.apiUrl}/auth/register`);
 
-    if (props.requireEmailVerification) {
-      verificationError.value = "";
+    console.log("CREATE USER PAYLOAD:", payload);
 
-      verificationCode.value = "";
+    const response: any = await $fetch(
+      `${config.public.apiUrl}/auth/register`,
+      {
+        method: "POST",
 
-      showVerification.value = true;
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
 
-      emit("send-verification", {
-        email: data.email,
-        type: data.type,
-      });
+        credentials: "include",
 
-      return;
-    }
+        body: payload,
+      },
+    );
+
+    console.log("CREATE USER RESPONSE:", response);
 
     /*
-     * If verification is disabled,
-     * close immediately.
+     * If your backend automatically sends
+     * a verification email after registration,
+     * show the verification screen.
      */
-    isOpen.value = false;
+
+    verificationError.value = "";
+
+    verificationCode.value = "";
+
+    verificationStep.value = true;
+
+    $toast?.success?.(
+      response?.message ||
+        `${typeLabel.value} account created. Verification code sent to email.`,
+    );
+  } catch (error: any) {
+    console.error("CREATE USER ERROR:", error);
+
+    $toast?.error?.(
+      getErrorMessage(error),
+    );
   } finally {
     loading.value = false;
   }
@@ -292,48 +319,155 @@ const submit = async () => {
  * ========================================================= */
 
 const verifyEmail = async () => {
-  if (verificationLoading.value) return;
+  if (verifying.value) return;
 
   verificationError.value = "";
 
-  if (!/^\d{6}$/.test(verificationCode.value)) {
+  const code = verificationCode.value.trim();
+
+  if (!code) {
     verificationError.value =
-      "Please enter the 6-digit verification code.";
+      "Please enter the verification code.";
 
     return;
   }
 
-  verificationLoading.value = true;
+  if (!/^\d{6}$/.test(code)) {
+    verificationError.value =
+      "Verification code must contain 6 digits.";
+
+    return;
+  }
+
+  verifying.value = true;
 
   try {
-    emit("verify-email", {
+    const payload = {
       email: form.email.trim(),
-      code: verificationCode.value,
-      type: props.type,
-    });
+      code,
+      isPrivate:true,
+      role: props.type,
+    };
+
+    console.log(
+      "VERIFY EMAIL URL:",
+      `${config.public.apiUrl}/auth/verify-email`,
+    );
+
+    console.log("VERIFY EMAIL PAYLOAD:", payload);
+
+    const response: any = await $fetch(
+      `${config.public.apiUrl}/auth/verify-email`,
+      {
+        method: "POST",
+
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+
+        credentials: "include",
+
+        body: payload,
+      },
+    );
+
+    console.log("VERIFY EMAIL RESPONSE:", response);
+
+    $toast?.success?.(
+      response?.message ||
+        `${typeLabel.value} email verified successfully.`,
+    );
+
+    /*
+     * Close after successful verification.
+     */
+
+    verificationStep.value = false;
+
+    verificationCode.value = "";
+
+    isOpen.value = false;
+
+    resetForm();
+  } catch (error: any) {
+    console.error("VERIFY EMAIL ERROR:", error);
+
+    const message = getErrorMessage(error);
+
+    verificationError.value = message;
+
+    $toast?.error?.(message);
   } finally {
-    verificationLoading.value = false;
+    verifying.value = false;
   }
 };
 
 /* =========================================================
- * RESEND VERIFICATION
+ * RESEND VERIFICATION CODE
  * ========================================================= */
 
 const resendVerification = async () => {
-  if (resendLoading.value) return;
+  if (resending.value) return;
 
-  resendLoading.value = true;
+  resending.value = true;
 
   verificationError.value = "";
 
   try {
-    emit("resend-verification", {
+    const payload = {
       email: form.email.trim(),
-      type: props.type,
-    });
+      role: props.type,
+    };
+
+    console.log(
+      "RESEND VERIFICATION URL:",
+      `${config.public.apiUrl}/auth/auth/resend-otp`,
+    );
+
+    console.log(
+      "RESEND VERIFICATION PAYLOAD:",
+      payload,
+    );
+
+    const response: any = await $fetch(
+      `${config.public.apiUrl}/auth/resend-otp`,
+      {
+        method: "POST",
+
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+
+        credentials: "include",
+
+        body: payload,
+      },
+    );
+
+    console.log(
+      "RESEND VERIFICATION RESPONSE:",
+      response,
+    );
+
+    $toast?.success?.(
+      response?.message ||
+        "A new verification code has been sent.",
+    );
+  } catch (error: any) {
+    console.error(
+      "RESEND VERIFICATION ERROR:",
+      error,
+    );
+
+    const message = getErrorMessage(error);
+
+    verificationError.value = message;
+
+    $toast?.error?.(message);
   } finally {
-    resendLoading.value = false;
+    resending.value = false;
   }
 };
 
@@ -342,14 +476,26 @@ const resendVerification = async () => {
  * ========================================================= */
 
 const backToForm = () => {
-  if (verificationLoading.value) return;
+  if (verifying.value) return;
 
-  showVerification.value = false;
+  verificationStep.value = false;
 
   verificationCode.value = "";
 
   verificationError.value = "";
 };
+
+/* =========================================================
+ * WATCH MODAL
+ * ========================================================= */
+
+watch(isOpen, (value) => {
+  if (!value) {
+    verificationStep.value = false;
+    verificationCode.value = "";
+    verificationError.value = "";
+  }
+});
 </script>
 
 <template>
@@ -383,17 +529,17 @@ const backToForm = () => {
           v-if="isOpen"
           class="fixed inset-0 z-[100] flex items-center justify-center p-4"
         >
-          <!-- Backdrop -->
+          <!-- BACKDROP -->
 
           <div
             class="absolute inset-0 bg-black/50 backdrop-blur-sm"
             @click="closeModal"
           />
 
-          <!-- Modal -->
+          <!-- MODAL -->
 
           <div
-            class="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900"
+            class="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-gray-900"
           >
             <!-- =================================================
                  HEADER
@@ -402,21 +548,21 @@ const backToForm = () => {
             <div
               class="flex items-center justify-between border-b border-gray-200 px-6 py-5 dark:border-gray-800"
             >
-              <div>
+              <div class="min-w-0">
                 <div class="flex items-center gap-2">
                   <h2
                     class="text-lg font-bold text-gray-900 dark:text-white"
                   >
-                    {{ showVerification
-                      ? "Verify Email"
-                      : defaultModalTitle }}
+                    {{
+                      verificationStep
+                        ? "Verify Email"
+                        : modalTitle
+                    }}
                   </h2>
 
-                  <!-- Type badge -->
-
                   <span
-                    v-if="!showVerification"
-                    class="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
+                    v-if="!verificationStep"
+                    class="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
                   >
                     {{ typeLabel }}
                   </span>
@@ -426,18 +572,21 @@ const backToForm = () => {
                   class="mt-1 text-sm text-gray-500 dark:text-gray-400"
                 >
                   {{
-                    showVerification
-                      ? `Enter the verification code sent to ${form.email}`
-                      : description
+                    verificationStep
+                      ? `Enter the 6-digit code sent to ${form.email}`
+                      : modalDescription
                   }}
                 </p>
               </div>
 
-              <!-- Close -->
-
               <button
                 type="button"
-                class="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-white"
+                class="ml-4 shrink-0 rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-white"
+                :disabled="
+                  loading ||
+                  verifying ||
+                  resending
+                "
                 @click="closeModal"
               >
                 <Icon
@@ -448,15 +597,15 @@ const backToForm = () => {
             </div>
 
             <!-- =================================================
-                 EMAIL VERIFICATION
+                 VERIFICATION SCREEN
             ================================================== -->
 
             <div
-              v-if="showVerification"
+              v-if="verificationStep"
               class="p-6"
             >
               <div class="mx-auto max-w-md">
-                <!-- Email icon -->
+                <!-- Icon -->
 
                 <div
                   class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-500/10"
@@ -466,6 +615,8 @@ const backToForm = () => {
                     class="h-8 w-8 text-indigo-600 dark:text-indigo-400"
                   />
                 </div>
+
+                <!-- Text -->
 
                 <div class="mt-5 text-center">
                   <h3
@@ -477,16 +628,17 @@ const backToForm = () => {
                   <p
                     class="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400"
                   >
-                    We've sent a 6-digit verification code to
-                    <span
-                      class="font-medium text-gray-900 dark:text-white"
-                    >
-                      {{ form.email }}
-                    </span>
+                    We sent a verification code to
+                  </p>
+
+                  <p
+                    class="mt-1 break-all text-sm font-semibold text-gray-900 dark:text-white"
+                  >
+                    {{ form.email }}
                   </p>
                 </div>
 
-                <!-- Verification error -->
+                <!-- Error -->
 
                 <div
                   v-if="verificationError"
@@ -504,37 +656,46 @@ const backToForm = () => {
                   </div>
                 </div>
 
-                <!-- Code -->
+                <!-- CODE -->
 
                 <div class="mt-6">
                   <label
                     class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
-                    Verification code
+                    Verification Code
                   </label>
 
                   <input
                     v-model="verificationCode"
                     type="text"
                     inputmode="numeric"
-                    maxlength="6"
                     autocomplete="one-time-code"
+                    maxlength="6"
                     placeholder="000000"
                     class="w-full rounded-xl border border-gray-200 bg-white px-4 py-4 text-center text-2xl font-bold tracking-[0.5em] text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                    @input="
+                      verificationCode =
+                        verificationCode
+                          .replace(/\D/g, '')
+                          .slice(0, 6)
+                    "
                     @keyup.enter="verifyEmail"
                   />
                 </div>
 
-                <!-- Verify -->
+                <!-- VERIFY -->
 
                 <button
                   type="button"
-                  :disabled="verificationLoading"
+                  :disabled="
+                    verifying ||
+                    verificationCode.length !== 6
+                  "
                   class="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
                   @click="verifyEmail"
                 >
                   <Icon
-                    v-if="verificationLoading"
+                    v-if="verifying"
                     name="lucide:loader-2"
                     class="h-5 w-5 animate-spin"
                   />
@@ -546,13 +707,13 @@ const backToForm = () => {
                   />
 
                   {{
-                    verificationLoading
+                    verifying
                       ? "Verifying..."
                       : "Verify Email"
                   }}
                 </button>
 
-                <!-- Resend -->
+                <!-- RESEND -->
 
                 <div class="mt-5 text-center">
                   <p
@@ -563,23 +724,34 @@ const backToForm = () => {
 
                   <button
                     type="button"
-                    :disabled="resendLoading"
-                    class="mt-1 text-sm font-semibold text-indigo-600 hover:text-indigo-700 disabled:opacity-50 dark:text-indigo-400"
+                    :disabled="resending"
+                    class="mt-1 text-sm font-semibold text-indigo-600 transition hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-indigo-400"
                     @click="resendVerification"
                   >
-                    {{
-                      resendLoading
-                        ? "Sending..."
-                        : "Resend verification code"
-                    }}
+                    <span
+                      v-if="resending"
+                      class="inline-flex items-center gap-1.5"
+                    >
+                      <Icon
+                        name="lucide:loader-2"
+                        class="h-4 w-4 animate-spin"
+                      />
+
+                      Sending...
+                    </span>
+
+                    <span v-else>
+                      Resend verification code
+                    </span>
                   </button>
                 </div>
 
-                <!-- Back -->
+                <!-- BACK -->
 
                 <button
                   type="button"
-                  class="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                  :disabled="verifying"
+                  class="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                   @click="backToForm"
                 >
                   <Icon
@@ -599,10 +771,41 @@ const backToForm = () => {
             <form
               v-else
               class="space-y-5 p-6"
-              @submit.prevent="submit"
+              @submit.prevent="createUser"
             >
               <div class="grid gap-5 sm:grid-cols-2">
-                <!-- Full Name -->
+                <!-- ACCOUNT TYPE -->
+
+                <div class="sm:col-span-2">
+                  <div
+                    class="flex items-center gap-3 rounded-xl border border-indigo-100 bg-indigo-50 p-4 dark:border-indigo-500/20 dark:bg-indigo-500/10"
+                  >
+                    <div
+                      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400"
+                    >
+                      <Icon
+                        :name="roleIcon"
+                        class="h-5 w-5"
+                      />
+                    </div>
+
+                    <div class="min-w-0">
+                      <p
+                        class="text-sm font-semibold text-gray-900 dark:text-white"
+                      >
+                        {{ typeLabel }} account
+                      </p>
+
+                      <p
+                        class="mt-0.5 text-xs text-gray-500 dark:text-gray-400"
+                      >
+                        {{ modalDescription }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- FULL NAME -->
 
                 <div class="sm:col-span-2">
                   <label
@@ -623,12 +826,12 @@ const backToForm = () => {
                       placeholder="Enter full name"
                       autocomplete="name"
                       required
-                      class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                      class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                     />
                   </div>
                 </div>
 
-                <!-- Email -->
+                <!-- EMAIL -->
 
                 <div>
                   <label
@@ -646,15 +849,15 @@ const backToForm = () => {
                     <input
                       v-model="form.email"
                       type="email"
-                      :placeholder="placeholderEmail"
+                      :placeholder="emailPlaceholder"
                       autocomplete="email"
                       required
-                      class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                      class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                     />
                   </div>
                 </div>
 
-                <!-- Phone -->
+                <!-- PHONE -->
 
                 <div>
                   <label
@@ -675,12 +878,12 @@ const backToForm = () => {
                       placeholder="08012345678"
                       autocomplete="tel"
                       required
-                      class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                      class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                     />
                   </div>
                 </div>
 
-                <!-- Password -->
+                <!-- PASSWORD -->
 
                 <div class="sm:col-span-2">
                   <label
@@ -702,56 +905,21 @@ const backToForm = () => {
                       autocomplete="new-password"
                       minlength="6"
                       required
-                      class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                      class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                     />
                   </div>
 
                   <p
                     class="mt-1.5 text-xs text-gray-500 dark:text-gray-400"
                   >
-                    The user can change this password after signing in.
+                    Minimum 6 characters.
                   </p>
-                </div>
-
-                <!-- Account Type -->
-
-                <div class="sm:col-span-2">
-                  <div
-                    class="flex items-center gap-3 rounded-xl border border-indigo-100 bg-indigo-50 p-4 dark:border-indigo-500/20 dark:bg-indigo-500/10"
-                  >
-                    <div
-                      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400"
-                    >
-                      <Icon
-                        :name="
-                          type === 'student'
-                            ? 'lucide:graduation-cap'
-                            : type === 'teacher'
-                              ? 'lucide:book-open'
-                              : 'lucide:shield-check'
-                        "
-                        class="h-5 w-5"
-                      />
-                    </div>
-
-                    <div>
-                      <p
-                        class="text-sm font-semibold text-gray-900 dark:text-white"
-                      >
-                        {{ typeLabel }} account
-                      </p>
-
-                      <p
-                        class="mt-0.5 text-xs text-gray-500 dark:text-gray-400"
-                      >
-                        {{ description }}
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
 
-              <!-- Actions -->
+              <!-- =================================================
+                   ACTIONS
+              ================================================== -->
 
               <div
                 class="flex flex-col-reverse gap-3 border-t border-gray-200 pt-5 sm:flex-row sm:justify-end dark:border-gray-800"
@@ -759,7 +927,7 @@ const backToForm = () => {
                 <button
                   type="button"
                   :disabled="loading"
-                  class="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                  class="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                   @click="closeModal"
                 >
                   Cancel
@@ -782,7 +950,11 @@ const backToForm = () => {
                     class="h-4 w-4"
                   />
 
-                  {{ loading ? "Creating..." : submitText }}
+                  {{
+                    loading
+                      ? "Creating..."
+                      : `Create ${typeLabel}`
+                  }}
                 </button>
               </div>
             </form>

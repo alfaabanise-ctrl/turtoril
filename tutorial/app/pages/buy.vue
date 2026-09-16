@@ -118,7 +118,7 @@
       </div>
     </div>
   </section>
-      <NavigationFooter />
+      <NavigationFooter />                        
 </div>
 </template>
 

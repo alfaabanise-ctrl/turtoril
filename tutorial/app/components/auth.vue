@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, watch } from "vue";
+import { ref, reactive, computed, watch } from "vue";
 import { useRouter, useRoute, useRuntimeConfig } from "#app";
 
 const { $toast } = useNuxtApp();
@@ -25,7 +25,8 @@ const loginWithGoogle = ref(false);
 ========================================================= */
 
 const registerData = reactive({
-  full_name: "",
+  first_name: "",
+  last_name: "",
   email: "",
   password: "",
   confirm_pwd: "",
@@ -52,31 +53,7 @@ const syncFromQuery = () => {
 
 syncFromQuery();
 
-/* =========================================================
-   NAME HELPERS
-========================================================= */
 
-const firstName = () => {
-  return registerData.full_name.trim().split(/\s+/)[0] || "";
-};
-
-const lastName = () => {
-  return registerData.full_name.trim().split(/\s+/).slice(1).join(" ");
-};
-
-const updateFirstName = (value: string) => {
-  const parts = registerData.full_name.trim().split(/\s+/);
-
-  const last = parts.slice(1).join(" ");
-
-  registerData.full_name = `${value} ${last}`.trim();
-};
-
-const updateLastName = (value: string) => {
-  const first = firstName();
-
-  registerData.full_name = `${first} ${value}`.trim();
-};
 
 /* =========================================================
    FORGOT PASSWORD
@@ -141,98 +118,123 @@ const handlechangepage = () => {
 ========================================================= */
 
 const handleregister = async () => {
+  if (registerloading.value) return;
+
   registerloading.value = true;
 
   try {
-    const fullName = registerData.full_name.trim();
-    const nameParts = fullName.split(/\s+/);
-
-    /* ---------------------------------------------
-       Validate full name
-    --------------------------------------------- */
-
-    if (nameParts.length < 2) {
-      $toast.error("Please enter your first and last name.");
+    // Validate frontend data first
+    if (!registerData.first_name.trim()) {
+      $toast.error("Please enter your first name.");
       return;
     }
 
-    /* ---------------------------------------------
-       Validate email
-    --------------------------------------------- */
+    if (!registerData.last_name.trim()) {
+      $toast.error("Please enter your last name.");
+      return;
+    }
 
     if (!registerData.email.trim()) {
       $toast.error("Please enter your email address.");
       return;
     }
 
-    /* ---------------------------------------------
-       Validate phone
-    --------------------------------------------- */
-
     if (!registerData.phone.trim()) {
       $toast.error("Please enter your phone number.");
       return;
     }
-
-    /* ---------------------------------------------
-       Validate password
-    --------------------------------------------- */
 
     if (registerData.password.length < 6) {
       $toast.error("Password must be at least 6 characters.");
       return;
     }
 
-    /* ---------------------------------------------
-       API REQUEST
-    --------------------------------------------- */
 
-    const response = await fetch(`${config.public.api_url}/auth/register`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
+    // EXACT object we are sending
+    const payload = {
+      firstName: registerData.first_name.trim(),
+      lastName: registerData.last_name.trim(),
+      email: registerData.email.trim(),
+      password: registerData.password,
+      phone: registerData.phone.trim(),
+    };
 
-      body: JSON.stringify({
-        firstName: nameParts[0],
+    console.log("REGISTER URL:", `${config.public.apiUrl}/auth/register`);
+    console.log("REGISTER PAYLOAD:", payload);
+    console.log(
+      "REGISTER JSON:",
+      JSON.stringify(payload)
+    );
 
-        lastName: nameParts.slice(1).join(" "),
+    const response = await fetch(
+      `${config.public.apiUrl}/auth/register`,
+      {
+        method: "POST",
 
-        email: registerData.email.trim(),
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
 
-        password: registerData.password,
+        credentials: "include",
 
-        phone: registerData.phone.trim(),
-      }),
-    });
+        body: JSON.stringify(payload),
+      }
+    );
 
-    const data = await response.json();
+    console.log("REGISTER STATUS:", response.status);
+    console.log("REGISTER RESPONSE URL:", response.url);
+    console.log(
+      "REGISTER CONTENT TYPE:",
+      response.headers.get("content-type")
+    );
 
-    /* ---------------------------------------------
-       API ERROR
-    --------------------------------------------- */
+    const rawResponse = await response.text();
 
-    if (!response.ok) {
-      $toast.error(data.message || "Registration failed.");
+    console.log("REGISTER RAW RESPONSE:", rawResponse);
+
+    let data: any = null;
+
+    try {
+      data = JSON.parse(rawResponse);
+    } catch {
+      console.error(
+        "Backend returned non-JSON response:",
+        rawResponse
+      );
+
+      $toast.error(
+        `Server returned an invalid response (${response.status}).`
+      );
 
       return;
     }
 
-    /* ---------------------------------------------
-       SUCCESS
-    --------------------------------------------- */
+    if (!response.ok) {
+      $toast.error(
+        data?.message || "Registration failed."
+      );
 
-    $toast.success(data.message || "Registration successful.");
+      return;
+    }
+
+    console.log("REGISTER SUCCESS:", data);
+
+    $toast.success(
+      data?.message || "Registration successful."
+    );
 
     setTimeout(() => {
       otpverify.value = true;
     }, 800);
+
   } catch (err: any) {
-    console.error("Registration failed:", err);
+    console.error("REGISTER FETCH ERROR:", err);
 
     $toast.error(
-      err?.message || "An error occurred while creating your account."
+      typeof err?.message === "string"
+        ? err.message
+        : "Unable to connect to the server."
     );
   } finally {
     registerloading.value = false;
@@ -247,7 +249,7 @@ const handlelogin = async () => {
   loginloading.value = true;
 
   try {
-    const response = await fetch(`${config.public.api_url}/auth/login/local`, {
+    const response = await fetch(`${config.public.apiUrl}/auth/login/local`, {
       method: "POST",
 
       headers: {
@@ -313,7 +315,7 @@ const handleloginwithGoogle = async () => {
   loginWithGoogle.value = true;
 
   try {
-    const response = await fetch(`${config.public.api_url}/auth/login/google`, {
+    const response = await fetch(`${config.public.apiUrl}/auth/login/google`, {
       method: "POST",
 
       headers: {
@@ -753,12 +755,12 @@ watch(() => route.query, syncFromQuery, {
 
                   <FormInput
                     type="text"
-                    :value="firstName()"
+                 
                     :required="true"
                     :usePlaceholder="true"
                     label="First name"
                     placeholder="Ada"
-                    @update:inputValue="updateFirstName"
+                   v-model:inputValue="registerData.first_name"
                   >
                     <template #prefix>
                       <Icon
@@ -768,16 +770,14 @@ watch(() => route.query, syncFromQuery, {
                     </template>
                   </FormInput>
 
-                  <!-- Last name -->
-
                   <FormInput
                     type="text"
-                    :value="lastName()"
+                   
                     :required="true"
                     :usePlaceholder="true"
                     label="Last name"
                     placeholder="Obi"
-                    @update:inputValue="updateLastName"
+                      v-model:inputValue="registerData.last_name"
                   >
                     <template #prefix>
                       <Icon

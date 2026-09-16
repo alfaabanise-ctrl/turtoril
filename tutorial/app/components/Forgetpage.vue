@@ -28,7 +28,7 @@ const submitForm = async () => {
   loading.value = true
 
   try {
-    const response = await fetch(`${config.public.api_url}/auth/request-password-reset`, {
+    const response = await fetch(`${config.public.apiUrl}/auth/request-password-reset`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.value })

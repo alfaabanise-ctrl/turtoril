@@ -1,165 +1,139 @@
+```vue
 <script setup lang="ts">
 definePageMeta({
   layout: "nav",
 });
 
+/* =========================================================
+   TYPES
+========================================================= */
+
+type PaymentStatus =
+  | "Successful"
+  | "Pending"
+  | "Failed"
+  | "Refunded";
+
+type PaymentPlan =
+  | "Monthly"
+  | "Quarterly"
+  | "Yearly";
+
+type PaymentMethod =
+  | "Card"
+  | "Bank Transfer"
+  | "USSD"
+  | "Paystack";
+
 interface Payment {
-  id: number;
+  id: string | number;
   student: string;
   email: string;
   phone: string;
+  avatar?: string | null;
   amount: number;
-  plan: "Monthly" | "Quarterly" | "Yearly";
-  paymentMethod: "Card" | "Bank Transfer" | "USSD" | "Paystack";
+  plan: PaymentPlan;
+  paymentMethod: PaymentMethod;
   referredBy: string;
   admin: string;
   paidAt: string;
   reference: string;
-  status: "Successful" | "Pending" | "Failed" | "Refunded";
+  status: PaymentStatus;
 }
 
-const payments = ref<Payment[]>([
-  {
-    id: 1,
-    student: "Amaka Obi",
-    email: "amaka@gmail.com",
-    phone: "0803 123 4567",
-    amount: 25000,
-    plan: "Yearly",
-    paymentMethod: "Paystack",
-    referredBy: "Mr. Okafor",
-    admin: "John Admin",
-    paidAt: "2026-08-12 10:42 AM",
-    reference: "TXN-20260812-001",
-    status: "Successful",
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+interface PaymentSummary {
+  totalPayments: number;
+  successfulPayments: number;
+  pendingPayments: number;
+  failedPayments: number;
+  refundedPayments: number;
+  successfulPercentage: number;
+  totalRevenue: number;
+  pendingRevenue: number;
+  averagePayment: number;
+  paymentMethods: {
+    Card: number;
+    "Bank Transfer": number;
+    USSD: number;
+    Paystack: number;
+  };
+}
+
+interface PaymentsApiData {
+  payments: Payment[];
+  pagination: Pagination;
+  summary: PaymentSummary;
+}
+
+interface PaymentsApiResponse {
+  success: boolean;
+  data: PaymentsApiData;
+  message: string | null;
+  status: number;
+  error: any;
+}
+
+/* =========================================================
+   STATE
+========================================================= */
+
+const isLoading = ref(false);
+const errorMessage = ref("");
+
+const payments = ref<Payment[]>([]);
+const pagination = ref<Pagination>({
+  page: 1,
+  limit: 100,
+  total: 0,
+  totalPages: 0,
+});
+
+const summary = ref<PaymentSummary>({
+  totalPayments: 0,
+  successfulPayments: 0,
+  pendingPayments: 0,
+  failedPayments: 0,
+  refundedPayments: 0,
+  successfulPercentage: 0,
+  totalRevenue: 0,
+  pendingRevenue: 0,
+  averagePayment: 0,
+  paymentMethods: {
+    Card: 0,
+    "Bank Transfer": 0,
+    USSD: 0,
+    Paystack: 0,
   },
-  {
-    id: 2,
-    student: "Tunde Bello",
-    email: "tunde@gmail.com",
-    phone: "0805 987 6543",
-    amount: 3000,
-    plan: "Monthly",
-    paymentMethod: "Card",
-    referredBy: "Mrs. Adaeze",
-    admin: "Sarah Williams",
-    paidAt: "2026-09-01 09:15 AM",
-    reference: "TXN-20260901-002",
-    status: "Pending",
-  },
-  {
-    id: 3,
-    student: "Chiamaka Eze",
-    email: "chiamaka@gmail.com",
-    phone: "0812 456 7890",
-    amount: 25000,
-    plan: "Yearly",
-    paymentMethod: "Bank Transfer",
-    referredBy: "Mr. Okafor",
-    admin: "John Admin",
-    paidAt: "2026-07-20 02:31 PM",
-    reference: "TXN-20260720-003",
-    status: "Successful",
-  },
-  {
-    id: 4,
-    student: "David Okon",
-    email: "david@gmail.com",
-    phone: "0701 222 3344",
-    amount: 8500,
-    plan: "Quarterly",
-    paymentMethod: "USSD",
-    referredBy: "Admin Bello",
-    admin: "Michael Brown",
-    paidAt: "2026-05-15 04:20 PM",
-    reference: "TXN-20260515-004",
-    status: "Failed",
-  },
-  {
-    id: 5,
-    student: "Blessing Johnson",
-    email: "blessing@gmail.com",
-    phone: "0814 333 2211",
-    amount: 25000,
-    plan: "Yearly",
-    paymentMethod: "Paystack",
-    referredBy: "Mr. Adewale",
-    admin: "Sarah Williams",
-    paidAt: "2026-08-24 11:05 AM",
-    reference: "TXN-20260824-005",
-    status: "Successful",
-  },
-  {
-    id: 6,
-    student: "Ibrahim Musa",
-    email: "ibrahim@gmail.com",
-    phone: "0806 555 7788",
-    amount: 8500,
-    plan: "Quarterly",
-    paymentMethod: "Bank Transfer",
-    referredBy: "Mr. Yusuf",
-    admin: "David Anderson",
-    paidAt: "2026-08-29 08:47 AM",
-    reference: "TXN-20260829-006",
-    status: "Successful",
-  },
-  {
-    id: 7,
-    student: "Sarah James",
-    email: "sarah@gmail.com",
-    phone: "0704 888 1122",
-    amount: 3000,
-    plan: "Monthly",
-    paymentMethod: "Card",
-    referredBy: "Mrs. Adaeze",
-    admin: "John Admin",
-    paidAt: "2026-09-03 01:22 PM",
-    reference: "TXN-20260903-007",
-    status: "Pending",
-  },
-  {
-    id: 8,
-    student: "Daniel Okafor",
-    email: "daniel@gmail.com",
-    phone: "0810 777 4455",
-    amount: 25000,
-    plan: "Yearly",
-    paymentMethod: "Paystack",
-    referredBy: "Mr. Okafor",
-    admin: "Michael Brown",
-    paidAt: "2026-08-18 03:14 PM",
-    reference: "TXN-20260818-008",
-    status: "Successful",
-  },
-  {
-    id: 9,
-    student: "Grace Thompson",
-    email: "grace@gmail.com",
-    phone: "0809 111 2233",
-    amount: 3000,
-    plan: "Monthly",
-    paymentMethod: "Card",
-    referredBy: "Mr. Adewale",
-    admin: "Sarah Williams",
-    paidAt: "2026-08-25 12:36 PM",
-    reference: "TXN-20260825-009",
-    status: "Successful",
-  },
-  {
-    id: 10,
-    student: "Emeka Nwosu",
-    email: "emeka@gmail.com",
-    phone: "0815 444 6677",
-    amount: 8500,
-    plan: "Quarterly",
-    paymentMethod: "Bank Transfer",
-    referredBy: "Mr. Yusuf",
-    admin: "David Anderson",
-    paidAt: "2026-06-10 05:08 PM",
-    reference: "TXN-20260610-010",
-    status: "Refunded",
-  },
-]);
+});
+
+/* =========================================================
+   FILTERS
+========================================================= */
+
+const search = ref("");
+
+const selectedStatus = ref("All Status");
+
+const selectedMethod = ref("All Methods");
+
+const selectedPlan = ref("All Plans");
+
+/*
+ * 100 is what your API is currently returning.
+ * You can change this to 10, 20, 50, 100, etc.
+ */
+const pageLimit = ref(100);
+
+/* =========================================================
+   TABLE COLUMNS
+========================================================= */
 
 const columns = [
   { key: "student", label: "Student" },
@@ -173,101 +147,448 @@ const columns = [
   { key: "status", label: "Status" },
 ];
 
-const search = ref("");
-const selectedStatus = ref("All Status");
-const selectedMethod = ref("All Methods");
-const selectedPlan = ref("All Plans");
+/* =========================================================
+   OPTIONS
+========================================================= */
 
-const statusOptions = ["All Status", "Successful", "Pending", "Failed", "Refunded"];
+const statusOptions = [
+  "All Status",
+  "Successful",
+  "Pending",
+  "Failed",
+  "Refunded",
+];
 
-const paymentMethods = ["All Methods", "Card", "Bank Transfer", "USSD", "Paystack"];
+const paymentMethods = [
+  "All Methods",
+  "Card",
+  "Bank Transfer",
+  "USSD",
+  "Paystack",
+];
 
-const planOptions = ["All Plans", "Monthly", "Quarterly", "Yearly"];
+const planOptions = [
+  "All Plans",
+  "Monthly",
+  "Quarterly",
+  "Yearly",
+];
 
+/* =========================================================
+   FETCH PAYMENTS FROM API
+========================================================= */
+
+async function fetchPayments(page = pagination.value.page) {
+  try {
+    isLoading.value = true;
+    errorMessage.value = "";
+
+    console.log("🔥 Fetching payments...");
+    console.log("➡️ Page:", page);
+    console.log("➡️ Limit:", pageLimit.value);
+
+    /*
+     * IMPORTANT:
+     *
+     * Your backend must accept:
+     *
+     * ?page=1&limit=100
+     *
+     * Example:
+     * /superadmin/payments?page=1&limit=100
+     */
+    const response = await useApiFetch<PaymentsApiResponse>(
+      `/superadmin/payments?page=${page}&limit=${pageLimit.value}`,
+      {
+        method: "GET",
+      }
+    );
+
+    console.log("📥 Payment API response:", response);
+
+    if (!response?.success) {
+      errorMessage.value =
+        response?.message || "Failed to load payments.";
+
+      console.error(
+        "❌ Payment API error:",
+        response?.message
+      );
+
+      return;
+    }
+
+    if (!response.data) {
+      errorMessage.value =
+        "No payment data was returned from the server.";
+
+      return;
+    }
+
+    const payload = response.data;
+
+    /*
+     * API DATA
+     */
+    payments.value = Array.isArray(payload.payments)
+      ? payload.payments
+      : [];
+
+    /*
+     * API PAGINATION
+     */
+    if (payload.pagination) {
+      pagination.value = {
+        page: Number(payload.pagination.page) || page,
+        limit: Number(payload.pagination.limit) || pageLimit.value,
+        total: Number(payload.pagination.total) || 0,
+        totalPages:
+          Number(payload.pagination.totalPages) || 0,
+      };
+    }
+
+    /*
+     * API SUMMARY
+     */
+    if (payload.summary) {
+      summary.value = {
+        totalPayments:
+          Number(payload.summary.totalPayments) || 0,
+
+        successfulPayments:
+          Number(payload.summary.successfulPayments) || 0,
+
+        pendingPayments:
+          Number(payload.summary.pendingPayments) || 0,
+
+        failedPayments:
+          Number(payload.summary.failedPayments) || 0,
+
+        refundedPayments:
+          Number(payload.summary.refundedPayments) || 0,
+
+        successfulPercentage:
+          Number(payload.summary.successfulPercentage) || 0,
+
+        totalRevenue:
+          Number(payload.summary.totalRevenue) || 0,
+
+        pendingRevenue:
+          Number(payload.summary.pendingRevenue) || 0,
+
+        averagePayment:
+          Number(payload.summary.averagePayment) || 0,
+
+        paymentMethods: {
+          Card:
+            Number(payload.summary.paymentMethods?.Card) || 0,
+
+          "Bank Transfer":
+            Number(
+              payload.summary.paymentMethods?.["Bank Transfer"]
+            ) || 0,
+
+          USSD:
+            Number(payload.summary.paymentMethods?.USSD) || 0,
+
+          Paystack:
+            Number(payload.summary.paymentMethods?.Paystack) || 0,
+        },
+      };
+    }
+
+    console.log("✅ Payments loaded:", payments.value);
+    console.log("📄 Pagination:", pagination.value);
+    console.log("📊 Summary:", summary.value);
+  } catch (error: any) {
+    console.error(
+      "🔥 Error fetching payments:",
+      error
+    );
+
+    errorMessage.value =
+      error?.message ||
+      "Unable to load payments.";
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+/* =========================================================
+   INITIAL LOAD
+========================================================= */
+onMounted(async() => {
+  await fetchPayments(1);
+});
+
+
+/* =========================================================
+   PAGINATION
+========================================================= */
+
+const currentPage = computed({
+  get: () => pagination.value.page,
+  set: (value: number) => {
+    pagination.value.page = value;
+  },
+});
+
+const totalPages = computed(
+  () => pagination.value.totalPages
+);
+
+const totalRecords = computed(
+  () => pagination.value.total
+);
+
+const hasPreviousPage = computed(
+  () => currentPage.value > 1
+);
+
+const hasNextPage = computed(
+  () => currentPage.value < totalPages.value
+);
+
+async function goToPage(page: number) {
+  if (isLoading.value) return;
+
+  if (page < 1) return;
+
+  if (totalPages.value && page > totalPages.value) {
+    return;
+  }
+
+  await fetchPayments(page);
+
+  /*
+   * Keep the table at the top after changing page.
+   */
+  if (import.meta.client) {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
+}
+
+async function nextPage() {
+  if (!hasNextPage.value) return;
+
+  await goToPage(currentPage.value + 1);
+}
+
+async function previousPage() {
+  if (!hasPreviousPage.value) return;
+
+  await goToPage(currentPage.value - 1);
+}
+
+async function firstPage() {
+  await goToPage(1);
+}
+
+async function lastPage() {
+  if (!totalPages.value) return;
+
+  await goToPage(totalPages.value);
+}
+
+/* =========================================================
+   PAGE NUMBERS
+========================================================= */
+
+const visiblePages = computed(() => {
+  const total = totalPages.value;
+  const current = currentPage.value;
+
+  if (!total) return [];
+
+  /*
+   * Show all pages when there are only a few.
+   */
+  if (total <= 7) {
+    return Array.from(
+      { length: total },
+      (_, index) => index + 1
+    );
+  }
+
+  const pages: (number | string)[] = [];
+
+  pages.push(1);
+
+  if (current > 4) {
+    pages.push("...");
+  }
+
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+
+  for (let page = start; page <= end; page++) {
+    pages.push(page);
+  }
+
+  if (current < total - 3) {
+    pages.push("...");
+  }
+
+  pages.push(total);
+
+  return pages;
+});
+
+/* =========================================================
+   FILTERING
+========================================================= */
+
+/*
+ * IMPORTANT:
+ *
+ * Because pagination is coming from the server,
+ * this filters ONLY the records on the current page.
+ *
+ * For global search/filter across all 228 records,
+ * your backend should also accept search/status/method/plan
+ * query parameters.
+ */
 const filteredPayments = computed(() => {
   const query = search.value.trim().toLowerCase();
 
   return payments.value.filter((payment) => {
     const matchesSearch =
       !query ||
-      payment.student.toLowerCase().includes(query) ||
-      payment.email.toLowerCase().includes(query) ||
-      payment.phone.toLowerCase().includes(query) ||
-      payment.reference.toLowerCase().includes(query) ||
-      payment.referredBy.toLowerCase().includes(query) ||
-      payment.admin.toLowerCase().includes(query);
+      String(payment.student || "")
+        .toLowerCase()
+        .includes(query) ||
+      String(payment.email || "")
+        .toLowerCase()
+        .includes(query) ||
+      String(payment.phone || "")
+        .toLowerCase()
+        .includes(query) ||
+      String(payment.reference || "")
+        .toLowerCase()
+        .includes(query) ||
+      String(payment.referredBy || "")
+        .toLowerCase()
+        .includes(query) ||
+      String(payment.admin || "")
+        .toLowerCase()
+        .includes(query);
 
     const matchesStatus =
-      selectedStatus.value === "All Status" || payment.status === selectedStatus.value;
+      selectedStatus.value === "All Status" ||
+      payment.status === selectedStatus.value;
 
     const matchesMethod =
       selectedMethod.value === "All Methods" ||
       payment.paymentMethod === selectedMethod.value;
 
     const matchesPlan =
-      selectedPlan.value === "All Plans" || payment.plan === selectedPlan.value;
+      selectedPlan.value === "All Plans" ||
+      payment.plan === selectedPlan.value;
 
-    return matchesSearch && matchesStatus && matchesMethod && matchesPlan;
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesMethod &&
+      matchesPlan
+    );
   });
 });
 
-const totalPayments = computed(() => payments.value.length);
+/* =========================================================
+   STATISTICS
+========================================================= */
+
+/*
+ * USE API SUMMARY.
+ *
+ * Do NOT calculate these from payments.value because
+ * payments.value only contains the current page.
+ */
+
+const totalPayments = computed(
+  () => summary.value.totalPayments
+);
 
 const successfulPayments = computed(
-  () => payments.value.filter((payment) => payment.status === "Successful").length
+  () => summary.value.successfulPayments
 );
 
 const pendingPayments = computed(
-  () => payments.value.filter((payment) => payment.status === "Pending").length
+  () => summary.value.pendingPayments
 );
 
 const failedPayments = computed(
-  () =>
-    payments.value.filter(
-      (payment) => payment.status === "Failed" || payment.status === "Refunded"
-    ).length
+  () => summary.value.failedPayments
 );
 
-const totalRevenue = computed(() =>
-  payments.value
-    .filter((payment) => payment.status === "Successful")
-    .reduce((total, payment) => total + payment.amount, 0)
+const refundedPayments = computed(
+  () => summary.value.refundedPayments
 );
 
-const pendingRevenue = computed(() =>
-  payments.value
-    .filter((payment) => payment.status === "Pending")
-    .reduce((total, payment) => total + payment.amount, 0)
+const totalRevenue = computed(
+  () => summary.value.totalRevenue
 );
 
-const averagePayment = computed(() => {
-  if (!successfulPayments.value) return 0;
+const pendingRevenue = computed(
+  () => summary.value.pendingRevenue
+);
 
-  return Math.round(totalRevenue.value / successfulPayments.value);
-});
+const averagePayment = computed(
+  () => summary.value.averagePayment
+);
 
-const successfulPercentage = computed(() => {
-  if (!totalPayments.value) return 0;
+const successfulPercentage = computed(
+  () => summary.value.successfulPercentage
+);
 
-  return Math.round((successfulPayments.value / totalPayments.value) * 100);
-});
+/* =========================================================
+   PAYMENT METHOD COUNTS
+========================================================= */
+
+const cardPayments = computed(
+  () => summary.value.paymentMethods.Card
+);
+
+const bankTransferPayments = computed(
+  () => summary.value.paymentMethods["Bank Transfer"]
+);
+
+const ussdPayments = computed(
+  () => summary.value.paymentMethods.USSD
+);
+
+const paystackPayments = computed(
+  () => summary.value.paymentMethods.Paystack
+);
+
+/* =========================================================
+   FORMATTING
+========================================================= */
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-NG", {
     style: "currency",
     currency: "NGN",
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(Number(amount) || 0);
 };
 
 const initials = (name: string) => {
-  return name
+  return String(name || "")
     .split(" ")
+    .filter(Boolean)
     .map((word) => word[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
 };
+
+/* =========================================================
+   AVATAR
+========================================================= */
 
 const avatarColors = [
   "bg-indigo-500",
@@ -281,25 +602,53 @@ const avatarColors = [
 ];
 
 const avatarColor = (name: string) => {
-  const index = name.split("").reduce((total, char) => total + char.charCodeAt(0), 0);
+  const index = String(name || "")
+    .split("")
+    .reduce(
+      (total, char) =>
+        total + char.charCodeAt(0),
+      0
+    );
 
-  return avatarColors[index % avatarColors.length];
+  return avatarColors[
+    index % avatarColors.length
+  ];
 };
 
-const statusStyles = (status: Payment["status"]) => {
-  const styles = {
+/* =========================================================
+   STATUS
+========================================================= */
+
+const statusStyles = (
+  status: PaymentStatus
+) => {
+  const styles: Record<
+    PaymentStatus,
+    string
+  > = {
     Successful:
       "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
-    Pending: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
-    Failed: "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
-    Refunded: "bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400",
+
+    Pending:
+      "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
+
+    Failed:
+      "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
+
+    Refunded:
+      "bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400",
   };
 
   return styles[status];
 };
 
-const statusDot = (status: Payment["status"]) => {
-  const dots = {
+const statusDot = (
+  status: PaymentStatus
+) => {
+  const dots: Record<
+    PaymentStatus,
+    string
+  > = {
     Successful: "bg-emerald-500",
     Pending: "bg-amber-500",
     Failed: "bg-rose-500",
@@ -309,33 +658,69 @@ const statusDot = (status: Payment["status"]) => {
   return dots[status];
 };
 
-const planStyles = (plan: Payment["plan"]) => {
-  const styles = {
-    Monthly: "bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400",
-    Quarterly: "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400",
-    Yearly: "bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400",
+/* =========================================================
+   PLAN
+========================================================= */
+
+const planStyles = (
+  plan: PaymentPlan
+) => {
+  const styles: Record<
+    PaymentPlan,
+    string
+  > = {
+    Monthly:
+      "bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400",
+
+    Quarterly:
+      "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400",
+
+    Yearly:
+      "bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400",
   };
 
   return styles[plan];
 };
 
-const paymentMethodIcon = (method: Payment["paymentMethod"]) => {
-  const icons = {
+/* =========================================================
+   PAYMENT METHOD
+========================================================= */
+
+const paymentMethodIcon = (
+  method: PaymentMethod
+) => {
+  const icons: Record<
+    PaymentMethod,
+    string
+  > = {
     Card: "i-heroicons-credit-card",
-    "Bank Transfer": "i-heroicons-building-library",
-    USSD: "i-heroicons-device-phone-mobile",
-    Paystack: "i-heroicons-bolt",
+    "Bank Transfer":
+      "i-heroicons-building-library",
+    USSD:
+      "i-heroicons-device-phone-mobile",
+    Paystack:
+      "i-heroicons-bolt",
   };
 
   return icons[method];
 };
 
-const paymentMethodStyle = (method: Payment["paymentMethod"]) => {
-  const styles = {
-    Card: "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400",
+const paymentMethodStyle = (
+  method: PaymentMethod
+) => {
+  const styles: Record<
+    PaymentMethod,
+    string
+  > = {
+    Card:
+      "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400",
+
     "Bank Transfer":
       "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400",
-    USSD: "bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400",
+
+    USSD:
+      "bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400",
+
     Paystack:
       "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400",
   };
@@ -343,33 +728,93 @@ const paymentMethodStyle = (method: Payment["paymentMethod"]) => {
   return styles[method];
 };
 
-const clearFilters = () => {
+/* =========================================================
+   FILTER ACTIONS
+========================================================= */
+
+function clearFilters() {
   search.value = "";
   selectedStatus.value = "All Status";
   selectedMethod.value = "All Methods";
   selectedPlan.value = "All Plans";
+}
+
+/*
+ * When changing filters, go back to page 1.
+ */
+watch(
+  [
+    search,
+    selectedStatus,
+    selectedMethod,
+    selectedPlan,
+  ],
+  async () => {
+    if (pagination.value.page !== 1) {
+      await goToPage(1);
+    }
+  }
+);
+
+/* =========================================================
+   ACTIONS
+========================================================= */
+
+const viewPayment = (
+  payment: Payment
+) => {
+  console.log(
+    "👁️ View payment:",
+    payment
+  );
 };
 
-const viewPayment = (payment: Payment) => {
-  console.log("View payment:", payment);
+const viewReceipt = (
+  payment: Payment
+) => {
+  console.log(
+    "🧾 View receipt:",
+    payment
+  );
 };
 
-const viewReceipt = (payment: Payment) => {
-  console.log("View receipt:", payment);
-};
+const refundPayment = (
+  payment: Payment
+) => {
+  if (
+    payment.status !==
+    "Successful"
+  ) {
+    return;
+  }
 
-const refundPayment = (payment: Payment) => {
-  if (payment.status !== "Successful") return;
-
+  /*
+   * This only changes the frontend temporarily.
+   *
+   * Connect this to your refund API when ready.
+   */
   payment.status = "Refunded";
 };
 
-const retryPayment = (payment: Payment) => {
-  if (payment.status !== "Failed") return;
+const retryPayment = (
+  payment: Payment
+) => {
+  if (
+    payment.status !==
+    "Failed"
+  ) {
+    return;
+  }
 
+  /*
+   * This only changes the frontend temporarily.
+   *
+   * Connect this to your retry API when ready.
+   */
   payment.status = "Pending";
 };
 </script>
+
 
 <template>
   <div class="space-y-6 pb-10">

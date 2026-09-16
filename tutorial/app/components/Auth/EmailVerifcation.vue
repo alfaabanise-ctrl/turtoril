@@ -68,7 +68,7 @@ const verifyCode = async () => {
   message.value = ''
 
   try {
-    const response = await fetch(`${config.public.api_url}/auth/verify-email`, {
+    const response = await fetch(`${config.public.apiUrl}/auth/verify-email`, {
       method: 'POST',
        headers: { 'Content-Type': 'application/json' },
        credentials: 'include',
@@ -77,7 +77,7 @@ const verifyCode = async () => {
         code: otp
       })
     })
-
+    
     const data = await response.json()
 
     if (!response.ok) {
@@ -121,7 +121,7 @@ const resendCode = async () => {
   message.value = ''
 
   try {
-    const response = await fetch(`${config.public.api_url}/auth/resend-otp`, {
+    const response = await fetch(`${config.public.apiUrl}/auth/resend-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: props.email })

@@ -1,3 +1,4 @@
+```vue
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 
@@ -20,29 +21,13 @@ const hasPaidForAccess = ref(false);
 const activationCode = ref("");
 const copied = ref(false);
 
-const generateCode = () => {
-  hasPaidForAccess.value = true;
+/* --------------------------------------------------
+ * Payment Processing
+ * -------------------------------------------------- */
 
-  activationCode.value =
-    "STU-" +
-    Math.random().toString(36).substring(2, 6).toUpperCase() +
-    "-" +
-    Math.random().toString(36).substring(2, 6).toUpperCase() +
-    "-" +
-    Math.random().toString(36).substring(2, 6).toUpperCase();
-};
-
-const copyCode = async () => {
-  if (!activationCode.value) return;
-
-  await navigator.clipboard.writeText(activationCode.value);
-
-  copied.value = true;
-
-  setTimeout(() => {
-    copied.value = false;
-  }, 2000);
-};
+const processing = ref(false);
+const paymentError = ref("");
+const paymentSuccess = ref("");
 
 /* --------------------------------------------------
  * Payment Summary
@@ -56,10 +41,14 @@ const debtAmount = ref("₦0");
  * Payment History
  * -------------------------------------------------- */
 
-type PaymentStatus = "Successful" | "Pending" | "Failed" | "Refunded";
+type PaymentStatus =
+  | "Successful"
+  | "Pending"
+  | "Failed"
+  | "Refunded";
 
 interface Payment {
-  id: number;
+  id: number | string;
   reference: string;
   description: string;
   amount: number;
@@ -67,40 +56,7 @@ interface Payment {
   status: PaymentStatus;
 }
 
-const payments = ref<Payment[]>([
-  {
-    id: 1,
-    reference: "PAY-2026-001",
-    description: "JAMB CBT Subscription",
-    amount: 15000,
-    date: "12 September 2026",
-    status: "Successful",
-  },
-  {
-    id: 2,
-    reference: "PAY-2026-002",
-    description: "Mobile App Access",
-    amount: 5000,
-    date: "10 September 2026",
-    status: "Pending",
-  },
-  {
-    id: 3,
-    reference: "PAY-2026-003",
-    description: "Practice Package",
-    amount: 7500,
-    date: "05 September 2026",
-    status: "Successful",
-  },
-  {
-    id: 4,
-    reference: "PAY-2026-004",
-    description: "Subscription Renewal",
-    amount: 10000,
-    date: "28 August 2026",
-    status: "Failed",
-  },
-]);
+const payments = ref<Payment[]>([]);
 
 const paymentSearch = ref("");
 
@@ -112,38 +68,19 @@ const filteredPayments = computed(() => {
   }
 
   return payments.value.filter((payment) =>
-    [payment.reference, payment.description, payment.status, payment.date].some((value) =>
-      value.toLowerCase().includes(search)
+    [
+      payment.reference,
+      payment.description,
+      payment.status,
+      payment.date,
+    ].some((value) =>
+      String(value).toLowerCase().includes(search)
     )
   );
 });
 
 /* --------------------------------------------------
- * Request Payment
- * -------------------------------------------------- */
-
-const requestingPayment = ref<number | null>(null);
-
-const requestPayment = (payment: Payment) => {
-  requestingPayment.value = payment.id;
-
-  // Connect your API here.
-  // Example:
-  //
-  // await $fetch("/api/student/payments/request", {
-  //   method: "POST",
-  //   body: {
-  //     paymentId: payment.id,
-  //   },
-  // });
-
-  setTimeout(() => {
-    requestingPayment.value = null;
-  }, 1000);
-};
-
-/* --------------------------------------------------
- * Helpers
+ * Currency
  * -------------------------------------------------- */
 
 const formatCurrency = (amount: number) => {
@@ -153,6 +90,10 @@ const formatCurrency = (amount: number) => {
     maximumFractionDigits: 0,
   }).format(amount);
 };
+
+/* --------------------------------------------------
+ * Status Helpers
+ * -------------------------------------------------- */
 
 const statusClass = (status: PaymentStatus) => {
   switch (status) {
@@ -193,33 +134,413 @@ const statusIcon = (status: PaymentStatus) => {
 };
 
 /* --------------------------------------------------
- * Theme
+ * Start Payment
+ *
+ * IMPORTANT:
+ * NOTHING is sent in the request body.
+ *
+ * The backend must determine:
+ * - student
+ * - amount
+ * - subscription/payment type
+ * - teacher
+ * - admin
+ * - commission
+ * - gateway configuration
  * -------------------------------------------------- */
 
-const selectedTheme = ref<"light" | "dark">("light");
+const generateCode = async () => {
+  if (processing.value) return;
 
-const setTheme = (theme: "light" | "dark") => {
-  selectedTheme.value = theme;
+  processing.value = true;
+  paymentError.value = "";
+  paymentSuccess.value = "";
 
-  if (theme === "dark") {
-    document.documentElement.classList.add("dark");
-    localStorage.setItem("theme", "dark");
-  } else {
-    document.documentElement.classList.remove("dark");
-    localStorage.setItem("theme", "light");
+  try {
+    /*
+     * NO BODY.
+     *
+     * Do NOT send:
+     * amount
+     * studentId
+     * teacherId
+     * adminId
+     * commissionPercentage
+     */
+    const response = await useApiFetch(
+      "/payments/student/create",
+      {
+        method: "POST",
+      }
+    );
+
+    if (!response?.success) {
+      paymentError.value =
+        response?.message ||
+        "Unable to create payment.";
+
+      return;
+    }
+
+    /*
+     * Expected backend response:
+     *
+     * {
+     *   success: true,
+     *   data: {
+     *     payment: {
+     *       txRef: "...",
+     *       amount: 500000,
+     *       currency: "NGN"
+     *     }
+     *   }
+     * }
+     *
+     * Amount is READ from backend.
+     * It is NOT sent to your backend.
+     */
+
+    const data = response.data?.data || response.data;
+
+    const payment = data?.payment;
+
+    if (!payment?.txRef) {
+      paymentError.value =
+        "Payment reference was not returned by the server.";
+
+      return;
+    }
+
+    /*
+     * If your payment gateway component/function is called `pay`,
+     * use the amount returned by the backend here.
+     *
+     * The amount is going FROM backend -> frontend -> payment gateway.
+     * It is NOT being supplied by the student.
+     */
+
+    const amountInKobo = Number(payment.amount);
+
+    if (!Number.isFinite(amountInKobo) || amountInKobo <= 0) {
+      paymentError.value =
+        "Invalid payment amount returned by server.";
+
+      return;
+    }
+
+    const amountInNaira = amountInKobo / 100;
+
+    paymentAmount.value = formatCurrency(amountInNaira);
+
+    /*
+     * If your project already has the Paystack `pay()` helper,
+     * call it here.
+     *
+     * Replace ONLY the gateway-specific section if your existing
+     * payment composable uses a different function.
+     */
+
+    if (typeof pay === "function") {
+      pay({
+        email: data?.customer?.email || "",
+        amount: amountInKobo,
+        reference: payment.txRef,
+
+        async onSuccess(transaction: any) {
+          try {
+            const verifyResponse = await useApiFetch(
+              "/payments/student/verify",
+              {
+                method: "POST",
+                body: {
+                  txRef: transaction.reference,
+                },
+              }
+            );
+
+            if (!verifyResponse?.success) {
+              paymentError.value =
+                verifyResponse?.message ||
+                "Payment verification failed.";
+
+              return;
+            }
+
+            hasPaidForAccess.value = true;
+
+            paymentSuccess.value =
+              "Payment successful. Your access has been activated.";
+
+            activationCode.value =
+              verifyResponse?.data?.activationCode ||
+              verifyResponse?.data?.data?.activationCode ||
+              "";
+
+            await loadPaymentHistory();
+          } catch (error) {
+            console.error(
+              "Payment verification error:",
+              error
+            );
+
+            paymentError.value =
+              "Payment was received but verification failed. Please check your payment history.";
+          } finally {
+            processing.value = false;
+          }
+        },
+
+        onCancel() {
+          paymentError.value = "Payment was cancelled.";
+          processing.value = false;
+        },
+
+        onClose() {
+          processing.value = false;
+        },
+      });
+    } else {
+      /*
+       * This means your existing Paystack `pay()` helper is not
+       * available in this component.
+       *
+       * The backend payment was successfully created, so do not
+       * create another payment. Connect your existing gateway
+       * composable here.
+       */
+      paymentSuccess.value =
+        "Payment request created successfully.";
+
+      console.log("Payment created:", payment);
+    }
+  } catch (error: any) {
+    console.error("Create payment error:", error);
+
+    paymentError.value =
+      error?.data?.message ||
+      error?.message ||
+      "Unable to start payment.";
+  } finally {
+    if (!paymentError.value) {
+      /*
+       * Keep processing active while the payment gateway is open.
+       * The gateway callbacks will reset it.
+       */
+    } else {
+      processing.value = false;
+    }
   }
 };
 
-onMounted(() => {
-  const savedTheme = localStorage.getItem("theme");
+/* --------------------------------------------------
+ * Payment History
+ * -------------------------------------------------- */
+
+const loadPaymentHistory = async () => {
+  try {
+    const response = await useApiFetch(
+      "/payments/student/history",
+      {
+        method: "GET",
+      }
+    );
+
+    if (!response?.success) return;
+
+    const data =
+      response.data?.data ||
+      response.data ||
+      [];
+
+    if (Array.isArray(data)) {
+      payments.value = data.map(
+        (item: any, index: number) => ({
+          id: item._id || item.id || index,
+          reference:
+            item.txRef ||
+            item.reference ||
+            `PAY-${index + 1}`,
+          description:
+            item.description ||
+            item.subscriptionType ||
+            "Student Payment",
+          amount:
+            Number(item.amount || 0) / 100,
+          date: item.createdAt
+            ? new Date(item.createdAt).toLocaleDateString(
+                "en-NG",
+                {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                }
+              )
+            : "",
+          status: normalizePaymentStatus(
+            item.status
+          ),
+        })
+      );
+    }
+  } catch (error) {
+    console.error(
+      "Unable to load payment history:",
+      error
+    );
+  }
+};
+
+const normalizePaymentStatus = (
+  status: string
+): PaymentStatus => {
+  switch (String(status).toUpperCase()) {
+    case "SUCCESS":
+    case "SUCCESSFUL":
+      return "Successful";
+
+    case "PENDING":
+    case "PROCESSING":
+      return "Pending";
+
+    case "FAILED":
+      return "Failed";
+
+    case "REFUNDED":
+      return "Refunded";
+
+    default:
+      return "Pending";
+  }
+};
+
+/* --------------------------------------------------
+ * Pending Payment Request
+ * -------------------------------------------------- */
+
+const requestingPayment = ref<
+  number | string | null
+>(null);
+
+const requestPayment = async (
+  payment: Payment
+) => {
+  if (requestingPayment.value !== null) {
+    return;
+  }
+
+  requestingPayment.value = payment.id;
+
+  try {
+    /*
+     * Do not send the amount.
+     *
+     * If this payment already exists in the backend,
+     * the backend identifies it from the reference.
+     */
+    const response = await useApiFetch(
+      "/payments/student/verify",
+      {
+        method: "POST",
+        body: {
+          txRef: payment.reference,
+        },
+      }
+    );
+
+    if (response?.success) {
+      await loadPaymentHistory();
+    }
+  } catch (error) {
+    console.error(
+      "Payment request error:",
+      error
+    );
+  } finally {
+    requestingPayment.value = null;
+  }
+};
+
+/* --------------------------------------------------
+ * Copy Activation Code
+ * -------------------------------------------------- */
+
+const copyCode = async () => {
+  if (!activationCode.value) return;
+
+  try {
+    await navigator.clipboard.writeText(
+      activationCode.value
+    );
+
+    copied.value = true;
+
+    setTimeout(() => {
+      copied.value = false;
+    }, 2000);
+  } catch (error) {
+    console.error(
+      "Unable to copy activation code:",
+      error
+    );
+  }
+};
+
+/* --------------------------------------------------
+ * Theme
+ * -------------------------------------------------- */
+
+const selectedTheme =
+  ref<"light" | "dark">("light");
+
+const setTheme = (
+  theme: "light" | "dark"
+) => {
+  selectedTheme.value = theme;
+
+  if (theme === "dark") {
+    document.documentElement.classList.add(
+      "dark"
+    );
+
+    localStorage.setItem(
+      "theme",
+      "dark"
+    );
+  } else {
+    document.documentElement.classList.remove(
+      "dark"
+    );
+
+    localStorage.setItem(
+      "theme",
+      "light"
+    );
+  }
+};
+
+/* --------------------------------------------------
+ * Initial Load
+ * -------------------------------------------------- */
+
+onMounted(async () => {
+  const savedTheme =
+    localStorage.getItem("theme");
 
   if (savedTheme === "dark") {
     selectedTheme.value = "dark";
-    document.documentElement.classList.add("dark");
+
+    document.documentElement.classList.add(
+      "dark"
+    );
   } else {
     selectedTheme.value = "light";
-    document.documentElement.classList.remove("dark");
+
+    document.documentElement.classList.remove(
+      "dark"
+    );
   }
+
+  await loadPaymentHistory();
 });
 </script>
 
@@ -229,7 +550,7 @@ onMounted(() => {
       <!-- ==========================================
            MOBILE APP ACCESS TOKEN
            ========================================== -->
-
+    
       <div
         class="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
       >

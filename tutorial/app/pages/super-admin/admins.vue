@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<!-- <script setup lang="ts">
 import { computed, ref } from "vue";
 
 definePageMeta({
@@ -13,7 +13,7 @@ interface Admin {
   image: string | null;
   totalTeachers: number;
   totalStudents: number;
-  subscribedStudents: number;
+  paidStudents: number;
   dateJoined: string;
   lastLogin: string;
   status: "Active" | "Suspended" | "Inactive";
@@ -23,14 +23,14 @@ interface AdminSummary {
   totalAdmins: number;
   totalTeachers: number;
   totalStudents: number;
-  subscribedStudents: number;
+  paidStudents: number;
 }
 
 const summary = ref<AdminSummary>({
   totalAdmins: 12,
   totalTeachers: 186,
   totalStudents: 3840,
-  subscribedStudents: 2914,
+  paidStudents: 2914,
 });
 
 const admins = ref<Admin[]>([
@@ -42,7 +42,7 @@ const admins = ref<Admin[]>([
     image: null,
     totalTeachers: 24,
     totalStudents: 486,
-    subscribedStudents: 378,
+    paidStudents: 378,
     dateJoined: "12 January 2026",
     lastLogin: "11 September 2026 06:42 PM",
     status: "Active",
@@ -55,7 +55,7 @@ const admins = ref<Admin[]>([
     image: null,
     totalTeachers: 18,
     totalStudents: 352,
-    subscribedStudents: 291,
+    paidStudents: 291,
     dateJoined: "20 January 2026",
     lastLogin: "11 September 2026 05:18 PM",
     status: "Active",
@@ -68,7 +68,7 @@ const admins = ref<Admin[]>([
     image: null,
     totalTeachers: 31,
     totalStudents: 624,
-    subscribedStudents: 487,
+    paidStudents: 487,
     dateJoined: "03 February 2026",
     lastLogin: "10 September 2026 09:12 PM",
     status: "Active",
@@ -81,7 +81,7 @@ const admins = ref<Admin[]>([
     image: null,
     totalTeachers: 14,
     totalStudents: 218,
-    subscribedStudents: 164,
+    paidStudents: 164,
     dateJoined: "15 February 2026",
     lastLogin: "09 September 2026 04:37 PM",
     status: "Active",
@@ -94,7 +94,7 @@ const admins = ref<Admin[]>([
     image: null,
     totalTeachers: 27,
     totalStudents: 531,
-    subscribedStudents: 419,
+    paidStudents: 419,
     dateJoined: "28 February 2026",
     lastLogin: "11 September 2026 01:24 PM",
     status: "Active",
@@ -107,7 +107,7 @@ const admins = ref<Admin[]>([
     image: null,
     totalTeachers: 11,
     totalStudents: 193,
-    subscribedStudents: 142,
+    paidStudents: 142,
     dateJoined: "09 March 2026",
     lastLogin: "08 September 2026 11:05 AM",
     status: "Inactive",
@@ -120,7 +120,7 @@ const admins = ref<Admin[]>([
     image: null,
     totalTeachers: 22,
     totalStudents: 407,
-    subscribedStudents: 318,
+    paidStudents: 318,
     dateJoined: "19 March 2026",
     lastLogin: "11 September 2026 03:52 PM",
     status: "Active",
@@ -133,7 +133,7 @@ const admins = ref<Admin[]>([
     image: null,
     totalTeachers: 16,
     totalStudents: 294,
-    subscribedStudents: 227,
+    paidStudents: 227,
     dateJoined: "02 April 2026",
     lastLogin: "10 September 2026 08:15 PM",
     status: "Active",
@@ -208,7 +208,7 @@ const subscriptionRate = computed(() => {
   if (!summary.value.totalStudents) return 0;
 
   return Math.round(
-    (summary.value.subscribedStudents / summary.value.totalStudents) * 100
+    (summary.value.paidStudents / summary.value.totalStudents) * 100
   );
 });
 
@@ -240,7 +240,8 @@ const stats = computed(() => [
 ]);
 
 const statusStyles: Record<Admin["status"], string> = {
-  Active: "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400",
+  Active:
+    "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400",
 
   Suspended: "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
 
@@ -282,7 +283,7 @@ function avatarColor(name: string) {
 function paidPercentage(admin: Admin) {
   if (!admin.totalStudents) return 0;
 
-  return Math.round((admin.subscribedStudents / admin.totalStudents) * 100);
+  return Math.round((admin.paidStudents / admin.totalStudents) * 100);
 }
 
 function openModal(type: "view" | "edit" | "suspend", admin: Admin) {
@@ -297,12 +298,574 @@ function closeModal() {
 function statusDot(status: Admin["status"]) {
   return statusDots[status];
 }
+</script> -->
+<script setup lang="ts">
+import { computed, onMounted, ref } from "vue";
+
+definePageMeta({
+  layout: "nav",
+});
+
+/* =========================================================
+   TYPES
+========================================================= */
+
+interface Admin {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  image: string | null;
+
+  totalTeachers: number;
+  totalStudents: number;
+  paidStudents: number;
+
+  dateJoined: string;
+  lastLogin: string;
+
+  status: "Active" | "Suspended" | "Inactive";
+}
+
+interface AdminSummary {
+  totalAdmins: number;
+  totalTeachers: number;
+  totalStudents: number;
+  paidStudents: number;
+}
+
+interface AdminApiResponse {
+  success: boolean;
+  data: {
+    admins: any[];
+    summary?: {
+      totalAdmins: number;
+      totalTeachers: number;
+      totalStudents: number;
+      paidStudents: number;
+    };
+  };
+  message?: string;
+}
+
+/* =========================================================
+   STATE
+========================================================= */
+
+const summary = ref<AdminSummary>({
+  totalAdmins: 0,
+  totalTeachers: 0,
+  totalStudents: 0,
+  paidStudents: 0,
+});
+
+const admins = ref<Admin[]>([]);
+
+const search = ref("");
+const statusFilter = ref("All");
+
+const isLoading = ref(false);
+const errorMessage = ref("");
+
+const selectedAdmin = ref<Admin | null>(null);
+
+const activeModal = ref<"view" | "edit" | "suspend" | null>(null);
+
+/* =========================================================
+   TABLE COLUMNS
+========================================================= */
+
+const columns = [
+  {
+    key: "name",
+    label: "Administrator",
+  },
+  {
+    key: "totalTeachers",
+    label: "Teachers",
+  },
+  {
+    key: "students",
+    label: "Students / Paid",
+  },
+  {
+    key: "dateJoined",
+    label: "Date Joined",
+  },
+  {
+    key: "lastLogin",
+    label: "Last Login",
+  },
+  {
+    key: "status",
+    label: "Status",
+  },
+];
+
+/* =========================================================
+   FETCH ADMINS
+========================================================= */
+
+async function fetchAdmins() {
+  isLoading.value = true;
+  errorMessage.value = "";
+
+  try {
+    console.log("🔥 Fetching administrators...");
+
+    const response = await useApiFetch<AdminApiResponse>(
+      "/superadmin/admin",
+      {
+        method: "GET",
+      }
+    );
+
+    console.log("📥 Admin API response:", response);
+
+    if (!response.success) {
+      errorMessage.value =
+        response.message || "Failed to load administrators.";
+
+      console.error("❌ Admin API error:", response.message);
+
+      return;
+    }
+
+    if (!response.data) {
+      errorMessage.value = "No administrator data was returned.";
+
+      return;
+    }
+
+    const payload = response.data;
+
+    /* =====================================================
+       MAP ADMIN DATA
+    ===================================================== */
+
+    admins.value = (payload.admins || []).map((admin: any) => {
+      const name =
+        admin.name ||
+        [admin.firstName, admin.middleName, admin.lastName]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+
+      return {
+        id: String(admin.id || admin._id || ""),
+
+        name: name || "Unknown Administrator",
+
+        email: admin.email || "",
+
+        phone:
+          admin.phone ||
+          admin.whatsapp_no ||
+          "",
+
+        image:
+          admin.image ||
+          admin.avatar ||
+          null,
+
+        totalTeachers: Number(
+          admin.totalTeachers || 0
+        ),
+
+        totalStudents: Number(
+          admin.totalStudents || 0
+        ),
+
+        paidStudents: Number(
+          admin.paidStudents || 0
+        ),
+
+        dateJoined:
+          admin.dateJoined
+            ? formatDate(admin.dateJoined)
+            : admin.createdAt
+              ? formatDate(admin.createdAt)
+              : "—",
+
+        lastLogin:
+          admin.lastLogin
+            ? formatDate(admin.lastLogin)
+            : "Never",
+
+        status: normalizeStatus(admin.status),
+      };
+    });
+
+    /* =====================================================
+       USE BACKEND SUMMARY
+    ===================================================== */
+
+    if (payload.summary) {
+      summary.value = {
+        totalAdmins: Number(
+          payload.summary.totalAdmins || 0
+        ),
+
+        totalTeachers: Number(
+          payload.summary.totalTeachers || 0
+        ),
+
+        totalStudents: Number(
+          payload.summary.totalStudents || 0
+        ),
+
+        paidStudents: Number(
+          payload.summary.paidStudents || 0
+        ),
+      };
+    } else {
+      /* ===================================================
+         FALLBACK SUMMARY
+      =================================================== */
+
+      summary.value = {
+        totalAdmins: admins.value.length,
+
+        totalTeachers: admins.value.reduce(
+          (total, admin) =>
+            total + admin.totalTeachers,
+          0
+        ),
+
+        totalStudents: admins.value.reduce(
+          (total, admin) =>
+            total + admin.totalStudents,
+          0
+        ),
+
+        paidStudents: admins.value.reduce(
+          (total, admin) =>
+            total + admin.paidStudents,
+          0
+        ),
+      };
+    }
+
+    console.log("✅ Administrators loaded:", admins.value);
+    console.log("📊 Summary:", summary.value);
+  } catch (error: any) {
+    console.error(
+      "🔥 Error fetching administrators:",
+      error
+    );
+
+    errorMessage.value =
+      error?.message ||
+      "Unable to load administrators.";
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+/* =========================================================
+   FORMAT DATE
+========================================================= */
+
+function formatDate(date: string | Date | null | undefined) {
+  if (!date) {
+    return "—";
+  }
+
+  const parsed = new Date(date);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "—";
+  }
+
+  return parsed.toLocaleString("en-NG", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/* =========================================================
+   NORMALIZE STATUS
+========================================================= */
+
+function normalizeStatus(
+  status: any
+): Admin["status"] {
+  const value = String(
+    status || "active"
+  ).toLowerCase();
+
+  switch (value) {
+    case "suspended":
+      return "Suspended";
+
+    case "inactive":
+      return "Inactive";
+
+    case "active":
+    default:
+      return "Active";
+  }
+}
+
+/* =========================================================
+   FILTER ADMINS
+========================================================= */
+
+const filteredAdmins = computed(() => {
+  const query = search.value
+    .trim()
+    .toLowerCase();
+
+  return admins.value.filter((admin) => {
+    const matchesSearch =
+      !query ||
+      admin.name
+        .toLowerCase()
+        .includes(query) ||
+      admin.email
+        .toLowerCase()
+        .includes(query) ||
+      admin.id
+        .toLowerCase()
+        .includes(query) ||
+      admin.phone
+        .toLowerCase()
+        .includes(query);
+
+    const matchesStatus =
+      statusFilter.value === "All" ||
+      admin.status === statusFilter.value;
+
+    return (
+      matchesSearch &&
+      matchesStatus
+    );
+  });
+});
+
+/* =========================================================
+   ADMIN COUNTS
+========================================================= */
+
+const activeAdmins = computed(
+  () =>
+    admins.value.filter(
+      (admin) =>
+        admin.status === "Active"
+    ).length
+);
+
+const suspendedAdmins = computed(
+  () =>
+    admins.value.filter(
+      (admin) =>
+        admin.status === "Suspended"
+    ).length
+);
+
+const inactiveAdmins = computed(
+  () =>
+    admins.value.filter(
+      (admin) =>
+        admin.status === "Inactive"
+    ).length
+);
+
+/* =========================================================
+   SUBSCRIPTION RATE
+========================================================= */
+
+const subscriptionRate = computed(() => {
+  if (!summary.value.totalStudents) {
+    return 0;
+  }
+
+  return Math.round(
+    (summary.value.paidStudents /
+      summary.value.totalStudents) *
+      100
+  );
+});
+
+/* =========================================================
+   STATISTICS
+========================================================= */
+
+const stats = computed(() => [
+  {
+    label: "Total Admins",
+    value: summary.value.totalAdmins,
+    icon: "i-heroicons-users",
+    description:
+      "Registered administrators",
+  },
+
+  {
+    label: "Active Admins",
+    value: activeAdmins.value,
+    icon: "i-heroicons-check-circle",
+    description:
+      "Currently active",
+  },
+
+  {
+    label: "Total Teachers",
+    value: summary.value.totalTeachers,
+    icon: "i-heroicons-academic-cap",
+    description:
+      "Managed teachers",
+  },
+
+  {
+    label: "Total Students",
+    value: summary.value.totalStudents,
+    icon: "i-heroicons-user-group",
+    description:
+      `${subscriptionRate.value}% paid`,
+  },
+]);
+
+/* =========================================================
+   STATUS STYLES
+========================================================= */
+
+const statusStyles: Record<
+  Admin["status"],
+  string
+> = {
+  Active:
+    "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400",
+
+  Suspended:
+    "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
+
+  Inactive:
+    "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
+};
+
+const statusDots: Record<
+  Admin["status"],
+  string
+> = {
+  Active: "bg-green-500",
+
+  Suspended: "bg-rose-500",
+
+  Inactive: "bg-gray-400",
+};
+
+/* =========================================================
+   AVATAR COLORS
+========================================================= */
+
+const avatarColors = [
+  "bg-indigo-500",
+  "bg-emerald-500",
+  "bg-amber-500",
+  "bg-rose-500",
+  "bg-sky-500",
+  "bg-violet-500",
+  "bg-cyan-500",
+  "bg-orange-500",
+];
+
+/* =========================================================
+   INITIALS
+========================================================= */
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+/* =========================================================
+   AVATAR COLOR
+========================================================= */
+
+function avatarColor(name: string) {
+  const sum = name
+    .split("")
+    .reduce(
+      (acc, char) =>
+        acc + char.charCodeAt(0),
+      0
+    );
+
+  return avatarColors[
+    sum % avatarColors.length
+  ];
+}
+
+/* =========================================================
+   PAID PERCENTAGE
+========================================================= */
+
+function paidPercentage(admin: Admin) {
+  if (!admin.totalStudents) {
+    return 0;
+  }
+
+  return Math.round(
+    (admin.paidStudents /
+      admin.totalStudents) *
+      100
+  );
+}
+
+/* =========================================================
+   MODALS
+========================================================= */
+
+function openModal(
+  type: "view" | "edit" | "suspend",
+  admin: Admin
+) {
+  selectedAdmin.value = admin;
+  activeModal.value = type;
+}
+
+function closeModal() {
+  activeModal.value = null;
+  selectedAdmin.value = null;
+}
+
+function statusDot(
+  status: Admin["status"]
+) {
+  return statusDots[status];
+}
+
+/* =========================================================
+   REFRESH
+========================================================= */
+
+async function refreshAdmins() {
+  await fetchAdmins();
+}
+
+/* =========================================================
+   INITIAL LOAD
+========================================================= */
+
+onMounted(() => {
+  fetchAdmins();
+});
 </script>
 
 <template>
   <Container class="mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
     <!-- Header -->
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div
+      class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+    >
       <div>
         <div class="flex items-center gap-2">
           <div
@@ -328,15 +891,13 @@ function statusDot(status: Admin["status"]) {
           Manage administrators, teachers, students and platform activity.
         </p>
       </div>
-
-      <button
-        type="button"
-        class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700"
-      >
-        <Icon name="i-heroicons-user-plus" class="h-4 w-4" />
-
-        Add Admin
-      </button>
+      <CreateUser
+        type="admin"
+        button-text="Add Admin"
+        button-icon="lucide:user-plus"
+        button-icon-class="h-5 w-5"
+      />
+      
     </div>
 
     <!-- Stats -->
@@ -391,7 +952,7 @@ function statusDot(status: Admin["status"]) {
             </p>
 
             <p class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">
-              {{ summary.subscribedStudents.toLocaleString() }}
+              {{ summary.paidStudents.toLocaleString() }}
               <span class="text-sm font-normal text-gray-400">
                 /
                 {{ summary.totalStudents.toLocaleString() }}
@@ -410,10 +971,14 @@ function statusDot(status: Admin["status"]) {
           <div class="mb-2 flex items-center justify-between text-xs">
             <span class="text-gray-400"> Payment rate </span>
 
-            <span class="font-semibold text-emerald-600"> {{ subscriptionRate }}% </span>
+            <span class="font-semibold text-emerald-600">
+              {{ subscriptionRate }}%
+            </span>
           </div>
 
-          <div class="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+          <div
+            class="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800"
+          >
             <div
               class="h-full rounded-full bg-emerald-500 transition-all"
               :style="{
@@ -537,7 +1102,11 @@ function statusDot(status: Admin["status"]) {
             v-if="item.image"
             class="h-10 w-10 shrink-0 overflow-hidden rounded-full ring-2 ring-white dark:ring-gray-900"
           >
-            <img :src="item.image" :alt="item.name" class="h-full w-full object-cover" />
+            <img
+              :src="item.image"
+              :alt="item.name"
+              class="h-full w-full object-cover"
+            />
           </div>
 
           <div
@@ -577,7 +1146,10 @@ function statusDot(status: Admin["status"]) {
 
             <!-- Phone -->
             <div class="mt-0.5 flex items-center gap-1.5">
-              <Icon name="i-heroicons-phone" class="h-3.5 w-3.5 shrink-0 text-gray-400" />
+              <Icon
+                name="i-heroicons-phone"
+                class="h-3.5 w-3.5 shrink-0 text-gray-400"
+              />
 
               <p class="text-xs text-gray-400 dark:text-gray-500">
                 {{ item.phone }}
@@ -623,8 +1195,10 @@ function statusDot(status: Admin["status"]) {
 
               <span class="text-gray-400"> / </span>
 
-              <span class="font-semibold text-emerald-600 dark:text-emerald-400">
-                {{ item.subscribedStudents }}
+              <span
+                class="font-semibold text-emerald-600 dark:text-emerald-400"
+              >
+                {{ item.paidStudents }}
               </span>
             </div>
           </div>
@@ -657,10 +1231,15 @@ function statusDot(status: Admin["status"]) {
           <div
             class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-50 dark:bg-gray-800"
           >
-            <Icon name="i-heroicons-calendar-days" class="h-4 w-4 text-gray-400" />
+            <Icon
+              name="i-heroicons-calendar-days"
+              class="h-4 w-4 text-gray-400"
+            />
           </div>
 
-          <span class="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+          <span
+            class="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300"
+          >
             {{ item.dateJoined }}
           </span>
         </div>
@@ -672,7 +1251,9 @@ function statusDot(status: Admin["status"]) {
           <div class="flex items-center gap-1.5">
             <span class="h-1.5 w-1.5 rounded-full bg-emerald-500" />
 
-            <span class="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+            <span
+              class="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300"
+            >
               {{ item.lastLogin }}
             </span>
           </div>
@@ -687,7 +1268,10 @@ function statusDot(status: Admin["status"]) {
           class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
           :class="statusStyles[item.status]"
         >
-          <span class="h-1.5 w-1.5 rounded-full" :class="statusDot(item.status)" />
+          <span
+            class="h-1.5 w-1.5 rounded-full"
+            :class="statusDot(item.status)"
+          />
 
           {{ item.status }}
         </span>
@@ -737,6 +1321,7 @@ function statusDot(status: Admin["status"]) {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+  display: n;
   transform: translateY(8px) scale(0.98);
 }
 </style>

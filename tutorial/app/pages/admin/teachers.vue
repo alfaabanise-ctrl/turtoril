@@ -203,13 +203,12 @@ function paidPercentage(teacher: Teacher) {
           Manage teachers and monitor their students
         </p>
       </div>
-
-      <button
-        class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
-      >
-        <Icon name="i-heroicons-user-plus" class="w-4 h-4" />
-        Add Teacher
-      </button>
+ <CreateUser
+        type="teacher"
+        button-text="Add Teacher s"
+        button-icon="lucide:user-plus"
+        button-icon-class="h-5 w-5"
+      />
     </div>
 
     <!-- Teacher List -->

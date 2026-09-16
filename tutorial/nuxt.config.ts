@@ -43,8 +43,10 @@ export default defineNuxtConfig({
     public: {
       projectName: "cbt lesson",
       apiUrl:
-      
+        process.env.NUXT_PUBLIC_API_URL ||
         "http://localhost:5000",
+      
+       
     },
   },
 })

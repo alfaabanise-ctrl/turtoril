@@ -375,18 +375,12 @@ const subscriptionPercentage = computed(() => {
         </p>
       </div>
 
-      <button
-        type="button"
-        class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700"
-        @click="openAddStudent"
-      >
-        <Icon
-          name="heroicons:plus"
-          class="h-5 w-5"
-        />
-
-        Add Student
-      </button>
+  <CreateUser
+        type="student"
+        button-text="Add Student"
+        button-icon="lucide:user-plus"
+        button-icon-class="h-5 w-5"
+      />
     </div>
 
     <!-- ============================================================

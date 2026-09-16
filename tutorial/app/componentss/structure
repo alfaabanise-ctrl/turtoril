@@ -1,55 +1,20 @@
-PUBLIC
+SUPERADMIN
 │
-├── /
-├── /login
-├── /register
-├── /forgot-password
-└── /reset-password
-
-
-SUPER ADMIN
+├── ADMINS
+│   ├── POST   /api/superadmin/admins
+│   ├── GET    /api/superadmin/admins
+│   ├── GET    /api/superadmin/admins/:adminId
+│   ├── PUT    /api/superadmin/admins/:adminId
+│   └── PATCH  /api/superadmin/admins/:adminId/status
 │
-├── /super-admin
-├── /super-admin/admins
-├── /super-admin/teachers
-├── /super-admin/ccc
-├── /super-admin/referrals
-├── /super-admin/subscriptions
-├── /super-admin/payments
-├── /super-admin/wallets
-├── /super-admin/reports
-└── /super-admin/settings
-
-
-ADMIN
+├── TEACHERS
+│   ├── GET    /api/superadmin/teachers
+│   ├── GET    /api/superadmin/teachers/:teacherId
+│   ├── PUT    /api/superadmin/teachers/:teacherId
+│   └── PATCH  /api/superadmin/teachers/:teacherId/status
 │
-├── /admin
-├── /admin/students
-├── /admin/students/[id]
-├── /admin/teachers
-├── /admin/referrals
-├── /admin/subscriptions
-├── /admin/payments
-├── /admin/wallet
-├── /admin/reports
-└── /admin/settings
-
-
-TEACHER
-│
-├── /teacher
-├── /teacher/students
-├── /teacher/students/[id]
-├── /teacher/referrals
-├── /teacher/payments
-├── /teacher/wallet
-└── /teacher/settings
-
-
-STUDENT
-│
-├── /student
-├── /student/subscription
-├── /student/payments
-├── /student/profile
-└── /student/settings
+└── STUDENTS
+    ├── GET    /api/superadmin/students
+    ├── GET    /api/superadmin/students/:studentId
+    ├── PUT    /api/superadmin/students/:studentId
+    └── PATCH  /api/superadmin/students/:studentId/status
