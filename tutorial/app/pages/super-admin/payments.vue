@@ -177,7 +177,15 @@ const planOptions = [
 /* =========================================================
    FETCH PAYMENTS FROM API
 ========================================================= */
+function fromKobo(amount: unknown): number {
+  const value = Number(amount ?? 0);
 
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return value / 100;
+}
 async function fetchPayments(page = pagination.value.page) {
   try {
     isLoading.value = true;
@@ -230,10 +238,12 @@ async function fetchPayments(page = pagination.value.page) {
     /*
      * API DATA
      */
-    payments.value = Array.isArray(payload.payments)
-      ? payload.payments
-      : [];
-
+   payments.value = Array.isArray(payload.payments)
+  ? payload.payments.map((payment) => ({
+      ...payment,
+      amount: fromKobo(payment.amount),
+    }))
+  : [];
     /*
      * API PAGINATION
      */
@@ -250,53 +260,53 @@ async function fetchPayments(page = pagination.value.page) {
     /*
      * API SUMMARY
      */
-    if (payload.summary) {
-      summary.value = {
-        totalPayments:
-          Number(payload.summary.totalPayments) || 0,
+   if (payload.summary) {
+  summary.value = {
+    totalPayments:
+      Number(payload.summary.totalPayments) || 0,
 
-        successfulPayments:
-          Number(payload.summary.successfulPayments) || 0,
+    successfulPayments:
+      Number(payload.summary.successfulPayments) || 0,
 
-        pendingPayments:
-          Number(payload.summary.pendingPayments) || 0,
+    pendingPayments:
+      Number(payload.summary.pendingPayments) || 0,
 
-        failedPayments:
-          Number(payload.summary.failedPayments) || 0,
+    failedPayments:
+      Number(payload.summary.failedPayments) || 0,
 
-        refundedPayments:
-          Number(payload.summary.refundedPayments) || 0,
+    refundedPayments:
+      Number(payload.summary.refundedPayments) || 0,
 
-        successfulPercentage:
-          Number(payload.summary.successfulPercentage) || 0,
+    successfulPercentage:
+      Number(payload.summary.successfulPercentage) || 0,
 
-        totalRevenue:
-          Number(payload.summary.totalRevenue) || 0,
+    // Kobo → Naira
+    totalRevenue:
+      fromKobo(payload.summary.totalRevenue),
 
-        pendingRevenue:
-          Number(payload.summary.pendingRevenue) || 0,
+    pendingRevenue:
+      fromKobo(payload.summary.pendingRevenue),
 
-        averagePayment:
-          Number(payload.summary.averagePayment) || 0,
+    averagePayment:
+      fromKobo(payload.summary.averagePayment),
 
-        paymentMethods: {
-          Card:
-            Number(payload.summary.paymentMethods?.Card) || 0,
+    paymentMethods: {
+      Card:
+        Number(payload.summary.paymentMethods?.Card) || 0,
 
-          "Bank Transfer":
-            Number(
-              payload.summary.paymentMethods?.["Bank Transfer"]
-            ) || 0,
+      "Bank Transfer":
+        Number(
+          payload.summary.paymentMethods?.["Bank Transfer"]
+        ) || 0,
 
-          USSD:
-            Number(payload.summary.paymentMethods?.USSD) || 0,
+      USSD:
+        Number(payload.summary.paymentMethods?.USSD) || 0,
 
-          Paystack:
-            Number(payload.summary.paymentMethods?.Paystack) || 0,
-        },
-      };
-    }
-
+      Paystack:
+        Number(payload.summary.paymentMethods?.Paystack) || 0,
+    },
+  };
+}
     console.log("✅ Payments loaded:", payments.value);
     console.log("📄 Pagination:", pagination.value);
     console.log("📊 Summary:", summary.value);

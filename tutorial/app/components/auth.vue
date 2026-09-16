@@ -283,6 +283,7 @@ const handlelogin = async () => {
     /* ---------------------------------------------
        AUTH STATE
     --------------------------------------------- */
+console.log(data);
 
     auth.value.user = data?.data || null;
     auth.value.authenticated = true;
@@ -296,8 +297,21 @@ const handlelogin = async () => {
     $toast.success(data.message || "Login successful.");
 
     setTimeout(() => {
-      router.push("/search");
-    }, 800);
+  const role = auth.value.user?.role;
+      console.log(role, 'role');
+      
+  if (role === "admin" ) {
+    router.push("/admin");
+  } else if (role === "teacher") {
+    router.push("/teacher");
+  }  else if (role === "superadmin") {
+    router.push("/super-admin");
+  }  else if (role === "student") {
+    router.push("/student");
+  } else {
+    router.push("/search");
+  }
+}, 800);
   } catch (err: any) {
     console.error("Login failed:", err);
 
