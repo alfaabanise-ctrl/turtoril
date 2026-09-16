@@ -42,6 +42,7 @@ export default defineNuxtConfig({
     // Public variables - available to the client
     public: {
       projectName: "cbt lesson",
+      paystackPublicKey: process.env.NUXT_PAYSTACK_API_URL,
       apiUrl:
         process.env.NUXT_PUBLIC_API_URL ||
         "http://localhost:5000",

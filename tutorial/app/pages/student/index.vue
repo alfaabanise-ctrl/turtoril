@@ -1,45 +1,17 @@
-```vue
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import {
+  computed,
+  onMounted,
+  ref,
+} from "vue";
 
 definePageMeta({
   layout: "nav",
 });
 
-/* --------------------------------------------------
- * Student
- * -------------------------------------------------- */
-
-const studentName = ref("RACHEAL");
-const studentLevel = ref("100L, HASS");
-
-/* --------------------------------------------------
- * Mobile App Access Token
- * -------------------------------------------------- */
-
-const hasPaidForAccess = ref(false);
-const activationCode = ref("");
-const copied = ref(false);
-
-/* --------------------------------------------------
- * Payment Processing
- * -------------------------------------------------- */
-
-const processing = ref(false);
-const paymentError = ref("");
-const paymentSuccess = ref("");
-
-/* --------------------------------------------------
- * Payment Summary
- * -------------------------------------------------- */
-
-const paymentAmount = ref("₦0");
-const paidAmount = ref("₦0");
-const debtAmount = ref("₦0");
-
-/* --------------------------------------------------
- * Payment History
- * -------------------------------------------------- */
+// ============================================================
+// TYPES
+// ============================================================
 
 type PaymentStatus =
   | "Successful"
@@ -56,344 +28,155 @@ interface Payment {
   status: PaymentStatus;
 }
 
-const payments = ref<Payment[]>([]);
+// ============================================================
+// STUDENT
+// ============================================================
 
-const paymentSearch = ref("");
+const studentName =
+  ref("RACHEAL");
 
-const filteredPayments = computed(() => {
-  const search = paymentSearch.value.trim().toLowerCase();
+const studentLevel =
+  ref("100L, HASS");
 
-  if (!search) {
-    return payments.value;
-  }
+// ============================================================
+// PAYMENT STATE
+// ============================================================
 
-  return payments.value.filter((payment) =>
-    [
-      payment.reference,
-      payment.description,
-      payment.status,
-      payment.date,
-    ].some((value) =>
-      String(value).toLowerCase().includes(search)
-    )
+const hasPaidForAccess =
+  ref(false);
+
+const activationCode =
+  ref("");
+
+const copied =
+  ref(false);
+
+const paymentError =
+  ref("");
+
+const paymentSuccess =
+  ref("");
+
+const paymentAmount =
+  ref("₦0");
+
+const paidAmount =
+  ref("₦0");
+
+const debtAmount =
+  ref("₦0");
+
+const payments =
+  ref<Payment[]>([]);
+
+const paymentSearch =
+  ref("");
+
+const requestingPayment =
+  ref<number | string | null>(
+    null
   );
-});
 
-/* --------------------------------------------------
- * Currency
- * -------------------------------------------------- */
+// ============================================================
+// HELPERS
+// ============================================================
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
+const formatCurrency = (
+  amount: number
+) =>
+  new Intl.NumberFormat(
+    "en-NG",
+    {
+      style: "currency",
+      currency: "NGN",
+      maximumFractionDigits: 0,
+    }
+  ).format(amount);
 
-/* --------------------------------------------------
- * Status Helpers
- * -------------------------------------------------- */
+// ============================================================
+// STATUS
+// ============================================================
 
-const statusClass = (status: PaymentStatus) => {
-  switch (status) {
-    case "Successful":
-      return "bg-green-50 text-green-700 ring-green-600/20 dark:bg-green-900/30 dark:text-green-400 dark:ring-green-400/20";
-
-    case "Pending":
-      return "bg-yellow-50 text-yellow-700 ring-yellow-600/20 dark:bg-yellow-900/30 dark:text-yellow-400 dark:ring-yellow-400/20";
-
-    case "Failed":
-      return "bg-red-50 text-red-700 ring-red-600/20 dark:bg-red-900/30 dark:text-red-400 dark:ring-red-400/20";
-
-    case "Refunded":
-      return "bg-gray-100 text-gray-700 ring-gray-500/20 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-400/20";
-
-    default:
-      return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
+const statusConfig: Record<
+  PaymentStatus,
+  {
+    icon: string;
+    class: string;
   }
+> = {
+  Successful: {
+    icon:
+      "heroicons:check-circle",
+
+    class:
+      "bg-green-50 text-green-700 ring-green-600/20 dark:bg-green-900/30 dark:text-green-400 dark:ring-green-400/20",
+  },
+
+  Pending: {
+    icon:
+      "heroicons:clock",
+
+    class:
+      "bg-yellow-50 text-yellow-700 ring-yellow-600/20 dark:bg-yellow-900/30 dark:text-yellow-400 dark:ring-yellow-400/20",
+  },
+
+  Failed: {
+    icon:
+      "heroicons:x-circle",
+
+    class:
+      "bg-red-50 text-red-700 ring-red-600/20 dark:bg-red-900/30 dark:text-red-400 dark:ring-red-400/20",
+  },
+
+  Refunded: {
+    icon:
+      "heroicons:arrow-uturn-left",
+
+    class:
+      "bg-gray-100 text-gray-700 ring-gray-500/20 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-400/20",
+  },
 };
 
-const statusIcon = (status: PaymentStatus) => {
-  switch (status) {
-    case "Successful":
-      return "heroicons:check-circle";
+// ============================================================
+// FILTER PAYMENTS
+// ============================================================
 
-    case "Pending":
-      return "heroicons:clock";
+const filteredPayments =
+  computed(() => {
+    const search =
+      paymentSearch.value
+        .trim()
+        .toLowerCase();
 
-    case "Failed":
-      return "heroicons:x-circle";
+    if (!search) {
+      return payments.value;
+    }
 
-    case "Refunded":
-      return "heroicons:arrow-uturn-left";
-
-    default:
-      return "heroicons:information-circle";
-  }
-};
-
-/* --------------------------------------------------
- * Start Payment
- *
- * IMPORTANT:
- * NOTHING is sent in the request body.
- *
- * The backend must determine:
- * - student
- * - amount
- * - subscription/payment type
- * - teacher
- * - admin
- * - commission
- * - gateway configuration
- * -------------------------------------------------- */
-
-const generateCode = async () => {
-  if (processing.value) return;
-
-  processing.value = true;
-  paymentError.value = "";
-  paymentSuccess.value = "";
-
-  try {
-    /*
-     * NO BODY.
-     *
-     * Do NOT send:
-     * amount
-     * studentId
-     * teacherId
-     * adminId
-     * commissionPercentage
-     */
-    const response = await useApiFetch(
-      "/payments/student/create",
-      {
-        method: "POST",
-      }
+    return payments.value.filter(
+      (payment) =>
+        [
+          payment.reference,
+          payment.description,
+          payment.status,
+          payment.date,
+        ].some((value) =>
+          String(value)
+            .toLowerCase()
+            .includes(search)
+        )
     );
+  });
 
-    if (!response?.success) {
-      paymentError.value =
-        response?.message ||
-        "Unable to create payment.";
-
-      return;
-    }
-
-    /*
-     * Expected backend response:
-     *
-     * {
-     *   success: true,
-     *   data: {
-     *     payment: {
-     *       txRef: "...",
-     *       amount: 500000,
-     *       currency: "NGN"
-     *     }
-     *   }
-     * }
-     *
-     * Amount is READ from backend.
-     * It is NOT sent to your backend.
-     */
-
-    const data = response.data?.data || response.data;
-
-    const payment = data?.payment;
-
-    if (!payment?.txRef) {
-      paymentError.value =
-        "Payment reference was not returned by the server.";
-
-      return;
-    }
-
-    /*
-     * If your payment gateway component/function is called `pay`,
-     * use the amount returned by the backend here.
-     *
-     * The amount is going FROM backend -> frontend -> payment gateway.
-     * It is NOT being supplied by the student.
-     */
-
-    const amountInKobo = Number(payment.amount);
-
-    if (!Number.isFinite(amountInKobo) || amountInKobo <= 0) {
-      paymentError.value =
-        "Invalid payment amount returned by server.";
-
-      return;
-    }
-
-    const amountInNaira = amountInKobo / 100;
-
-    paymentAmount.value = formatCurrency(amountInNaira);
-
-    /*
-     * If your project already has the Paystack `pay()` helper,
-     * call it here.
-     *
-     * Replace ONLY the gateway-specific section if your existing
-     * payment composable uses a different function.
-     */
-
-    if (typeof pay === "function") {
-      pay({
-        email: data?.customer?.email || "",
-        amount: amountInKobo,
-        reference: payment.txRef,
-
-        async onSuccess(transaction: any) {
-          try {
-            const verifyResponse = await useApiFetch(
-              "/payments/student/verify",
-              {
-                method: "POST",
-                body: {
-                  txRef: transaction.reference,
-                },
-              }
-            );
-
-            if (!verifyResponse?.success) {
-              paymentError.value =
-                verifyResponse?.message ||
-                "Payment verification failed.";
-
-              return;
-            }
-
-            hasPaidForAccess.value = true;
-
-            paymentSuccess.value =
-              "Payment successful. Your access has been activated.";
-
-            activationCode.value =
-              verifyResponse?.data?.activationCode ||
-              verifyResponse?.data?.data?.activationCode ||
-              "";
-
-            await loadPaymentHistory();
-          } catch (error) {
-            console.error(
-              "Payment verification error:",
-              error
-            );
-
-            paymentError.value =
-              "Payment was received but verification failed. Please check your payment history.";
-          } finally {
-            processing.value = false;
-          }
-        },
-
-        onCancel() {
-          paymentError.value = "Payment was cancelled.";
-          processing.value = false;
-        },
-
-        onClose() {
-          processing.value = false;
-        },
-      });
-    } else {
-      /*
-       * This means your existing Paystack `pay()` helper is not
-       * available in this component.
-       *
-       * The backend payment was successfully created, so do not
-       * create another payment. Connect your existing gateway
-       * composable here.
-       */
-      paymentSuccess.value =
-        "Payment request created successfully.";
-
-      console.log("Payment created:", payment);
-    }
-  } catch (error: any) {
-    console.error("Create payment error:", error);
-
-    paymentError.value =
-      error?.data?.message ||
-      error?.message ||
-      "Unable to start payment.";
-  } finally {
-    if (!paymentError.value) {
-      /*
-       * Keep processing active while the payment gateway is open.
-       * The gateway callbacks will reset it.
-       */
-    } else {
-      processing.value = false;
-    }
-  }
-};
-
-/* --------------------------------------------------
- * Payment History
- * -------------------------------------------------- */
-
-const loadPaymentHistory = async () => {
-  try {
-    const response = await useApiFetch(
-      "/payments/student/history",
-      {
-        method: "GET",
-      }
-    );
-
-    if (!response?.success) return;
-
-    const data =
-      response.data?.data ||
-      response.data ||
-      [];
-
-    if (Array.isArray(data)) {
-      payments.value = data.map(
-        (item: any, index: number) => ({
-          id: item._id || item.id || index,
-          reference:
-            item.txRef ||
-            item.reference ||
-            `PAY-${index + 1}`,
-          description:
-            item.description ||
-            item.subscriptionType ||
-            "Student Payment",
-          amount:
-            Number(item.amount || 0) / 100,
-          date: item.createdAt
-            ? new Date(item.createdAt).toLocaleDateString(
-                "en-NG",
-                {
-                  day: "2-digit",
-                  month: "long",
-                  year: "numeric",
-                }
-              )
-            : "",
-          status: normalizePaymentStatus(
-            item.status
-          ),
-        })
-      );
-    }
-  } catch (error) {
-    console.error(
-      "Unable to load payment history:",
-      error
-    );
-  }
-};
+// ============================================================
+// NORMALIZE STATUS
+// ============================================================
 
 const normalizePaymentStatus = (
   status: string
 ): PaymentStatus => {
-  switch (String(status).toUpperCase()) {
+  switch (
+    String(status).toUpperCase()
+  ) {
     case "SUCCESS":
     case "SUCCESSFUL":
       return "Successful";
@@ -413,59 +196,221 @@ const normalizePaymentStatus = (
   }
 };
 
-/* --------------------------------------------------
- * Pending Payment Request
- * -------------------------------------------------- */
+// ============================================================
+// LOAD PAYMENT HISTORY
+// ============================================================
 
-const requestingPayment = ref<
-  number | string | null
->(null);
+const loadPaymentHistory =
+  async () => {
+    try {
+      const response =
+        await useApiFetch(
+          "/payments/history",
+          {
+            method: "GET",
+          }
+        );
+
+      if (!response?.success) {
+        return;
+      }
+
+      const data =
+        response.data?.data ??
+        response.data ??
+        [];
+        console.log(data,'fgfdgdfdfgdf');
+      if (!Array.isArray(data.payments)) {
+        return;
+      }
+      console.log(data,'fgfdgdfdfgdf');
+      
+      payments.value =
+        data.payments.map(
+          (
+            item: any,
+            index: number
+          ) => ({
+            id:
+              item._id ||
+              item.id ||
+              index,
+
+            reference:
+              item.txRef ||
+              item.reference ||
+              `PAY-${index + 1}`,
+
+            description:
+              item.description ||
+              item.paymentPurpose ||
+              item.subscriptionType ||
+              "Student Payment",
+
+            amount:
+              Number(
+                item.amount || 0
+              ) / 100,
+
+            date: item.createdAt
+              ? new Date(
+                  item.createdAt
+                ).toLocaleDateString(
+                  "en-NG",
+                  {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric",
+                  }
+                )
+              : "",
+
+            status:
+              normalizePaymentStatus(
+                item.status
+              ),
+          })
+        );
+    } catch (error) {
+      console.error(
+        "Unable to load payment history:",
+        error
+      );
+    }
+  };
+
+// ============================================================
+// PAYMENT INITIALIZED
+// ============================================================
+
+const onPaymentInitialized =
+  (payment: any) => {
+    console.log(
+      "Payment initialized:",
+      payment
+    );
+
+    const amount =
+      Number(payment?.amount || 0) /
+      100;
+
+    if (amount > 0) {
+      paymentAmount.value =
+        formatCurrency(amount);
+    }
+
+    paymentError.value = "";
+    paymentSuccess.value = "";
+  };
+
+// ============================================================
+// PAYMENT SUCCESS
+// ============================================================
+
+const onPaymentSuccess =
+  async (payment: any) => {
+    console.log(
+      "Payment successful:",
+      payment
+    );
+
+    hasPaidForAccess.value =
+      true;
+
+    paymentSuccess.value =
+      "Payment successful. Your access has been activated.";
+
+    activationCode.value =
+      payment?.activationCode ||
+      payment?.data?.activationCode ||
+      "";
+
+    await loadPaymentHistory();
+  };
+
+// ============================================================
+// PAYMENT CANCEL
+// ============================================================
+
+const onPaymentCancel =
+  () => {
+    paymentError.value =
+      "Payment was cancelled.";
+
+    paymentSuccess.value = "";
+  };
+
+// ============================================================
+// PAYMENT ERROR
+// ============================================================
+
+const onPaymentError =
+  (error: any) => {
+    console.error(
+      "Payment error:",
+      error
+    );
+
+    paymentError.value =
+      error?.message ||
+      "Unable to process payment.";
+
+    paymentSuccess.value = "";
+  };
+
+// ============================================================
+// RETRY PENDING PAYMENT
+// ============================================================
 
 const requestPayment = async (
   payment: Payment
 ) => {
-  if (requestingPayment.value !== null) {
+  if (
+    requestingPayment.value !==
+    null
+  ) {
     return;
   }
 
-  requestingPayment.value = payment.id;
+  requestingPayment.value =
+    payment.id;
 
   try {
-    /*
-     * Do not send the amount.
-     *
-     * If this payment already exists in the backend,
-     * the backend identifies it from the reference.
-     */
-    const response = await useApiFetch(
-      "/payments/student/verify",
-      {
-        method: "POST",
-        body: {
-          txRef: payment.reference,
-        },
-      }
-    );
+    const response =
+      await useApiFetch(
+        "/payments/verify",
+        {
+          method: "POST",
 
-    if (response?.success) {
-      await loadPaymentHistory();
-    }
+          body: {
+            ref: payment.reference,
+          },
+        }
+      );
+        console.log(response, 'dssssssssssdddddddddddddddsssssssssssssssssss');
+        
+    // if (response?.success) {
+    //   await loadPaymentHistory();
+    // }
   } catch (error) {
     console.error(
-      "Payment request error:",
+      "Payment verification error:",
       error
     );
   } finally {
-    requestingPayment.value = null;
+    requestingPayment.value =
+      null;
   }
 };
 
-/* --------------------------------------------------
- * Copy Activation Code
- * -------------------------------------------------- */
+// ============================================================
+// COPY ACTIVATION CODE
+// ============================================================
 
 const copyCode = async () => {
-  if (!activationCode.value) return;
+  if (!activationCode.value) {
+    return;
+  }
 
   try {
     await navigator.clipboard.writeText(
@@ -485,82 +430,78 @@ const copyCode = async () => {
   }
 };
 
-/* --------------------------------------------------
- * Theme
- * -------------------------------------------------- */
+// ============================================================
+// THEME
+// ============================================================
 
 const selectedTheme =
-  ref<"light" | "dark">("light");
+  ref<"light" | "dark">(
+    "light"
+  );
 
 const setTheme = (
   theme: "light" | "dark"
 ) => {
-  selectedTheme.value = theme;
+  selectedTheme.value =
+    theme;
 
-  if (theme === "dark") {
-    document.documentElement.classList.add(
-      "dark"
-    );
+  document.documentElement.classList.toggle(
+    "dark",
+    theme === "dark"
+  );
 
-    localStorage.setItem(
-      "theme",
-      "dark"
-    );
-  } else {
-    document.documentElement.classList.remove(
-      "dark"
-    );
-
-    localStorage.setItem(
-      "theme",
-      "light"
-    );
-  }
+  localStorage.setItem(
+    "theme",
+    theme
+  );
 };
 
-/* --------------------------------------------------
- * Initial Load
- * -------------------------------------------------- */
+// ============================================================
+// INITIAL LOAD
+// ============================================================
 
 onMounted(async () => {
-  const savedTheme =
-    localStorage.getItem("theme");
-
-  if (savedTheme === "dark") {
-    selectedTheme.value = "dark";
-
-    document.documentElement.classList.add(
-      "dark"
+  const theme =
+    localStorage.getItem(
+      "theme"
     );
-  } else {
-    selectedTheme.value = "light";
 
-    document.documentElement.classList.remove(
-      "dark"
-    );
-  }
+  setTheme(
+    theme === "dark"
+      ? "dark"
+      : "light"
+  );
 
   await loadPaymentHistory();
 });
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-950">
-    <div class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-      <!-- ==========================================
-           MOBILE APP ACCESS TOKEN
-           ========================================== -->
-    
-      <div
+  <div
+    class="min-h-screen bg-gray-50 dark:bg-gray-950"
+  >
+    <div
+      class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8"
+    >
+
+      <!-- =====================================================
+           MOBILE APP ACCESS
+      ====================================================== -->
+
+      <section
         class="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
       >
         <div class="p-5 sm:p-6">
-          <!-- Not Paid -->
+
+          <!-- NOT PAID -->
+
           <div
             v-if="!hasPaidForAccess"
-            class="flex flex-col items-center justify-center py-4 text-center sm:flex-row sm:justify-between sm:text-left"
+            class="flex flex-col items-center justify-between py-4 text-center sm:flex-row sm:text-left"
           >
-            <div class="flex items-center gap-4">
+            <div
+              class="flex items-center gap-4"
+            >
               <div
                 class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30"
               >
@@ -571,33 +512,62 @@ onMounted(async () => {
               </div>
 
               <div>
-                <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                <h3
+                  class="text-base font-semibold text-gray-900 dark:text-white"
+                >
                   Activate Your Mobile App
                 </h3>
 
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <p
+                  class="mt-1 text-sm text-gray-500 dark:text-gray-400"
+                >
                   Purchase an access token to unlock the mobile app.
                 </p>
               </div>
             </div>
 
-            <button
-              type="button"
-              class="mt-4 inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:mt-0 sm:w-auto"
-              @click="generateCode"
-            >
-              <Icon name="heroicons:credit-card" class="h-4 w-4" />
+            <!-- REUSABLE PAYMENT -->
 
-              Pay & Generate Code
-            </button>
+            <div
+              class="mt-4 w-full sm:mt-0 sm:w-auto"
+            >
+              <PaymentPaystackPayment
+                :amount="5000"
+                :email="''"
+                payment-purpose="TOKEN_PURCHASE"
+                :metadata="{
+                  source:
+                    'STUDENT_DASHBOARD',
+                  purpose:
+                    'MOBILE_APP_ACTIVATION'
+                }"
+                label="Pay & Generate Code"
+                loading-label="Processing..."
+                @initialized="
+                  onPaymentInitialized
+                "
+                @success="
+                  onPaymentSuccess
+                "
+                @cancel="
+                  onPaymentCancel
+                "
+                @error="
+                  onPaymentError
+                "
+              />
+            </div>
           </div>
 
-          <!-- Paid -->
+          <!-- PAID -->
+
           <div
             v-else
-            class="flex flex-col items-center justify-center py-4 text-center sm:flex-row sm:justify-between sm:text-left"
+            class="flex flex-col items-center justify-between py-4 text-center sm:flex-row sm:text-left"
           >
-            <div class="flex items-center gap-4">
+            <div
+              class="flex items-center gap-4"
+            >
               <div
                 class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-green-50 dark:bg-green-900/30"
               >
@@ -608,18 +578,22 @@ onMounted(async () => {
               </div>
 
               <div>
-                <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                <h3
+                  class="text-base font-semibold text-gray-900 dark:text-white"
+                >
                   Your Activation Code
                 </h3>
 
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <p
+                  class="mt-1 text-sm text-gray-500 dark:text-gray-400"
+                >
                   Use this code in the mobile app to activate your account.
                 </p>
               </div>
             </div>
 
             <div
-              class="mt-4 flex w-full shrink-0 items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 p-1.5 dark:border-gray-700 dark:bg-gray-800 sm:mt-0 sm:w-auto"
+              class="mt-4 flex w-full items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 p-1.5 dark:border-gray-700 dark:bg-gray-800 sm:mt-0 sm:w-auto"
             >
               <code
                 class="px-3 font-mono text-base font-bold tracking-widest text-gray-900 dark:text-white"
@@ -629,65 +603,109 @@ onMounted(async () => {
 
               <button
                 type="button"
-                class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-gray-200 text-gray-600 transition hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                 title="Copy Code"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-gray-200 text-gray-600 transition hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                 @click="copyCode"
               >
                 <Icon
-                  :name="copied ? 'heroicons:check' : 'heroicons:clipboard-document'"
+                  :name="
+                    copied
+                      ? 'heroicons:check'
+                      : 'heroicons:clipboard-document'
+                  "
                   class="h-4 w-4"
                 />
               </button>
             </div>
           </div>
+
+          <!-- ERROR -->
+
+          <p
+            v-if="paymentError"
+            class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400"
+          >
+            {{ paymentError }}
+          </p>
+
+          <!-- SUCCESS -->
+
+          <p
+            v-if="paymentSuccess"
+            class="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-600 dark:bg-green-900/20 dark:text-green-400"
+          >
+            {{ paymentSuccess }}
+          </p>
         </div>
-      </div>
+      </section>
 
-      <!-- ==========================================
-           DASHBOARD GRID
-           ========================================== -->
+      <!-- =====================================================
+           DASHBOARD
+      ====================================================== -->
 
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <!-- Welcome -->
-        <div
+      <div
+        class="grid grid-cols-1 gap-6 lg:grid-cols-3"
+      >
+
+        <!-- WELCOME -->
+
+        <section
           class="relative overflow-hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
         >
           <div class="relative z-10">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">
-              Welcome back, {{ studentName }}! 👋
+            <h2
+              class="text-xl font-bold text-gray-900 dark:text-white"
+            >
+              Welcome back,
+              {{ studentName }}! 👋
             </h2>
 
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <p
+              class="mt-1 text-sm text-gray-500 dark:text-gray-400"
+            >
               {{ studentLevel }}
             </p>
 
-            <div class="mt-4 flex flex-col items-start gap-3">
+            <div
+              class="mt-4 flex flex-col items-start gap-3"
+            >
               <span
-                class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 dark:bg-green-900/30 dark:text-green-400 dark:ring-green-400/20"
+                class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 dark:bg-green-900/30 dark:text-green-400"
               >
                 Profile Completed
               </span>
 
               <NuxtLink
                 to="/student/setting"
-                class="inline-flex h-9 items-center justify-center rounded-lg bg-indigo-100 px-4 text-sm font-medium text-indigo-700 transition hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50"
+                class="inline-flex h-9 items-center justify-center rounded-lg bg-indigo-100 px-4 text-sm font-medium text-indigo-700 transition hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
               >
                 Update Profile
               </NuxtLink>
             </div>
           </div>
 
-          <div class="absolute bottom-0 right-0 z-0 h-32 w-32 opacity-80">
-          <img src="/images/pricing.png" alt="" srcset="">
+          <div
+            class="absolute bottom-0 right-0 z-0 h-32 w-32 opacity-80"
+          >
+            <img
+              src="/images/pricing.png"
+              alt=""
+              class="h-full w-full object-contain"
+            />
           </div>
-        </div>
+        </section>
 
-        <!-- Payment Summary -->
-        <div
+        <!-- PAYMENT SUMMARY -->
+
+        <section
           class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
         >
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">
+          <div
+            class="flex items-center justify-between"
+          >
+            <span
+              class="text-sm font-medium text-gray-500 dark:text-gray-400"
+            >
               Payment
             </span>
 
@@ -700,7 +718,9 @@ onMounted(async () => {
           </div>
 
           <div class="mt-4">
-            <span class="text-3xl font-bold text-gray-900 dark:text-white">
+            <span
+              class="text-3xl font-bold text-gray-900 dark:text-white"
+            >
               {{ paymentAmount }}
             </span>
           </div>
@@ -708,40 +728,52 @@ onMounted(async () => {
           <div
             class="mt-6 flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-800"
           >
-            <div class="flex flex-col">
+            <div>
               <span
                 class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"
               >
-                <Icon name="heroicons:check-circle" class="h-3 w-3 text-green-500" />
-
+                <Icon
+                  name="heroicons:check-circle"
+                  class="h-3 w-3 text-green-500"
+                />
                 Paid
               </span>
 
-              <span class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+              <span
+                class="mt-1 block text-sm font-semibold text-gray-900 dark:text-white"
+              >
                 {{ paidAmount }}
               </span>
             </div>
 
-            <div class="h-6 w-px bg-gray-200 dark:bg-gray-700"></div>
+            <div
+              class="h-6 w-px bg-gray-200 dark:bg-gray-700"
+            />
 
-            <div class="flex flex-col items-end">
+            <div class="text-right">
               <span
-                class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"
+                class="flex items-center justify-end gap-1 text-xs text-gray-500 dark:text-gray-400"
               >
                 Debt
 
-                <Icon name="heroicons:exclamation-circle" class="h-3 w-3 text-red-500" />
+                <Icon
+                  name="heroicons:exclamation-circle"
+                  class="h-3 w-3 text-red-500"
+                />
               </span>
 
-              <span class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+              <span
+                class="mt-1 block text-sm font-semibold text-gray-900 dark:text-white"
+              >
                 {{ debtAmount }}
               </span>
             </div>
           </div>
-        </div>
+        </section>
 
-        <!-- Portal Closing Date -->
-        <div
+        <!-- CLOSING DATE -->
+
+        <section
           class="relative overflow-hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
         >
           <div class="relative z-10">
@@ -754,56 +786,94 @@ onMounted(async () => {
               />
             </div>
 
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Not Set</h3>
+            <h3
+              class="text-lg font-bold text-gray-900 dark:text-white"
+            >
+              Not Set
+            </h3>
 
-            <p class="text-sm text-gray-500 dark:text-gray-400">Portal Closing Date</p>
+            <p
+              class="text-sm text-gray-500 dark:text-gray-400"
+            >
+              Portal Closing Date
+            </p>
           </div>
 
-          <div class="absolute bottom-0 left-0 right-0 h-16 w-full">
+          <div
+            class="absolute bottom-0 left-0 right-0 h-16"
+          >
             <img
               src="/images/calendar.svg"
               alt="Calendar Illustration"
               class="h-full w-full object-cover opacity-80"
             />
           </div>
-        </div>
+        </section>
       </div>
 
-      <!-- ==========================================
+      <!-- =====================================================
            PAYMENT HISTORY
-           ========================================== -->
+      ====================================================== -->
 
-      <div
+      <section
         class="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
       >
-        <!-- Header -->
-        <div class="border-b border-gray-200 p-5 dark:border-gray-800 sm:p-6">
-          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div
+          class="border-b border-gray-200 p-5 dark:border-gray-800 sm:p-6"
+        >
+          <div
+            class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+          >
             <div>
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2
+                class="text-lg font-semibold text-gray-900 dark:text-white"
+              >
                 Payment History
               </h2>
 
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p
+                class="mt-1 text-sm text-gray-500 dark:text-gray-400"
+              >
                 View your payments and payment status.
               </p>
             </div>
 
-            <!-- Request Payment -->
-            <button
-              type="button"
-              class="mt-4 inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 sm:mt-0 sm:w-auto"
-              @click="generateCode"
+            <div
+              class="w-full sm:w-auto"
             >
-              <Icon name="heroicons:credit-card" class="h-4 w-4" />
-
-              Pay & Generate Code
-            </button>
+              <PaystackPayment
+                :amount="5000"
+                :email="''"
+                payment-purpose="TOKEN_PURCHASE"
+                :metadata="{
+                  source:
+                    'STUDENT_DASHBOARD',
+                  purpose:
+                    'MOBILE_APP_ACTIVATION'
+                }"
+                label="Pay & Generate Code"
+                @initialized="
+                  onPaymentInitialized
+                "
+                @success="
+                  onPaymentSuccess
+                "
+                @cancel="
+                  onPaymentCancel
+                "
+                @error="
+                  onPaymentError
+                "
+              />
+            </div>
           </div>
         </div>
 
-        <!-- Search -->
-        <div class="border-b border-gray-200 p-5 dark:border-gray-800 sm:p-6">
+        <!-- SEARCH -->
+
+        <div
+          class="border-b border-gray-200 p-5 dark:border-gray-800 sm:p-6"
+        >
           <div class="relative max-w-sm">
             <Icon
               name="heroicons:magnifying-glass"
@@ -814,33 +884,55 @@ onMounted(async () => {
               v-model="paymentSearch"
               type="text"
               placeholder="Search payments..."
-              class="h-10 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500"
+              class="h-10 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
             />
           </div>
         </div>
 
-        <!-- Desktop Table -->
-        <div class="hidden overflow-x-auto md:block">
-          <table class="w-full text-left text-sm">
+        <!-- DESKTOP -->
+
+        <div
+          class="hidden overflow-x-auto md:block"
+        >
+          <table
+            class="w-full text-left text-sm"
+          >
             <thead
               class="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800/50 dark:text-gray-400"
             >
               <tr>
-                <th class="px-6 py-4 font-semibold">Reference</th>
+                <th class="px-6 py-4 font-semibold">
+                  Reference
+                </th>
 
-                <th class="px-6 py-4 font-semibold">Description</th>
+                <th class="px-6 py-4 font-semibold">
+                  Description
+                </th>
 
-                <th class="px-6 py-4 font-semibold">Amount</th>
+                <th class="px-6 py-4 font-semibold">
+                  Amount
+                </th>
 
-                <th class="px-6 py-4 font-semibold">Date</th>
+                <th class="px-6 py-4 font-semibold">
+                  Date
+                </th>
 
-                <th class="px-6 py-4 font-semibold">Status</th>
+                <th class="px-6 py-4 font-semibold">
+                  Status
+                </th>
 
-                <th class="px-6 py-4 text-right font-semibold">Action</th>
+                <th
+                  class="px-6 py-4 text-right font-semibold"
+                >
+                  Action
+                </th>
               </tr>
             </thead>
 
-            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            <tbody
+              v-if="filteredPayments.length"
+              class="divide-y divide-gray-100 dark:divide-gray-800"
+            >
               <tr
                 v-for="payment in filteredPayments"
                 :key="payment.id"
@@ -852,7 +944,9 @@ onMounted(async () => {
                   {{ payment.reference }}
                 </td>
 
-                <td class="whitespace-nowrap px-6 py-4 text-gray-600 dark:text-gray-400">
+                <td
+                  class="whitespace-nowrap px-6 py-4 text-gray-600 dark:text-gray-400"
+                >
                   {{ payment.description }}
                 </td>
 
@@ -862,54 +956,104 @@ onMounted(async () => {
                   {{ formatCurrency(payment.amount) }}
                 </td>
 
-                <td class="whitespace-nowrap px-6 py-4 text-gray-500 dark:text-gray-400">
+                <td
+                  class="whitespace-nowrap px-6 py-4 text-gray-500 dark:text-gray-400"
+                >
                   {{ payment.date }}
                 </td>
 
-                <td class="whitespace-nowrap px-6 py-4">
+                <td
+                  class="whitespace-nowrap px-6 py-4"
+                >
                   <span
                     class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset"
-                    :class="statusClass(payment.status)"
+                    :class="
+                      statusConfig[
+                        payment.status
+                      ].class
+                    "
                   >
-                    <Icon :name="statusIcon(payment.status)" class="h-3.5 w-3.5" />
+                    <Icon
+                      :name="
+                        statusConfig[
+                          payment.status
+                        ].icon
+                      "
+                      class="h-3.5 w-3.5"
+                    />
 
                     {{ payment.status }}
                   </span>
                 </td>
 
-                <td class="whitespace-nowrap px-6 py-4 text-right">
+                <td
+                  class="whitespace-nowrap px-6 py-4 text-right"
+                >
                   <button
-                    v-if="payment.status === 'Pending'"
+                    v-if="
+                      payment.status ===
+                      'Pending'
+                    "
                     type="button"
-                    class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50"
-                    :disabled="requestingPayment === payment.id"
-                    @click="requestPayment(payment)"
+                    :disabled="
+                      requestingPayment ===
+                      payment.id
+                    "
+                    class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-100 disabled:opacity-50 dark:bg-indigo-900/30 dark:text-indigo-400"
+                    @click="
+                      requestPayment(
+                        payment
+                      )
+                    "
                   >
                     <Icon
                       :name="
-                        requestingPayment === payment.id
+                        requestingPayment ===
+                        payment.id
                           ? 'heroicons:arrow-path'
                           : 'heroicons:arrow-up-right'
                       "
                       class="h-4 w-4"
-                      :class="requestingPayment === payment.id ? 'animate-spin' : ''"
+                      :class="
+                        requestingPayment ===
+                        payment.id
+                          ? 'animate-spin'
+                          : ''
+                      "
                     />
 
-                    {{ requestingPayment === payment.id ? "Requesting..." : "Request" }}
+                    {{
+                      requestingPayment ===
+                      payment.id
+                        ? "Requesting..."
+                        : "Request"
+                    }}
                   </button>
 
-                  <span v-else class="text-xs text-gray-400 dark:text-gray-500"> — </span>
+                  <span
+                    v-else
+                    class="text-xs text-gray-400 dark:text-gray-500"
+                  >
+                    —
+                  </span>
                 </td>
               </tr>
+            </tbody>
 
-              <tr v-if="filteredPayments.length === 0">
-                <td colspan="6" class="px-6 py-10 text-center">
+            <tbody v-else>
+              <tr>
+                <td
+                  colspan="6"
+                  class="px-6 py-10 text-center"
+                >
                   <Icon
                     name="heroicons:banknotes"
                     class="mx-auto h-8 w-8 text-gray-300 dark:text-gray-700"
                   />
 
-                  <p class="mt-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+                  <p
+                    class="mt-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                  >
                     No payments found
                   </p>
                 </td>
@@ -918,74 +1062,152 @@ onMounted(async () => {
           </table>
         </div>
 
-        <!-- Mobile Payment List -->
-        <div class="divide-y divide-gray-100 md:hidden dark:divide-gray-800">
-          <div v-for="payment in filteredPayments" :key="payment.id" class="p-5">
-            <div class="flex items-start justify-between gap-4">
+        <!-- MOBILE -->
+
+        <div
+          class="divide-y divide-gray-100 md:hidden dark:divide-gray-800"
+        >
+          <div
+            v-for="payment in filteredPayments"
+            :key="payment.id"
+            class="p-5"
+          >
+            <div
+              class="flex items-start justify-between gap-4"
+            >
               <div>
-                <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                <p
+                  class="text-sm font-semibold text-gray-900 dark:text-white"
+                >
                   {{ payment.description }}
                 </p>
 
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p
+                  class="mt-1 text-xs text-gray-500 dark:text-gray-400"
+                >
                   {{ payment.reference }}
                 </p>
               </div>
 
               <span
                 class="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset"
-                :class="statusClass(payment.status)"
+                :class="
+                  statusConfig[
+                    payment.status
+                  ].class
+                "
               >
-                <Icon :name="statusIcon(payment.status)" class="h-3.5 w-3.5" />
+                <Icon
+                  :name="
+                    statusConfig[
+                      payment.status
+                    ].icon
+                  "
+                  class="h-3.5 w-3.5"
+                />
 
                 {{ payment.status }}
               </span>
             </div>
 
-            <div class="mt-4 flex items-center justify-between">
+            <div
+              class="mt-4 flex items-center justify-between"
+            >
               <div>
-                <p class="text-base font-bold text-gray-900 dark:text-white">
-                  {{ formatCurrency(payment.amount) }}
+                <p
+                  class="text-base font-bold text-gray-900 dark:text-white"
+                >
+                  {{
+                    formatCurrency(
+                      payment.amount
+                    )
+                  }}
                 </p>
 
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p
+                  class="mt-1 text-xs text-gray-500 dark:text-gray-400"
+                >
                   {{ payment.date }}
                 </p>
               </div>
 
               <button
-                v-if="payment.status === 'Pending'"
+                v-if="
+                  payment.status ===
+                  'Pending'
+                "
                 type="button"
-                class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50"
-                :disabled="requestingPayment === payment.id"
-                @click="requestPayment(payment)"
+                :disabled="
+                  requestingPayment ===
+                  payment.id
+                "
+                class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-100 disabled:opacity-50 dark:bg-indigo-900/30 dark:text-indigo-400"
+                @click="
+                  requestPayment(
+                    payment
+                  )
+                "
               >
-                <Icon name="heroicons:arrow-up-right" class="h-4 w-4" />
+                <Icon
+                  :name="
+                    requestingPayment ===
+                    payment.id
+                      ? 'heroicons:arrow-path'
+                      : 'heroicons:arrow-up-right'
+                  "
+                  class="h-4 w-4"
+                  :class="
+                    requestingPayment ===
+                    payment.id
+                      ? 'animate-spin'
+                      : ''
+                  "
+                />
 
-                {{ requestingPayment === payment.id ? "Requesting..." : "Request" }}
+                {{
+                  requestingPayment ===
+                  payment.id
+                    ? "Requesting..."
+                    : "Request"
+                }}
               </button>
             </div>
           </div>
 
-          <div v-if="filteredPayments.length === 0" class="px-5 py-10 text-center">
+          <div
+            v-if="
+              filteredPayments.length ===
+              0
+            "
+            class="px-5 py-10 text-center"
+          >
             <Icon
               name="heroicons:banknotes"
               class="mx-auto h-8 w-8 text-gray-300 dark:text-gray-700"
             />
 
-            <p class="mt-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+            <p
+              class="mt-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+            >
               No payments found
             </p>
           </div>
         </div>
 
-        <!-- Footer -->
-        <div class="border-t border-gray-200 px-5 py-4 dark:border-gray-800 sm:px-6">
+        <!-- FOOTER -->
+
+        <div
+          class="border-t border-gray-200 px-5 py-4 dark:border-gray-800 sm:px-6"
+        >
           <div
             class="flex flex-col gap-2 text-xs text-gray-500 dark:text-gray-400 sm:flex-row sm:items-center sm:justify-between"
           >
             <span>
-              Showing {{ filteredPayments.length }} of {{ payments.length }} payments
+              Showing
+              {{ filteredPayments.length }}
+              of
+              {{ payments.length }}
+              payments
             </span>
 
             <NuxtLink
@@ -996,32 +1218,37 @@ onMounted(async () => {
             </NuxtLink>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- ==========================================
-           RECENT NOTIFICATIONS
-           ========================================== -->
+      <!-- =====================================================
+           NOTIFICATIONS
+      ====================================================== -->
 
-      <div
+      <section
         class="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 lg:w-1/3"
       >
-        <div class="flex items-center justify-between">
-          <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+        <div
+          class="flex items-center justify-between"
+        >
+          <h3
+            class="text-base font-semibold text-gray-900 dark:text-white"
+          >
             Recent Notifications
           </h3>
 
-          <Icon name="heroicons:bell" class="h-5 w-5 text-gray-400" />
+          <Icon
+            name="heroicons:bell"
+            class="h-5 w-5 text-gray-400"
+          />
         </div>
 
-        <div class="mt-4">
-          <button
-            type="button"
-            class="w-full rounded-lg bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50"
-          >
-            View all Notifications
-          </button>
-        </div>
-      </div>
+        <button
+          type="button"
+          class="mt-4 w-full rounded-lg bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400"
+        >
+          View all Notifications
+        </button>
+      </section>
     </div>
   </div>
 </template>
