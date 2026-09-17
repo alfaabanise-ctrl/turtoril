@@ -481,7 +481,7 @@ onMounted(async () => {
     class="min-h-screen bg-gray-50 dark:bg-gray-950"
   >
     <div
-      class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8"
+      class="mx-auto w-full max-w-7xl px-0 py-6 sm:px-6 lg:px-8"
     >
 
       <!-- =====================================================
@@ -491,7 +491,7 @@ onMounted(async () => {
       <section
         class="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
       >
-        <div class="p-5 sm:p-6">
+        <div class="p-2 sm:p-6">
 
           <!-- NOT PAID -->
 
@@ -650,7 +650,7 @@ onMounted(async () => {
         <!-- WELCOME -->
 
         <section
-          class="relative overflow-hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+          class="relative overflow-hidden rounded-xl border border-gray-200 bg-white p-2 sm:p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
         >
           <div class="relative z-10">
             <h2
@@ -934,7 +934,7 @@ onMounted(async () => {
               class="divide-y divide-gray-100 dark:divide-gray-800"
             >
               <tr
-                v-for="payment in filteredPayments"
+                v-for="payment in filteredPayments.slice(0, 7)"
                 :key="payment.id"
                 class="transition hover:bg-gray-50 dark:hover:bg-gray-800/40"
               >

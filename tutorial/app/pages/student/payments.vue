@@ -1,711 +1,1451 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 definePageMeta({
   layout: "nav",
 });
 
-/* --------------------------------------------------
- * Types
- * -------------------------------------------------- */
+/* =========================================================
+ * TYPES
+ * ========================================================= */
 
-type PaymentStatus = "Successful" | "Pending" | "Failed" | "Refunded";
+type PaymentStatus =
+  | "Success"
+  | "Pending"
+  | "Failed"
+  | "Refunded";
 
 type PaymentMethod =
-  | "Paystack"
-  | "Card"
-  | "Bank Transfer"
+  | "CARD"
+  | "BANK_TRANSFER"
   | "USSD"
-  | "Scratch Card";
-
-type PaymentType =
-  | "GENERAL_PAYMENT"
-  | "PIN_PURCHASE"
-  | "SCRATCH_CARD"
-  | "SUBSCRIPTION";
+  | "ACCOUNT"
+  | "QR"
+  | "MOBILE_MONEY"
+  | "UNKNOWN";
 
 interface Payment {
   id: string;
-  reference: string;
-  description: string;
-  amount: number; // Naira
-  paymentMethod: PaymentMethod;
-  paymentType: PaymentType | string;
+  student: string;
+  email: string;
+  amount: number;
+  plan: string;
+  method: PaymentMethod;
+  teacher: string;
   date: string;
   status: PaymentStatus;
-  raw?: any; // original server payload for detail/retry
 }
 
-/* --------------------------------------------------
- * Composables
- * -------------------------------------------------- */
+interface PaymentApiResponse {
+  success?: boolean;
+  message?: string;
+  payments?: any[];
+  summary?: any;
+}
 
-const { pay } = usePaystack();
+/* =========================================================
+ * CONFIG
+ * ========================================================= */
 
-/* --------------------------------------------------
- * State
- * -------------------------------------------------- */
+const config = useRuntimeConfig();
+
+/* =========================================================
+ * CSR STATE
+ * ========================================================= */
+
+/*
+ * IMPORTANT:
+ * Do NOT call this apiData.
+ * We use paymentsData to avoid any naming collision.
+ */
+
+const paymentsData = ref<PaymentApiResponse | null>(null);
+
+const loadingPayments = ref(false);
+
+const paymentError = ref<string | null>(null);
+
+/* =========================================================
+ * FILTERS
+ * ========================================================= */
 
 const search = ref("");
+
 const selectedStatus = ref<"All" | PaymentStatus>("All");
 
-const payments = ref<Payment[]>([]);
-const loading = ref(false);
-const errorMessage = ref("");
-const processingRef = ref<string | null>(null);
+const selectedMethod = ref<"All" | PaymentMethod>("All");
 
-const page = ref(1);
-const limit = ref(20);
-const total = ref(0);
-const totalPages = ref(0);
+/* =========================================================
+ * LOAD PAYMENTS
+ * ========================================================= */
 
-/* --------------------------------------------------
- * Mappers
- * -------------------------------------------------- */
-
-function mapStatus(raw: string): PaymentStatus {
-  const value = String(raw || "").toUpperCase();
-
-  switch (value) {
-    case "SUCCESS":
-    case "SUCCESSFUL":
-    case "COMPLETED":
-    case "PAID":
-      return "Successful";
-
-    case "PENDING":
-    case "PROCESSING":
-    case "CREATED":
-      return "Pending";
-
-    case "FAILED":
-    case "CANCELLED":
-    case "EXPIRED":
-    case "DECLINED":
-      return "Failed";
-
-    case "REFUNDED":
-    case "PARTIALLY_REFUNDED":
-      return "Refunded";
-
-    default:
-      return "Pending";
-  }
-}
-
-function mapMethod(raw: string | null | undefined): PaymentMethod {
-  const value = String(raw || "").toUpperCase();
-
-  if (value.includes("SCRATCH")) return "Scratch Card";
-  if (value.includes("CARD")) return "Card";
-  if (value.includes("TRANSFER")) return "Bank Transfer";
-  if (value.includes("USSD")) return "USSD";
-
-  return "Paystack";
-}
-
-function buildDescription(raw: any): string {
-  const type =
-    raw?.metadata?.paymentType ||
-    raw?.metadata?.purpose ||
-    raw?.paymentType ||
-    "Payment";
-
-  const labels: Record<string, string> = {
-    GENERAL_PAYMENT: "General Payment",
-    PIN_PURCHASE: "PIN Purchase",
-    SCRATCH_CARD: "Scratch Card Purchase",
-    SUBSCRIPTION: "Subscription",
-    JAMB_CBT: "JAMB CBT Subscription",
-  };
-
-  if (labels[type]) return labels[type];
-
-  return String(type)
-    .toLowerCase()
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function formatDate(raw: string | Date | undefined): string {
-  if (!raw) return "—";
-
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return date.toLocaleDateString("en-NG", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function mapPayment(raw: any): Payment {
-  const amountKobo = Number(raw.amount || 0);
-
-  return {
-    id: String(raw._id || raw.id || raw.txRef),
-    reference: raw.txRef || raw.reference || "—",
-    description: buildDescription(raw),
-    amount: amountKobo / 100,
-    paymentMethod: mapMethod(
-      raw.paymentMethod || raw.gateway || raw.metadata?.paymentMethod
-    ),
-    paymentType:
-      raw.metadata?.paymentType || raw.paymentType || "GENERAL_PAYMENT",
-    date: formatDate(raw.paidAt || raw.createdAt),
-    status: mapStatus(raw.status),
-    raw,
-  };
-}
-
-/* --------------------------------------------------
- * API
- * -------------------------------------------------- */
-
-async function fetchPayments() {
-  loading.value = true;
-  errorMessage.value = "";
+async function loadPayments() {
+  loadingPayments.value = true;
+  paymentError.value = null;
 
   try {
-    const query: Record<string, any> = {
-      page: page.value,
-      limit: limit.value,
-    };
+    console.log(
+      "Loading admin payments...",
+      `${config.public.apiUrl}/admin/payments`
+    );
 
-    if (selectedStatus.value !== "All") {
-      const statusMap: Record<PaymentStatus, string> = {
-        Successful: "SUCCESS",
-        Pending: "PENDING",
-        Failed: "FAILED",
-        Refunded: "REFUNDED",
-      };
-      query.status = statusMap[selectedStatus.value];
-    }
+    const response = await $fetch<PaymentApiResponse>(
+      "/admin/payments",
+      {
+        baseURL: config.public.apiUrl,
+        credentials: "include",
+        method: "GET",
+      }
+    );
 
-    const response = await useApiFetch("/payments/history", {
-      method: "GET",
-      query,
-    });
+    console.log("Admin payments response:", response);
 
-    if (!response?.success) {
-      throw new Error(
-        response?.message || "Unable to load payment history."
-      );
-    }
+    /*
+     * IMPORTANT:
+     * Only paymentsData is updated here.
+     */
+    paymentsData.value = response;
 
-    // Server response shape:
-    // { success, message, data: { success, page, limit, total, totalPages, payments: [...] } }
-    const payload = response.data?.data ?? response.data ?? {};
-    const list = Array.isArray(payload.payments)
-      ? payload.payments
-      : Array.isArray(payload)
-        ? payload
-        : [];
+  } catch (err: any) {
+    console.error(
+      "Failed to load payments:",
+      err
+    );
 
-    payments.value = list.map(mapPayment);
-    total.value = payload.total ?? list.length;
-    totalPages.value = payload.totalPages ?? 1;
-  } catch (error: any) {
-    console.error("fetchPayments error:", error);
-    errorMessage.value =
-      error?.data?.message ||
-      error?.message ||
-      "Unable to load payment history.";
-    payments.value = [];
+    paymentError.value =
+      err?.data?.message ||
+      err?.message ||
+      "Failed to load payments.";
+
+    paymentsData.value = null;
+
   } finally {
-    loading.value = false;
+    loadingPayments.value = false;
   }
 }
 
-/* --------------------------------------------------
- * Lifecycle
- * -------------------------------------------------- */
+/* =========================================================
+ * CSR ONLY
+ * ========================================================= */
 
-onMounted(fetchPayments);
+onMounted(() => {
+  loadPayments();
+});
 
-/* --------------------------------------------------
- * Computed
- * -------------------------------------------------- */
+/* =========================================================
+ * STATUS
+ * ========================================================= */
 
-const totalPaid = computed(() =>
-  payments.value
-    .filter((payment) => payment.status === "Successful")
-    .reduce((sum, payment) => sum + payment.amount, 0)
-);
+function normalizeStatus(
+  status: unknown
+): PaymentStatus {
+  const value = String(status || "").toUpperCase();
 
-const pendingPayments = computed(() =>
-  payments.value.filter((payment) => payment.status === "Pending")
-);
+  if (value === "SUCCESS") {
+    return "Success";
+  }
 
-const totalPending = computed(() =>
-  pendingPayments.value.reduce((sum, payment) => sum + payment.amount, 0)
-);
+  if (
+    value === "PENDING" ||
+    value === "CREATED" ||
+    value === "PROCESSING"
+  ) {
+    return "Pending";
+  }
 
-const failedPayments = computed(() =>
-  payments.value.filter((payment) => payment.status === "Failed")
-);
+  if (
+    value === "REFUNDED" ||
+    value === "PARTIALLY_REFUNDED"
+  ) {
+    return "Refunded";
+  }
 
-const scratchCardPayments = computed(() =>
-  payments.value.filter((payment) => payment.paymentMethod === "Scratch Card")
-);
+  return "Failed";
+}
+
+/* =========================================================
+ * PAYMENT METHOD
+ * ========================================================= */
+
+function normalizeMethod(
+  method: unknown
+): PaymentMethod {
+  const value = String(
+    method || "UNKNOWN"
+  ).toUpperCase();
+
+  const validMethods: PaymentMethod[] = [
+    "CARD",
+    "BANK_TRANSFER",
+    "USSD",
+    "ACCOUNT",
+    "QR",
+    "MOBILE_MONEY",
+    "UNKNOWN",
+  ];
+
+  if (
+    validMethods.includes(
+      value as PaymentMethod
+    )
+  ) {
+    return value as PaymentMethod;
+  }
+
+  return "UNKNOWN";
+}
+
+/* =========================================================
+ * PAYMENT LIST
+ * ========================================================= */
+
+const payments = computed<Payment[]>(() => {
+  const rows =
+    paymentsData.value?.payments ?? [];
+
+  return rows.map(
+    (payment: any, index: number) => {
+      const payer =
+        payment?.payer || {};
+
+      const student =
+        payment?.student || {};
+
+      const teacher =
+        payment?.teacher || {};
+
+      const studentName =
+        student.name ||
+        student.fullName ||
+        `${student.firstName || payer.firstName || ""} ${
+          student.lastName || payer.lastName || ""
+        }`.trim() ||
+        "Unknown Student";
+
+      const teacherName =
+        teacher.name ||
+        teacher.fullName ||
+        `${teacher.firstName || ""} ${
+          teacher.lastName || ""
+        }`.trim() ||
+        "Direct";
+
+      return {
+        id:
+          payment?._id ||
+          payment?.id ||
+          payment?.txRef ||
+          `payment-${index}`,
+
+        student: studentName,
+
+        email:
+          student.email ||
+          payer.email ||
+          "—",
+
+        /*
+         * Your backend stores amount in kobo.
+         */
+        amount:
+          Number(payment?.amount || 0) /
+          100,
+
+        plan:
+          payment?.plan ||
+          payment?.subscriptionType ||
+          payment?.paymentPurpose ||
+          "—",
+
+        method:
+          normalizeMethod(
+            payment?.paymentMethod
+          ),
+
+        teacher: teacherName,
+
+        date:
+          payment?.createdAt ||
+          payment?.paidAt ||
+          payment?.date ||
+          "",
+
+        status:
+          normalizeStatus(
+            payment?.status
+          ),
+      };
+    }
+  );
+});
+
+/* =========================================================
+ * FILTERED PAYMENTS
+ * ========================================================= */
 
 const filteredPayments = computed(() => {
-  const query = search.value.trim().toLowerCase();
+  const query =
+    search.value
+      .trim()
+      .toLowerCase();
 
-  return payments.value.filter((payment) => {
-    const matchesStatus =
-      selectedStatus.value === "All" || payment.status === selectedStatus.value;
+  return payments.value.filter(
+    (payment) => {
+      const matchesSearch =
+        !query ||
+        payment.student
+          .toLowerCase()
+          .includes(query) ||
+        payment.email
+          .toLowerCase()
+          .includes(query) ||
+        payment.teacher
+          .toLowerCase()
+          .includes(query) ||
+        payment.plan
+          .toLowerCase()
+          .includes(query);
 
-    const matchesSearch =
-      !query ||
-      payment.reference.toLowerCase().includes(query) ||
-      payment.description.toLowerCase().includes(query) ||
-      payment.paymentMethod.toLowerCase().includes(query) ||
-      payment.status.toLowerCase().includes(query);
+      const matchesStatus =
+        selectedStatus.value === "All" ||
+        payment.status ===
+          selectedStatus.value;
 
-    return matchesStatus && matchesSearch;
-  });
+      const matchesMethod =
+        selectedMethod.value === "All" ||
+        payment.method ===
+          selectedMethod.value;
+
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesMethod
+      );
+    }
+  );
 });
 
-/* --------------------------------------------------
- * Table Columns
- * -------------------------------------------------- */
+/* =========================================================
+ * STATS
+ * ========================================================= */
 
-const columns = [
-  { key: "reference", label: "Reference" },
-  { key: "description", label: "Description" },
-  { key: "amount", label: "Amount" },
-  { key: "paymentMethod", label: "Payment Method" },
-  { key: "date", label: "Date" },
-  { key: "status", label: "Status" },
-];
+const totalPayments = computed(
+  () => payments.value.length
+);
 
-/* --------------------------------------------------
- * Stats
- * -------------------------------------------------- */
+const successfulPayments = computed(
+  () =>
+    payments.value.filter(
+      (payment) =>
+        payment.status === "Success"
+    ).length
+);
 
-const stats = computed(() => [
-  {
-    label: "Total Paid",
-    value: formatCurrency(totalPaid.value),
-    icon: "heroicons:check-circle",
-    color: "green",
-  },
-  {
-    label: "Pending",
-    value: formatCurrency(totalPending.value),
-    icon: "heroicons:clock",
-    color: "amber",
-  },
-  {
-    label: "Scratch Cards",
-    value: scratchCardPayments.value.length,
-    icon: "heroicons:ticket",
-    color: "violet",
-  },
-  {
-    label: "Failed",
-    value: failedPayments.value.length,
-    icon: "heroicons:x-circle",
-    color: "rose",
-  },
-  {
-    label: "Transactions",
-    value: payments.value.length,
-    icon: "heroicons:banknotes",
-    color: "indigo",
-  },
-]);
+const pendingPayments = computed(
+  () =>
+    payments.value.filter(
+      (payment) =>
+        payment.status === "Pending"
+    ).length
+);
 
-/* --------------------------------------------------
- * Helpers
- * -------------------------------------------------- */
+const failedPayments = computed(
+  () =>
+    payments.value.filter(
+      (payment) =>
+        payment.status === "Failed"
+    ).length
+);
 
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("en-NG", {
+const refundedPayments = computed(
+  () =>
+    payments.value.filter(
+      (payment) =>
+        payment.status === "Refunded"
+    ).length
+);
+
+/* =========================================================
+ * REVENUE
+ * ========================================================= */
+
+const totalRevenue = computed(() =>
+  payments.value
+    .filter(
+      (payment) =>
+        payment.status === "Success"
+    )
+    .reduce(
+      (total, payment) =>
+        total + payment.amount,
+      0
+    )
+);
+
+const pendingRevenue = computed(() =>
+  payments.value
+    .filter(
+      (payment) =>
+        payment.status === "Pending"
+    )
+    .reduce(
+      (total, payment) =>
+        total + payment.amount,
+      0
+    )
+);
+
+const refundedRevenue = computed(() =>
+  payments.value
+    .filter(
+      (payment) =>
+        payment.status === "Refunded"
+    )
+    .reduce(
+      (total, payment) =>
+        total + payment.amount,
+      0
+    )
+);
+
+/* =========================================================
+ * CURRENCY
+ * ========================================================= */
+
+const currency = new Intl.NumberFormat(
+  "en-NG",
+  {
     style: "currency",
     currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-function statusClass(status: PaymentStatus) {
-  switch (status) {
-    case "Successful":
-      return "bg-green-50 text-green-700 ring-green-600/20 dark:bg-green-900/30 dark:text-green-400 dark:ring-green-400/20";
-    case "Pending":
-      return "bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-900/30 dark:text-amber-400 dark:ring-amber-400/20";
-    case "Failed":
-      return "bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-900/30 dark:text-rose-400 dark:ring-rose-400/20";
-    case "Refunded":
-      return "bg-gray-100 text-gray-700 ring-gray-500/20 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-400/20";
+    maximumFractionDigits: 2,
   }
-}
+);
 
-function statusIcon(status: PaymentStatus) {
-  switch (status) {
-    case "Successful":
-      return "heroicons:check-circle";
-    case "Pending":
-      return "heroicons:clock";
-    case "Failed":
-      return "heroicons:x-circle";
-    case "Refunded":
-      return "heroicons:arrow-uturn-left";
+/* =========================================================
+ * DATE
+ * ========================================================= */
+
+function formatDate(
+  date: string | Date | null | undefined
+) {
+  if (!date) {
+    return "—";
   }
+
+  const parsed =
+    new Date(date);
+
+  if (
+    Number.isNaN(
+      parsed.getTime()
+    )
+  ) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat(
+    "en-NG",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+  ).format(parsed);
 }
 
-function methodIcon(method: PaymentMethod) {
+/* =========================================================
+ * METHOD LABEL
+ * ========================================================= */
+
+function methodLabel(
+  method: PaymentMethod
+) {
   switch (method) {
-    case "Scratch Card":
-      return "heroicons:ticket";
-    case "Card":
-      return "heroicons:credit-card";
-    case "Bank Transfer":
-      return "heroicons:building-library";
-    case "USSD":
-      return "heroicons:device-phone-mobile";
+    case "BANK_TRANSFER":
+      return "Bank Transfer";
+
+    case "MOBILE_MONEY":
+      return "Mobile Money";
+
+    case "UNKNOWN":
+      return "Unknown";
+
     default:
-      return "heroicons:bolt";
+      return method;
   }
 }
 
-/* --------------------------------------------------
- * Actions
- * -------------------------------------------------- */
+/* =========================================================
+ * STATUS CLASS
+ * ========================================================= */
 
-function viewPayment(payment: Payment) {
-  console.log("View payment:", payment);
-  // Hook up a modal or navigate to /payments/:reference
-}
+function statusClass(
+  status: PaymentStatus
+) {
+  switch (status) {
+    case "Success":
+      return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
 
-async function requestPayment(payment: Payment) {
-  if (payment.status !== "Pending") return;
+    case "Pending":
+      return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400";
 
-  const raw = payment.raw || {};
-  const reference = raw.txRef || raw.reference;
+    case "Refunded":
+      return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400";
 
-  if (!reference) {
-    errorMessage.value = "Payment reference is missing.";
-    return;
-  }
-
-  const amountInKobo = Number(raw.amount || 0);
-  if (!Number.isFinite(amountInKobo) || amountInKobo <= 0) {
-    errorMessage.value = "Invalid payment amount.";
-    return;
-  }
-
-  const customerEmail = raw.email || raw.payer?.email || "";
-  if (!customerEmail) {
-    errorMessage.value = "Customer email is required.";
-    return;
-  }
-
-  processingRef.value = reference;
-  errorMessage.value = "";
-
-  try {
-    await pay({
-      email: customerEmail,
-      amount: amountInKobo, // Paystack inline expects KOBO
-      reference,
-      metadata: {
-        ...(raw.metadata || {}),
-        paymentId: raw._id || raw.id,
-        paymentType: raw.metadata?.paymentType || "GENERAL_PAYMENT",
-      },
-
-      async onSuccess(transaction: any) {
-        try {
-          const verification = await useApiFetch("/payments/verify", {
-            method: "POST",
-            body: { ref: transaction.reference },
-          });
-
-          if (!verification?.success) {
-            throw new Error(
-              verification?.message || "Payment verification failed."
-            );
-          }
-
-          await fetchPayments();
-        } catch (error: any) {
-          console.error("Verification error:", error);
-          errorMessage.value =
-            error?.data?.message ||
-            error?.message ||
-            "Unable to verify payment.";
-        } finally {
-          processingRef.value = null;
-        }
-      },
-
-      onCancel() {
-        processingRef.value = null;
-      },
-    });
-  } catch (error: any) {
-    console.error("requestPayment error:", error);
-    errorMessage.value =
-      error?.data?.message ||
-      error?.message ||
-      "Unable to process payment.";
-    processingRef.value = null;
+    case "Failed":
+    default:
+      return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
   }
 }
 
-/* --------------------------------------------------
- * Watchers
- * -------------------------------------------------- */
+/* =========================================================
+ * CLEAR FILTERS
+ * ========================================================= */
 
-watch(selectedStatus, () => {
-  page.value = 1;
-  fetchPayments();
-});
+function clearFilters() {
+  search.value = "";
+  selectedStatus.value = "All";
+  selectedMethod.value = "All";
+}
+
+/* =========================================================
+ * REFRESH
+ * ========================================================= */
+
+async function reloadPayments() {
+  await loadPayments();
+}
+
+/* =========================================================
+ * EXPORT CSV
+ * ========================================================= */
+
+function exportCSV() {
+  if (
+    !filteredPayments.value.length
+  ) {
+    return;
+  }
+
+  const headers = [
+    "Student",
+    "Email",
+    "Amount",
+    "Plan",
+    "Payment Method",
+    "Teacher",
+    "Date",
+    "Status",
+  ];
+
+  const rows =
+    filteredPayments.value.map(
+      (payment) => [
+        payment.student,
+        payment.email,
+        payment.amount.toFixed(2),
+        payment.plan,
+        methodLabel(
+          payment.method
+        ),
+        payment.teacher,
+        formatDate(
+          payment.date
+        ),
+        payment.status,
+      ]
+    );
+
+  const csv = [
+    headers,
+    ...rows,
+  ]
+    .map((row) =>
+      row
+        .map(
+          (value) =>
+            `"${String(value).replace(
+              /"/g,
+              '""'
+            )}"`
+        )
+        .join(",")
+    )
+    .join("\n");
+
+  const blob =
+    new Blob(
+      [csv],
+      {
+        type:
+          "text/csv;charset=utf-8;",
+      }
+    );
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+  const link =
+    document.createElement(
+      "a"
+    );
+
+  link.href = url;
+
+  link.download =
+    `admin-payments-${new Date()
+      .toISOString()
+      .slice(0, 10)}.csv`;
+
+  document.body.appendChild(
+    link
+  );
+
+  link.click();
+
+  document.body.removeChild(
+    link
+  );
+
+  URL.revokeObjectURL(
+    url
+  );
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 px-4 py-6 dark:bg-gray-950 sm:px-6 lg:px-8">
-    <div class="mx-auto w-full max-w-7xl">
-      <!-- ==========================================
-           PAGE HEADER
-           ========================================== -->
+  <div
+    class="min-h-screen bg-gray-50 px-4 py-6 dark:bg-gray-950 sm:px-6 lg:px-8"
+  >
+    <div
+      class="mx-auto max-w-7xl space-y-6"
+    >
+
+      <!-- =================================================
+           HEADER
+      ================================================== -->
 
       <div
-        class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
       >
         <div>
-          <div class="flex items-center gap-2">
-            <NuxtLink
-              to="/student"
-              class="text-sm text-gray-500 transition hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-            >
-              Dashboard
-            </NuxtLink>
-
-            <Icon name="heroicons:chevron-right" class="h-4 w-4 text-gray-400" />
-
-            <span class="text-sm font-medium text-gray-900 dark:text-white">
-              Payments
-            </span>
-          </div>
-
-          <h1 class="mt-3 text-2xl font-bold text-gray-900 dark:text-white">
-            Payment History
+          <h1
+            class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white"
+          >
+            Payments
           </h1>
 
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            View your payment history and payment status.
+          <p
+            class="mt-1 text-sm text-gray-500 dark:text-gray-400"
+          >
+            View the first payment made by each
+            student in your network.
           </p>
         </div>
 
-        <div class="flex items-center gap-2">
-          <!-- Refresh -->
-          <button
-            type="button"
-            class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
-            :disabled="loading"
-            @click="fetchPayments"
-          >
-            <Icon
-              name="heroicons:arrow-path"
-              class="h-4 w-4"
-              :class="{ 'animate-spin': loading }"
-            />
-            Refresh
-          </button>
+        <button
+          type="button"
+          :disabled="
+            !filteredPayments.length
+          "
+          class="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
+          @click="exportCSV"
+        >
+          <Icon
+            name="i-heroicons-arrow-down-tray"
+            class="h-5 w-5"
+          />
 
-          <!-- Complete Pending Payment -->
-          <button
-            v-if="pendingPayments.length"
-            type="button"
-            class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:cursor-not-allowed disabled:opacity-60"
-            :disabled="!!processingRef"
-            @click="requestPayment(pendingPayments[0])"
+          Export CSV
+        </button>
+      </div>
+
+      <!-- =================================================
+           STAT CARDS
+      ================================================== -->
+
+      <div
+        class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      >
+
+        <!-- Total -->
+        <div
+          class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+        >
+          <div
+            class="flex items-start justify-between"
+          >
+            <div>
+              <p
+                class="text-sm font-medium text-gray-500 dark:text-gray-400"
+              >
+                First Payments
+              </p>
+
+              <p
+                class="mt-2 text-2xl font-bold text-gray-900 dark:text-white"
+              >
+                {{ totalPayments }}
+              </p>
+            </div>
+
+            <div
+              class="rounded-xl bg-blue-100 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+            >
+              <Icon
+                name="i-heroicons-credit-card"
+                class="h-6 w-6"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Revenue -->
+        <div
+          class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+        >
+          <div
+            class="flex items-start justify-between"
+          >
+            <div>
+              <p
+                class="text-sm font-medium text-gray-500 dark:text-gray-400"
+              >
+                Revenue
+              </p>
+
+              <p
+                class="mt-2 text-2xl font-bold text-gray-900 dark:text-white"
+              >
+                {{ currency.format(totalRevenue) }}
+              </p>
+            </div>
+
+            <div
+              class="rounded-xl bg-green-100 p-3 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+            >
+              <Icon
+                name="i-heroicons-banknotes"
+                class="h-6 w-6"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Pending -->
+        <div
+          class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+        >
+          <div
+            class="flex items-start justify-between"
+          >
+            <div>
+              <p
+                class="text-sm font-medium text-gray-500 dark:text-gray-400"
+              >
+                Pending
+              </p>
+
+              <p
+                class="mt-2 text-2xl font-bold text-gray-900 dark:text-white"
+              >
+                {{ pendingPayments }}
+              </p>
+            </div>
+
+            <div
+              class="rounded-xl bg-yellow-100 p-3 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400"
+            >
+              <Icon
+                name="i-heroicons-clock"
+                class="h-6 w-6"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Failed -->
+        <div
+          class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+        >
+          <div
+            class="flex items-start justify-between"
+          >
+            <div>
+              <p
+                class="text-sm font-medium text-gray-500 dark:text-gray-400"
+              >
+                Failed
+              </p>
+
+              <p
+                class="mt-2 text-2xl font-bold text-gray-900 dark:text-white"
+              >
+                {{ failedPayments }}
+              </p>
+            </div>
+
+            <div
+              class="rounded-xl bg-red-100 p-3 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+            >
+              <Icon
+                name="i-heroicons-x-circle"
+                class="h-6 w-6"
+              />
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- =================================================
+           LOADING
+      ================================================== -->
+
+      <div
+        v-if="loadingPayments"
+        class="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+      >
+        <div
+          class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30"
+        >
+          <Icon
+            name="i-heroicons-arrow-path"
+            class="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400"
+          />
+        </div>
+
+        <div>
+          <p
+            class="font-semibold text-gray-900 dark:text-white"
+          >
+            Loading payments...
+          </p>
+
+          <p
+            class="mt-1 text-sm text-gray-500 dark:text-gray-400"
+          >
+            Fetching your students' payment records.
+          </p>
+        </div>
+      </div>
+
+      <!-- =================================================
+           ERROR
+      ================================================== -->
+
+      <div
+        v-else-if="paymentError"
+        class="rounded-2xl border border-red-200 bg-red-50 p-5 dark:border-red-900/50 dark:bg-red-950/20"
+      >
+        <div
+          class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div
+            class="flex items-start gap-3"
           >
             <Icon
-              name="heroicons:arrow-path"
-              class="h-4 w-4"
-              :class="{ 'animate-spin': !!processingRef }"
+              name="i-heroicons-exclamation-triangle"
+              class="h-6 w-6 shrink-0 text-red-600 dark:text-red-400"
             />
-            Complete Pending Payment
+
+            <div>
+              <p
+                class="font-semibold text-red-700 dark:text-red-400"
+              >
+                Failed to load payments
+              </p>
+
+              <p
+                class="mt-1 text-sm text-red-600 dark:text-red-500"
+              >
+                {{ paymentError }}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700"
+            @click="reloadPayments"
+          >
+            <Icon
+              name="i-heroicons-arrow-path"
+              class="h-5 w-5"
+            />
+
+            Try Again
           </button>
         </div>
       </div>
 
-      <!-- ==========================================
-           ERROR BANNER
-           ========================================== -->
+      <!-- =================================================
+           REVENUE DETAILS
+      ================================================== -->
 
       <div
-        v-if="errorMessage"
-        class="mb-4 flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-400"
+        v-if="
+          !loadingPayments &&
+          !paymentError
+        "
+        class="grid grid-cols-1 gap-4 md:grid-cols-3"
       >
-        <Icon name="heroicons:exclamation-triangle" class="mt-0.5 h-4 w-4" />
-        <span class="flex-1">{{ errorMessage }}</span>
-        <button
-          type="button"
-          class="text-rose-500 hover:text-rose-700 dark:hover:text-rose-300"
-          @click="errorMessage = ''"
+
+        <div
+          class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900"
         >
-          <Icon name="heroicons:x-mark" class="h-4 w-4" />
-        </button>
+          <p
+            class="text-sm text-gray-500 dark:text-gray-400"
+          >
+            Successful Revenue
+          </p>
+
+          <p
+            class="mt-2 text-xl font-bold text-green-600 dark:text-green-400"
+          >
+            {{ currency.format(totalRevenue) }}
+          </p>
+
+          <p
+            class="mt-1 text-xs text-gray-500"
+          >
+            {{ successfulPayments }}
+            successful payment(s)
+          </p>
+        </div>
+
+        <div
+          class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900"
+        >
+          <p
+            class="text-sm text-gray-500 dark:text-gray-400"
+          >
+            Pending Revenue
+          </p>
+
+          <p
+            class="mt-2 text-xl font-bold text-yellow-600 dark:text-yellow-400"
+          >
+            {{ currency.format(pendingRevenue) }}
+          </p>
+
+          <p
+            class="mt-1 text-xs text-gray-500"
+          >
+            {{ pendingPayments }}
+            pending payment(s)
+          </p>
+        </div>
+
+        <div
+          class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900"
+        >
+          <p
+            class="text-sm text-gray-500 dark:text-gray-400"
+          >
+            Refunded Revenue
+          </p>
+
+          <p
+            class="mt-2 text-xl font-bold text-purple-600 dark:text-purple-400"
+          >
+            {{ currency.format(refundedRevenue) }}
+          </p>
+
+          <p
+            class="mt-1 text-xs text-gray-500"
+          >
+            {{ refundedPayments }}
+            refunded payment(s)
+          </p>
+        </div>
+
       </div>
 
-      <!-- ==========================================
-           PAYMENT LIST
-           ========================================== -->
+      <!-- =================================================
+           FILTERS
+      ================================================== -->
 
-      <UiDataList
-        :items="filteredPayments"
-        :columns="columns"
-        row-key="id"
-        title="All Payments"
-        subtitle="Your complete payment history."
-        searchable
-        :search-keys="['reference', 'description', 'paymentMethod', 'status']"
-        :empty-text="loading ? 'Loading payments…' : 'No payments found'"
-        :stats="stats"
-        show-total-stat
+      <div
+        class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900"
       >
-        <!-- ========================================
-             FILTERS
-             ======================================== -->
+        <div
+          class="grid grid-cols-1 gap-4 md:grid-cols-3"
+        >
 
-        <template #filters>
-          <div class="flex flex-wrap items-center gap-3">
-            <div class="flex items-center gap-2">
-              <Icon name="heroicons:funnel" class="h-4 w-4 text-gray-400" />
+          <!-- Search -->
+          <div class="relative">
+            <Icon
+              name="i-heroicons-magnifying-glass"
+              class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+            />
 
-              <select
-                v-model="selectedStatus"
-                class="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+            <input
+              v-model="search"
+              type="search"
+              placeholder="Search student, email, teacher..."
+              class="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+
+          <!-- Status -->
+          <select
+            v-model="selectedStatus"
+            class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          >
+            <option value="All">
+              All statuses
+            </option>
+
+            <option value="Success">
+              Success
+            </option>
+
+            <option value="Pending">
+              Pending
+            </option>
+
+            <option value="Failed">
+              Failed
+            </option>
+
+            <option value="Refunded">
+              Refunded
+            </option>
+          </select>
+
+          <!-- Method -->
+          <select
+            v-model="selectedMethod"
+            class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          >
+            <option value="All">
+              All payment methods
+            </option>
+
+            <option value="CARD">
+              Card
+            </option>
+
+            <option value="BANK_TRANSFER">
+              Bank Transfer
+            </option>
+
+            <option value="USSD">
+              USSD
+            </option>
+
+            <option value="ACCOUNT">
+              Account
+            </option>
+
+            <option value="QR">
+              QR
+            </option>
+
+            <option value="MOBILE_MONEY">
+              Mobile Money
+            </option>
+
+            <option value="UNKNOWN">
+              Unknown
+            </option>
+          </select>
+
+        </div>
+
+        <div
+          class="mt-4 flex flex-col gap-3 border-t border-gray-100 pt-4 dark:border-gray-800 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p
+            class="text-sm text-gray-500 dark:text-gray-400"
+          >
+            Showing
+            <span
+              class="font-semibold text-gray-900 dark:text-white"
+            >
+              {{ filteredPayments.length }}
+            </span>
+            of
+            <span
+              class="font-semibold text-gray-900 dark:text-white"
+            >
+              {{ payments.length }}
+            </span>
+            payments
+          </p>
+
+          <button
+            v-if="
+              search ||
+              selectedStatus !== 'All' ||
+              selectedMethod !== 'All'
+            "
+            type="button"
+            class="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400"
+            @click="clearFilters"
+          >
+            Clear filters
+          </button>
+        </div>
+      </div>
+
+      <!-- =================================================
+           PAYMENTS
+      ================================================== -->
+
+      <div
+        v-if="
+          !loadingPayments &&
+          !paymentError
+        "
+        class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
+      >
+
+        <!-- Header -->
+        <div
+          class="flex flex-col gap-3 border-b border-gray-200 px-5 py-4 dark:border-gray-800 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div>
+            <h2
+              class="font-semibold text-gray-900 dark:text-white"
+            >
+              Student Payments
+            </h2>
+
+            <p
+              class="mt-1 text-sm text-gray-500 dark:text-gray-400"
+            >
+              One first payment per student.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+            @click="reloadPayments"
+          >
+            <Icon
+              name="i-heroicons-arrow-path"
+              class="h-4 w-4"
+            />
+
+            Refresh
+          </button>
+        </div>
+
+        <!-- Empty -->
+        <div
+          v-if="
+            filteredPayments.length === 0
+          "
+          class="flex flex-col items-center justify-center px-6 py-16 text-center"
+        >
+          <div
+            class="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
+          >
+            <Icon
+              name="i-heroicons-credit-card"
+              class="h-7 w-7 text-gray-400"
+            />
+          </div>
+
+          <h3
+            class="mt-4 font-semibold text-gray-900 dark:text-white"
+          >
+            No payments found
+          </h3>
+
+          <p
+            class="mt-1 max-w-md text-sm text-gray-500 dark:text-gray-400"
+          >
+            {{
+              payments.length
+                ? "Try changing your filters."
+                : "There are no student payments to display yet."
+            }}
+          </p>
+        </div>
+
+        <!-- Desktop -->
+        <div
+          v-else
+          class="hidden overflow-x-auto lg:block"
+        >
+          <table class="w-full text-left">
+            <thead
+              class="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950"
+            >
+              <tr>
+                <th
+                  class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500"
+                >
+                  Student
+                </th>
+
+                <th
+                  class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500"
+                >
+                  Amount
+                </th>
+
+                <th
+                  class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500"
+                >
+                  Plan
+                </th>
+
+                <th
+                  class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500"
+                >
+                  Method
+                </th>
+
+                <th
+                  class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500"
+                >
+                  Teacher
+                </th>
+
+                <th
+                  class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500"
+                >
+                  Date
+                </th>
+
+                <th
+                  class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500"
+                >
+                  Status
+                </th>
+              </tr>
+            </thead>
+
+            <tbody
+              class="divide-y divide-gray-100 dark:divide-gray-800"
+            >
+              <tr
+                v-for="payment in filteredPayments"
+                :key="payment.id"
+                class="transition hover:bg-gray-50 dark:hover:bg-gray-800/50"
               >
-                <option value="All">All Status</option>
-                <option value="Successful">Successful</option>
-                <option value="Pending">Pending</option>
-                <option value="Failed">Failed</option>
-                <option value="Refunded">Refunded</option>
-              </select>
+                <td
+                  class="px-5 py-4"
+                >
+                  <p
+                    class="font-medium text-gray-900 dark:text-white"
+                  >
+                    {{ payment.student }}
+                  </p>
+
+                  <p
+                    class="mt-0.5 text-xs text-gray-500"
+                  >
+                    {{ payment.email }}
+                  </p>
+                </td>
+
+                <td
+                  class="whitespace-nowrap px-5 py-4"
+                >
+                  <span
+                    class="font-semibold text-gray-900 dark:text-white"
+                  >
+                    {{
+                      currency.format(
+                        payment.amount
+                      )
+                    }}
+                  </span>
+                </td>
+
+                <td
+                  class="px-5 py-4 text-sm text-gray-700 dark:text-gray-300"
+                >
+                  {{ payment.plan }}
+                </td>
+
+                <td
+                  class="px-5 py-4 text-sm text-gray-700 dark:text-gray-300"
+                >
+                  {{
+                    methodLabel(
+                      payment.method
+                    )
+                  }}
+                </td>
+
+                <td
+                  class="px-5 py-4 text-sm text-gray-700 dark:text-gray-300"
+                >
+                  {{ payment.teacher }}
+                </td>
+
+                <td
+                  class="whitespace-nowrap px-5 py-4 text-sm text-gray-500 dark:text-gray-400"
+                >
+                  {{
+                    formatDate(
+                      payment.date
+                    )
+                  }}
+                </td>
+
+                <td
+                  class="px-5 py-4"
+                >
+                  <span
+                    class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                    :class="
+                      statusClass(
+                        payment.status
+                      )
+                    "
+                  >
+                    {{ payment.status }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile -->
+        <div
+          class="divide-y divide-gray-100 dark:divide-gray-800 lg:hidden"
+        >
+          <div
+            v-for="payment in filteredPayments"
+            :key="payment.id"
+            class="p-5"
+          >
+            <div
+              class="flex items-start justify-between gap-4"
+            >
+              <div
+                class="min-w-0"
+              >
+                <p
+                  class="truncate font-semibold text-gray-900 dark:text-white"
+                >
+                  {{ payment.student }}
+                </p>
+
+                <p
+                  class="mt-1 truncate text-xs text-gray-500"
+                >
+                  {{ payment.email }}
+                </p>
+              </div>
+
+              <span
+                class="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold"
+                :class="
+                  statusClass(
+                    payment.status
+                  )
+                "
+              >
+                {{ payment.status }}
+              </span>
+            </div>
+
+            <div
+              class="mt-4 grid grid-cols-2 gap-4"
+            >
+              <div>
+                <p
+                  class="text-xs text-gray-500"
+                >
+                  Amount
+                </p>
+
+                <p
+                  class="mt-1 font-semibold text-gray-900 dark:text-white"
+                >
+                  {{
+                    currency.format(
+                      payment.amount
+                    )
+                  }}
+                </p>
+              </div>
+
+              <div>
+                <p
+                  class="text-xs text-gray-500"
+                >
+                  Plan
+                </p>
+
+                <p
+                  class="mt-1 text-sm text-gray-700 dark:text-gray-300"
+                >
+                  {{ payment.plan }}
+                </p>
+              </div>
+
+              <div>
+                <p
+                  class="text-xs text-gray-500"
+                >
+                  Method
+                </p>
+
+                <p
+                  class="mt-1 text-sm text-gray-700 dark:text-gray-300"
+                >
+                  {{
+                    methodLabel(
+                      payment.method
+                    )
+                  }}
+                </p>
+              </div>
+
+              <div>
+                <p
+                  class="text-xs text-gray-500"
+                >
+                  Teacher
+                </p>
+
+                <p
+                  class="mt-1 text-sm text-gray-700 dark:text-gray-300"
+                >
+                  {{ payment.teacher }}
+                </p>
+              </div>
+            </div>
+
+            <div
+              class="mt-4 border-t border-gray-100 pt-3 dark:border-gray-800"
+            >
+              <p
+                class="text-xs text-gray-500"
+              >
+                Payment date
+              </p>
+
+              <p
+                class="mt-1 text-sm text-gray-700 dark:text-gray-300"
+              >
+                {{
+                  formatDate(
+                    payment.date
+                  )
+                }}
+              </p>
             </div>
           </div>
-        </template>
+        </div>
 
-        <!-- ========================================
-             REFERENCE
-             ======================================== -->
+      </div>
 
-        <template #cell-reference="{ item }">
-          <span class="font-medium text-gray-900 dark:text-white">
-            {{ item.reference }}
-          </span>
-        </template>
-
-        <!-- ========================================
-             DESCRIPTION
-             ======================================== -->
-
-        <template #cell-description="{ item }">
-          <div class="flex items-center gap-2">
-            <span class="text-gray-700 dark:text-gray-300">
-              {{ item.description }}
-            </span>
-
-            <span
-              v-if="item.paymentMethod === 'Scratch Card'"
-              class="inline-flex items-center gap-1 rounded-md bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700 ring-1 ring-inset ring-violet-600/20 dark:bg-violet-900/30 dark:text-violet-400 dark:ring-violet-400/20"
-            >
-              <Icon name="heroicons:ticket" class="h-3 w-3" />
-              Scratch
-            </span>
-          </div>
-        </template>
-
-        <!-- ========================================
-             AMOUNT
-             ======================================== -->
-
-        <template #cell-amount="{ item }">
-          <span class="font-semibold text-gray-900 dark:text-white">
-            {{ formatCurrency(item.amount) }}
-          </span>
-        </template>
-
-        <!-- ========================================
-             PAYMENT METHOD
-             ======================================== -->
-
-        <template #cell-paymentMethod="{ item }">
-          <span
-            class="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-400"
-          >
-            <Icon :name="methodIcon(item.paymentMethod)" class="h-4 w-4" />
-            {{ item.paymentMethod }}
-          </span>
-        </template>
-
-        <!-- ========================================
-             DATE
-             ======================================== -->
-
-        <template #cell-date="{ item }">
-          <span class="text-gray-500 dark:text-gray-400">
-            {{ item.date }}
-          </span>
-        </template>
-
-        <!-- ========================================
-             STATUS
-             ======================================== -->
-
-        <template #cell-status="{ item }">
-          <span
-            class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset"
-            :class="statusClass(item.status)"
-          >
-            <Icon :name="statusIcon(item.status)" class="h-3.5 w-3.5" />
-            {{ item.status }}
-          </span>
-        </template>
-
-        <!-- ========================================
-             ACTIONS
-             ======================================== -->
-
-        <template #actions_row="{ item }">
-          <div class="flex items-center justify-end gap-2">
-            <!-- View -->
-            <button
-              type="button"
-              title="View payment"
-              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-              @click="viewPayment(item)"
-            >
-              <Icon name="heroicons:eye" class="h-4 w-4" />
-            </button>
-
-            <!-- Complete Pending -->
-            <button
-              v-if="item.status === 'Pending'"
-              type="button"
-              class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50"
-              :disabled="processingRef === item.reference"
-              @click="requestPayment(item)"
-            >
-              <Icon
-                name="heroicons:arrow-path"
-                class="h-3.5 w-3.5"
-                :class="{
-                  'animate-spin': processingRef === item.reference,
-                }"
-              />
-              {{ processingRef === item.reference ? "Processing…" : "Complete" }}
-            </button>
-          </div>
-        </template>
-      </UiDataList>
     </div>
   </div>
 </template>

@@ -1,163 +1,447 @@
+```vue
 <script setup lang="ts">
 definePageMeta({
   layout: "nav",
 });
 
+/* =========================================================
+   TYPES
+========================================================= */
+
 interface Teacher {
-  id: number;
+  id: string;
   name: string;
   email: string;
   phone: string;
+  image: string | null;
   students: number;
   paidStudents: number;
-  status: "Active" | "Pending" | "Inactive";
-  joinedAt: string;
+  admin: string;
+  adminId: string | null;
+  status: "Active" | "Pending" | "Inactive" | "Suspended";
+  dateJoined: string;
+  lastLogin: string | null;
 }
 
-const teachers = ref<Teacher[]>([
-  {
-    id: 1,
-    name: "Mr. Okafor",
-    email: "okafor@gmail.com",
-    phone: "0803 456 7890",
-    students: 86,
-    paidStudents: 72,
-    status: "Active",
-    joinedAt: "12 January 2026",
-  },
-  {
-    id: 2,
-    name: "Mrs. Adaeze",
-    email: "adaeze@gmail.com",
-    phone: "0805 234 5678",
-    students: 64,
-    paidStudents: 51,
-    status: "Active",
-    joinedAt: "20 January 2026",
-  },
-  {
-    id: 3,
-    name: "Mr. Adewale",
-    email: "adewale@gmail.com",
-    phone: "0812 345 6789",
-    students: 58,
-    paidStudents: 47,
-    status: "Active",
-    joinedAt: "05 February 2026",
-  },
-  {
-    id: 4,
-    name: "Mr. Yusuf",
-    email: "yusuf@gmail.com",
-    phone: "0701 345 6789",
-    students: 45,
-    paidStudents: 39,
-    status: "Active",
-    joinedAt: "18 February 2026",
-  },
-  {
-    id: 5,
-    name: "Mrs. Grace",
-    email: "grace@gmail.com",
-    phone: "0806 567 8901",
-    students: 39,
-    paidStudents: 28,
-    status: "Pending",
-    joinedAt: "12 March 2026",
-  },
-  {
-    id: 6,
-    name: "Mr. Daniel",
-    email: "daniel@gmail.com",
-    phone: "0814 234 5678",
-    students: 31,
-    paidStudents: 24,
-    status: "Active",
-    joinedAt: "25 March 2026",
-  },
-  {
-    id: 7,
-    name: "Mrs. Esther",
-    email: "esther@gmail.com",
-    phone: "0704 789 1234",
-    students: 27,
-    paidStudents: 18,
-    status: "Inactive",
-    joinedAt: "08 April 2026",
-  },
-]);
+interface TeachersApiResponse {
+  success: boolean;
+  teachers: any[];
+  summary?: {
+    totalTeachers: number;
+    totalStudents: number;
+  };
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
+/* =========================================================
+   STATE
+========================================================= */
+
+const teachers = ref<Teacher[]>([]);
+
+const loading = ref(false);
+const errorMessage = ref("");
+
+const search = ref("");
+const selectedStatus = ref("All Status");
+
+const currentPage = ref(1);
+const limit = ref(20);
+
+const totalTeachers = ref(0);
+const totalStudentsApi = ref(0);
+const totalPages = ref(1);
+
+/* =========================================================
+   COLUMNS
+========================================================= */
 
 const columns = [
   { key: "name", label: "Teacher" },
   { key: "students", label: "Students / Paid" },
+  { key: "last-login", label: "Last Login" },
   { key: "status", label: "Status" },
-  { key: "joinedAt", label: "Joined" },
 ];
 
-const selectedStatus = ref("All Status");
+/* =========================================================
+   STATUS
+========================================================= */
 
-const statuses = ["All Status", "Active", "Pending", "Inactive"];
+const statuses = [
+  "All Status",
+  "Active",
+  "Pending",
+  "Inactive",
+  "Suspended",
+];
 
-const filteredTeachers = computed(() => {
-  if (selectedStatus.value === "All Status") {
-    return teachers.value;
+
+
+/* =========================================================
+   FETCH TEACHERS
+========================================================= */
+
+async function fetchTeachers() {
+  loading.value = true;
+  errorMessage.value = "";
+
+  try {
+    const params = new URLSearchParams();
+
+    params.set("page", String(currentPage.value));
+    params.set("limit", String(limit.value));
+
+    if (search.value.trim()) {
+      params.set("search", search.value.trim());
+    }
+
+    if (selectedStatus.value !== "All Status") {
+      params.set(
+        "status",
+        selectedStatus.value.toLowerCase()
+      );
+    }
+
+    const response = await useApiFetch<TeachersApiResponse>(
+      `/admin/teachers?${params.toString()}`
+    );
+
+    if (!response.success) {
+      throw new Error(
+        response.message || "Failed to load teachers"
+      );
+    }
+
+    const apiData = response.data;
+
+    if (!apiData) {
+      teachers.value = [];
+      totalTeachers.value = 0;
+      totalStudentsApi.value = 0;
+      totalPages.value = 1;
+      return;
+    }
+
+    /* =====================================================
+       MAP BACKEND DATA → FRONTEND DATA
+    ===================================================== */
+
+    teachers.value = (apiData.teachers || []).map(
+      (teacher: any) => {
+        const name = [
+          teacher.firstName,
+          teacher.middleName,
+          teacher.lastName,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+
+        let adminName = "Not Assigned";
+
+        if (teacher.admin) {
+          adminName = [
+            teacher.admin.firstName,
+            teacher.admin.middleName,
+            teacher.admin.lastName,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .trim();
+
+          if (!adminName) {
+            adminName = "Not Assigned";
+          }
+        }
+
+        return {
+          id: String(teacher._id),
+
+          name: name || "Unnamed Teacher",
+
+          email: teacher.email || "-",
+
+          phone:
+            teacher.phone ||
+            teacher.whatsapp_no ||
+            "-",
+
+          image: teacher.avatar || null,
+
+          students: Number(
+            teacher.totalStudents ??
+              teacher.studentsCount ??
+              teacher.students ??
+              0
+          ),
+
+          paidStudents: Number(
+            teacher.subscribedStudents ??
+              teacher.paidStudents ??
+              teacher.paidStudentCount ??
+              0
+          ),
+
+          admin: adminName,
+
+          adminId: teacher.adminOwner
+            ? String(
+                typeof teacher.adminOwner === "object"
+                  ? teacher.adminOwner._id
+                  : teacher.adminOwner
+              )
+            : null,
+
+          status: normalizeStatus(teacher.status),
+
+          dateJoined: teacher.createdAt || "",
+
+          lastLogin: teacher.lastLogin || '',
+        };
+      }
+    );
+
+    /* =====================================================
+       PAGINATION
+    ===================================================== */
+
+    totalTeachers.value =
+      Number(apiData.pagination?.total) ||
+      Number(apiData.summary?.totalTeachers) ||
+      teachers.value.length;
+
+    totalStudentsApi.value =
+      Number(apiData.summary?.totalStudents) ||
+      teachers.value.reduce(
+        (total, teacher) =>
+          total + teacher.students,
+        0
+      );
+
+    totalPages.value =
+      Number(apiData.pagination?.pages) ||
+      Math.max(
+        1,
+        Math.ceil(
+          totalTeachers.value / limit.value
+        )
+      );
+  } catch (error: any) {
+    console.error(
+      "❌ Failed to fetch teachers:",
+      error
+    );
+
+    teachers.value = [];
+
+    errorMessage.value =
+      error?.message ||
+      "Unable to load teachers.";
+  } finally {
+    loading.value = false;
+  }
+}
+
+/* =========================================================
+   NORMALIZE STATUS
+========================================================= */
+
+function normalizeStatus(
+  status: any
+): Teacher["status"] {
+  if (!status) {
+    return "Active";
   }
 
-  return teachers.value.filter((teacher) => teacher.status === selectedStatus.value);
+  const value = String(status).toLowerCase();
+
+  if (value === "active") return "Active";
+  if (value === "pending") return "Pending";
+  if (value === "inactive") return "Inactive";
+  if (value === "suspended") return "Suspended";
+
+  return "Active";
+}
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+let searchTimer:
+  | ReturnType<typeof setTimeout>
+  | null = null;
+
+watch(search, () => {
+  if (searchTimer) {
+    clearTimeout(searchTimer);
+  }
+
+  searchTimer = setTimeout(() => {
+    currentPage.value = 1;
+    fetchTeachers();
+  }, 400);
 });
 
-const totalTeachers = computed(() => teachers.value.length);
+/* =========================================================
+   STATUS FILTER
+========================================================= */
 
-const activeTeachers = computed(
-  () => teachers.value.filter((teacher) => teacher.status === "Active").length
+watch(selectedStatus, () => {
+  currentPage.value = 1;
+  fetchTeachers();
+});
+
+/* =========================================================
+   FILTERED TEACHERS
+========================================================= */
+
+const filteredTeachers = computed(() => {
+  /*
+   * Filtering is performed by the backend.
+   * We return the API results directly.
+   */
+
+  return teachers.value;
+});
+
+/* =========================================================
+   COUNTS
+========================================================= */
+
+const activeCount = computed(() =>
+  teachers.value.filter(
+    (teacher) =>
+      teacher.status === "Active"
+  ).length
 );
 
-const pendingTeachers = computed(
-  () => teachers.value.filter((teacher) => teacher.status === "Pending").length
+const pendingCount = computed(() =>
+  teachers.value.filter(
+    (teacher) =>
+      teacher.status === "Pending"
+  ).length
 );
 
-const totalStudents = computed(() =>
-  teachers.value.reduce((sum, teacher) => sum + teacher.students, 0)
+const inactiveCount = computed(() =>
+  teachers.value.filter(
+    (teacher) =>
+      teacher.status === "Inactive"
+  ).length
 );
 
-const totalPaidStudents = computed(() =>
-  teachers.value.reduce((sum, teacher) => sum + teacher.paidStudents, 0)
+const suspendedCount = computed(() =>
+  teachers.value.filter(
+    (teacher) =>
+      teacher.status === "Suspended"
+  ).length
 );
+
+/* =========================================================
+   STUDENT TOTALS
+========================================================= */
+
+const totalStudents = computed(() => {
+  return (
+    totalStudentsApi.value ||
+    teachers.value.reduce(
+      (total, teacher) =>
+        total + teacher.students,
+      0
+    )
+  );
+});
+
+const totalPaidStudents = computed(() => {
+  return teachers.value.reduce(
+    (total, teacher) =>
+      total + teacher.paidStudents,
+    0
+  );
+});
+
+/* =========================================================
+   STATS
+========================================================= */
 
 const stats = computed(() => [
   {
     label: "Total Teachers",
     value: totalTeachers.value,
-    icon: "i-heroicons-user-group",
+    icon: "i-heroicons-academic-cap",
     color: "indigo" as const,
   },
+
   {
     label: "Active Teachers",
-    value: activeTeachers.value,
+    value: activeCount.value,
     icon: "i-heroicons-check-circle",
     color: "green" as const,
   },
+
   {
     label: "Pending",
-    value: pendingTeachers.value,
+    value: pendingCount.value,
     icon: "i-heroicons-clock",
     color: "amber" as const,
   },
+
   {
     label: "Total Students",
     value: totalStudents.value,
-    icon: "i-heroicons-academic-cap",
-    color: "blue" as const,
+    icon: "i-heroicons-users",
+    color: "sky" as const,
   },
 ]);
 
+/* =========================================================
+   STATUS STYLES
+========================================================= */
+
 const statusStyles: Record<string, string> = {
-  Active: "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400",
+  Active:
+    "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400",
 
-  Pending: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
+  Pending:
+    "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
 
-  Inactive: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
+  Inactive:
+    "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
+
+  Suspended:
+    "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400",
 };
+
+const statusDots: Record<string, string> = {
+  Active: "bg-green-500",
+  Pending: "bg-amber-500",
+  Inactive: "bg-gray-400",
+  Suspended: "bg-red-500",
+};
+
+/* =========================================================
+   INITIALS
+========================================================= */
+
+function initials(name: string) {
+  if (!name) return "?";
+
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+/* =========================================================
+   AVATAR COLORS
+========================================================= */
 
 const avatarColors = [
   "bg-indigo-500",
@@ -168,50 +452,209 @@ const avatarColors = [
   "bg-violet-500",
 ];
 
-function initials(name: string) {
-  return name
-    .split(" ")
-    .map((word) => word[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
-
 function avatarColor(name: string) {
-  const sum = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const sum = name
+    .split("")
+    .reduce(
+      (acc, c) =>
+        acc + c.charCodeAt(0),
+      0
+    );
 
-  return avatarColors[sum % avatarColors.length];
+  return avatarColors[
+    sum % avatarColors.length
+  ];
 }
 
-function paidPercentage(teacher: Teacher) {
-  if (!teacher.students) return 0;
+/* =========================================================
+   PAID PERCENTAGE
+========================================================= */
 
-  return Math.round((teacher.paidStudents / teacher.students) * 100);
+function paidPercentage(
+  teacher: Teacher
+) {
+  if (!teacher.students) {
+    return 0;
+  }
+
+  return Math.round(
+    (teacher.paidStudents /
+      teacher.students) *
+      100
+  );
 }
+
+/* =========================================================
+   DATE FORMAT
+========================================================= */
+
+function formatDate(
+  date: string | null
+) {
+  if (!date) return ;
+
+  const parsed = new Date(date);
+
+  if (
+    Number.isNaN(parsed.getTime())
+  ) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat(
+    "en-NG",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }
+  ).format(parsed);
+}
+
+/* =========================================================
+   PAGINATION
+========================================================= */
+
+function nextPage() {
+  if (
+    currentPage.value >=
+    totalPages.value
+  ) {
+    return;
+  }
+
+  currentPage.value++;
+  fetchTeachers();
+}
+
+function previousPage() {
+  if (currentPage.value <= 1) {
+    return;
+  }
+
+  currentPage.value--;
+  fetchTeachers();
+}
+
+function goToPage(page: number) {
+  if (
+    page < 1 ||
+    page > totalPages.value
+  ) {
+    return;
+  }
+
+  currentPage.value = page;
+  fetchTeachers();
+}
+
+/* =========================================================
+   REFRESH
+========================================================= */
+
+function refreshTeachers() {
+  fetchTeachers();
+}
+
+/* =========================================================
+   INITIAL LOAD
+========================================================= */
+
+onMounted(() => {
+  fetchTeachers();
+});
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+  <div
+    class="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto"
+  >
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div
+      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
+    >
       <div>
-        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight">
-          Teachers
-        </h1>
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center"
+          >
+            <Icon
+              name="i-heroicons-academic-cap"
+              class="w-5 h-5 text-indigo-600 dark:text-indigo-400"
+            />
+          </div>
 
-        <p class="text-sm text-gray-400 mt-1">
-          Manage teachers and monitor their students
-        </p>
+          <div>
+            <h1
+              class="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight"
+            >
+              Teachers
+            </h1>
+
+            <p
+              class="text-sm text-gray-400 mt-0.5"
+            >
+              Manage all teachers and their students
+            </p>
+          </div>
+        </div>
       </div>
- <CreateUser
-        type="teacher"
-        button-text="Add Teacher s"
-        button-icon="lucide:user-plus"
-        button-icon-class="h-5 w-5"
-      />
+
+      <div class="flex items-center gap-2">
+        <!-- Refresh -->
+        <button
+          type="button"
+          title="Refresh teachers"
+          @click="refreshTeachers"
+          :disabled="loading"
+          class="p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors disabled:opacity-50"
+        >
+          <Icon
+            name="i-heroicons-arrow-path"
+            class="w-5 h-5"
+            :class="{
+              'animate-spin': loading,
+            }"
+          />
+        </button>
+
+        <CreateUser
+          type="teacher"
+          button-text="Add Teacher"
+          button-icon="lucide:user-plus"
+          button-icon-class="h-5 w-5"
+        />
+      </div>
     </div>
 
-    <!-- Teacher List -->
+    <!-- Error -->
+    <div
+      v-if="errorMessage"
+      class="mb-5 rounded-xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 px-4 py-3 flex items-center justify-between gap-3"
+    >
+      <div class="flex items-center gap-2">
+        <Icon
+          name="i-heroicons-exclamation-triangle"
+          class="w-5 h-5 text-red-500"
+        />
+
+        <p
+          class="text-sm text-red-700 dark:text-red-400"
+        >
+          {{ errorMessage }}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        @click="fetchTeachers"
+        class="text-sm font-medium text-red-600 hover:text-red-700"
+      >
+        Retry
+      </button>
+    </div>
+
+    <!-- Data List -->
     <UiDataList
       :items="filteredTeachers"
       :columns="columns"
@@ -221,46 +664,96 @@ function paidPercentage(teacher: Teacher) {
     >
       <!-- Filters -->
       <template #filters>
-        <select
-          v-model="selectedStatus"
-          class="text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
+        <div
+          class="flex flex-col sm:flex-row gap-2"
         >
-          <option v-for="status in statuses" :key="status" :value="status">
-            {{ status }}
-          </option>
-        </select>
+          <!-- Search -->
+          <div class="relative">
+            <Icon
+              name="i-heroicons-magnifying-glass"
+              class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+            />
+
+            <input
+              v-model="search"
+              type="search"
+              placeholder="Search teachers..."
+              class="w-full sm:w-64 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-9 pr-3 py-2.5 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
+            />
+          </div>
+
+          <!-- Status -->
+          <select
+            v-model="selectedStatus"
+            class="text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
+          >
+            <option
+              v-for="status in statuses"
+              :key="status"
+              :value="status"
+            >
+              {{ status }}
+            </option>
+          </select>
+        </div>
       </template>
 
       <!-- Teacher -->
       <template #cell-name="{ item }">
-        <div class="flex items-center gap-3 min-w-[240px]">
+        <div
+          class="flex items-center gap-3 min-w-[240px]"
+        >
+          <!-- Real Avatar -->
+          <img
+            v-if="item.image"
+            :src="item.image"
+            :alt="item.name"
+            class="w-10 h-10 rounded-full object-cover shrink-0 shadow-sm"
+          />
+
+          <!-- Initial Avatar -->
           <div
-            class="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
+            v-else
+            class="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0 shadow-sm"
             :class="avatarColor(item.name)"
           >
             {{ initials(item.name) }}
           </div>
 
+          <!-- Details -->
           <div class="min-w-0">
-            <p class="font-medium text-gray-900 dark:text-white truncate">
+            <p
+              class="font-medium text-gray-900 dark:text-white truncate"
+            >
               {{ item.name }}
             </p>
 
-            <div class="flex items-center gap-1.5 mt-0.5">
+            <div
+              class="flex items-center gap-1.5 mt-0.5"
+            >
               <Icon
                 name="i-heroicons-envelope"
                 class="w-3.5 h-3.5 text-gray-400 shrink-0"
               />
 
-              <p class="text-xs text-gray-400 truncate">
+              <p
+                class="text-xs text-gray-400 truncate"
+              >
                 {{ item.email }}
               </p>
             </div>
 
-            <div class="flex items-center gap-1.5 mt-0.5">
-              <Icon name="i-heroicons-phone" class="w-3.5 h-3.5 text-gray-400 shrink-0" />
+            <div
+              class="flex items-center gap-1.5 mt-0.5"
+            >
+              <Icon
+                name="i-heroicons-phone"
+                class="w-3.5 h-3.5 text-gray-400 shrink-0"
+              />
 
-              <p class="text-[11px] text-gray-400">
+              <p
+                class="text-xs text-gray-400"
+              >
                 {{ item.phone }}
               </p>
             </div>
@@ -268,22 +761,32 @@ function paidPercentage(teacher: Teacher) {
         </div>
       </template>
 
-      <!-- Students -->
+      <!-- Students / Paid -->
       <template #cell-students="{ item }">
         <div class="min-w-[150px]">
-          <div class="flex items-center gap-2">
-            <span class="font-semibold text-gray-900 dark:text-white">
+          <div
+            class="flex items-center gap-2"
+          >
+            <span
+              class="font-semibold text-gray-900 dark:text-white"
+            >
               {{ item.students }}
             </span>
 
-            <span class="text-gray-400"> / </span>
+            <span class="text-gray-400">
+              /
+            </span>
 
-            <span class="font-semibold text-emerald-600 dark:text-emerald-400">
+            <span
+              class="font-semibold text-emerald-600 dark:text-emerald-400"
+            >
               {{ item.paidStudents }}
             </span>
           </div>
 
-          <div class="flex items-center gap-2 mt-1.5">
+          <div
+            class="flex items-center gap-2 mt-1.5"
+          >
             <div
               class="w-20 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden"
             >
@@ -295,10 +798,49 @@ function paidPercentage(teacher: Teacher) {
               />
             </div>
 
-            <span class="text-[11px] text-gray-400"> {{ paidPercentage(item) }}% </span>
+            <span
+              class="text-[11px] text-gray-400"
+            >
+              {{ paidPercentage(item) }}%
+            </span>
           </div>
 
-          <p class="text-[11px] text-gray-400 mt-1">Students / Paid</p>
+          <p
+            class="text-[11px] text-gray-400 mt-1"
+          >
+            Students / Paid
+          </p>
+        </div>
+      </template>
+
+      <!-- Admin -->
+      <template #cell-last-login="{ item }">
+        <div
+          class="flex items-center gap-2"
+        >
+          <div
+            class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center shrink-0"
+          >
+            <Icon
+              name="i-heroicons-user"
+              class="w-4 h-4 text-indigo-500"
+            />
+          </div>
+
+          <div class="min-w-0">
+            <p
+              class="font-medium text-gray-700 dark:text-gray-200 truncate"
+            >
+             
+              {{ formatDate(item.lastLogin)  || 'Never' }}
+            </p>
+
+            <p
+              class="text-[11px] text-gray-400"
+            >
+              Last activity
+            </p>
+          </div>
         </div>
       </template>
 
@@ -310,102 +852,104 @@ function paidPercentage(teacher: Teacher) {
         >
           <span
             class="w-1.5 h-1.5 rounded-full"
-            :class="{
-              'bg-green-500': item.status === 'Active',
-              'bg-amber-500': item.status === 'Pending',
-              'bg-gray-400': item.status === 'Inactive',
-            }"
+            :class="statusDots[item.status]"
           />
 
           {{ item.status }}
         </span>
       </template>
 
-      <!-- Joined -->
-      <template #cell-joinedAt="{ item }">
-        <div class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-          <Icon name="i-heroicons-calendar-days" class="w-4 h-4 text-gray-400" />
-
-          <span class="text-sm">
-            {{ item.joinedAt }}
-          </span>
-        </div>
-      </template>
-
       <!-- Actions -->
       <template #actions_row="{ item }">
         <button
-          title="View teacher"
+          title="Edit teacher"
           class="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
         >
-          <Icon name="i-heroicons-eye" class="w-4 h-4" />
-        </button>
-
-        <button
-          title="Edit teacher"
-          class="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors ml-1"
-        >
-          <Icon name="i-heroicons-pencil-square" class="w-4 h-4" />
+          <Icon
+            name="i-heroicons-pencil-square"
+            class="w-4 h-4"
+          />
         </button>
 
         <button
           title="Delete teacher"
           class="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors ml-1"
         >
-          <Icon name="i-heroicons-trash" class="w-4 h-4" />
+          <Icon
+            name="i-heroicons-trash"
+            class="w-4 h-4"
+          />
         </button>
       </template>
     </UiDataList>
 
-    <!-- Small Summary -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-      <div
-        class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
-      >
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm text-gray-400">Students Assigned</p>
+    <!-- Pagination -->
+    <div
+      v-if="totalTeachers > 0"
+      class="mt-5 flex flex-col sm:flex-row items-center justify-between gap-3"
+    >
+      <p class="text-sm text-gray-400">
+        Page {{ currentPage }} of {{ totalPages }}
+        · {{ totalTeachers }} teachers
+      </p>
 
-            <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">
-              {{ totalStudents }}
-            </p>
+      <div class="flex items-center gap-1">
+        <button
+          type="button"
+          @click="previousPage"
+          :disabled="
+            currentPage === 1 || loading
+          "
+          class="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Previous
+        </button>
 
-            <p class="text-xs text-gray-400 mt-1">Across {{ totalTeachers }} teachers</p>
-          </div>
+        <button
+          v-for="page in totalPages"
+          :key="page"
+          type="button"
+          @click="goToPage(page)"
+          class="min-w-9 px-2 py-2 rounded-lg text-sm transition-colors"
+          :class="
+            page === currentPage
+              ? 'bg-indigo-600 text-white'
+              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+          "
+        >
+          {{ page }}
+        </button>
 
-          <div
-            class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center"
-          >
-            <Icon name="i-heroicons-academic-cap" class="w-5 h-5 text-indigo-500" />
-          </div>
-        </div>
+        <button
+          type="button"
+          @click="nextPage"
+          :disabled="
+            currentPage === totalPages ||
+            loading
+          "
+          class="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Next
+        </button>
       </div>
+    </div>
 
-      <div
-        class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
+    <!-- Loading -->
+    <div
+      v-if="loading && !teachers.length"
+      class="py-12 flex flex-col items-center justify-center"
+    >
+      <Icon
+        name="i-heroicons-arrow-path"
+        class="w-8 h-8 text-indigo-500 animate-spin"
+      />
+
+      <p
+        class="mt-3 text-sm text-gray-400"
       >
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm text-gray-400">Subscribed Students</p>
-
-            <p class="text-xl font-bold text-gray-900 dark:text-white mt-1">
-              {{ totalPaidStudents }}
-            </p>
-
-            <p class="text-xs text-emerald-500 mt-1">
-              {{
-                totalStudents ? Math.round((totalPaidStudents / totalStudents) * 100) : 0
-              }}% conversion
-            </p>
-          </div>
-
-          <div
-            class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center"
-          >
-            <Icon name="i-heroicons-check-circle" class="w-5 h-5 text-emerald-500" />
-          </div>
-        </div>
-      </div>
+        Loading teachers...
+      </p>
     </div>
   </div>
 </template>
+

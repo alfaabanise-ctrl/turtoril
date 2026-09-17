@@ -1,248 +1,712 @@
-```vue
+
 <script setup lang="ts">
+import { computed, onMounted, ref } from "vue";
+
 definePageMeta({
   layout: "nav",
 });
 
-interface Student {
-  id: number;
-  name: string;
+/*
+|--------------------------------------------------------------------------
+| TYPES
+|--------------------------------------------------------------------------
+*/
+
+interface DashboardStats {
+  totalUsers: number;
+  totalStudents: number;
+  totalTeachers: number;
+  totalAdmins: number;
+
+  activeUsers: number;
+
+  totalTokens: number;
+  activeTokens: number;
+  unusedTokens: number;
+  usedTokens: number;
+  expiredTokens: number;
+  revokedTokens: number;
+
+  activeSubscriptions: number;
+
+  totalRevenue: number;
+  tokenRevenue: number;
+
+  changes: {
+    students: number;
+    teachers: number;
+    admins: number;
+    revenue: number;
+  };
+}
+
+interface RecentStudent {
+  _id?: string;
+  id?: string;
+
+  name?: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
+
   email: string;
-  status: "Active" | "Pending" | "Expired";
-  joinedAt: string;
+
+  status:
+    | "Active"
+    | "Pending"
+    | "Expired"
+    | "Suspended"
+    | "Inactive";
+
+  createdAt?: string;
+  joinedAt?: string;
+
+  avatar?: string | null;
+  avatar_public_id?: string | null;
 }
 
-interface Payment {
-  id: number;
-  student: string;
-  amount: number;
-  plan: "Monthly" | "Quarterly" | "Yearly";
-  status: "Successful" | "Pending" | "Failed";
-  date: string;
-}
-
-interface Teacher {
-  id: number;
+interface TopTeacher {
+  id: string;
   name: string;
   students: number;
   paidStudents: number;
+  conversion: number;
 }
 
-const stats = [
-  {
-    label: "Total Students",
-    value: "1,248",
-    change: "+12.5%",
-    description: "from last month",
-    icon: "i-heroicons-academic-cap",
-    iconClass: "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400",
-    positive: true,
-  },
-  {
-    label: "Total Teachers",
-    value: "86",
-    change: "+8.2%",
-    description: "from last month",
-    icon: "i-heroicons-user-group",
-    iconClass:
-      "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400",
-    positive: true,
-  },
-  {
-    label: "Total Admins",
-    value: "12",
-    change: "+2",
-    description: "new this month",
-    icon: "i-heroicons-shield-check",
-    iconClass: "bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400",
-    positive: true,
-  },
-  {
-    label: "Active Subscriptions",
-    value: "934",
-    change: "+15.8%",
-    description: "from last month",
-    icon: "i-heroicons-rectangle-stack",
-    iconClass: "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
-    positive: true,
-  },
-  {
-    label: "Total Revenue",
-    value: "₦4.82M",
-    change: "+18.4%",
-    description: "from last month",
-    icon: "i-heroicons-banknotes",
-    iconClass: "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400",
-    positive: true,
-  },
-];
+interface RevenueItem {
+  month: string;
+  value: number;
+}
 
-const revenueData = [
-  { month: "Mar", value: 320000 },
-  { month: "Apr", value: 410000 },
-  { month: "May", value: 580000 },
-  { month: "Jun", value: 720000 },
-  { month: "Jul", value: 850000 },
-  { month: "Aug", value: 970000 },
-  { month: "Sep", value: 1120000 },
-];
+interface StudentGrowthItem {
+  month: string;
+  value: number;
+  newStudents?: number;
+}
 
-const studentGrowth = [
-  { month: "Mar", value: 640 },
-  { month: "Apr", value: 720 },
-  { month: "May", value: 815 },
-  { month: "Jun", value: 910 },
-  { month: "Jul", value: 1030 },
-  { month: "Aug", value: 1140 },
-  { month: "Sep", value: 1248 },
-];
+interface Payment {
+  id: string;
+  txRef?: string;
 
-const recentStudents: Student[] = [
-  {
-    id: 1,
-    name: "Amaka Obi",
-    email: "amaka@gmail.com",
-    status: "Active",
-    joinedAt: "12 Sep 2026",
-  },
-  {
-    id: 2,
-    name: "Tunde Bello",
-    email: "tunde@gmail.com",
-    status: "Pending",
-    joinedAt: "11 Sep 2026",
-  },
-  {
-    id: 3,
-    name: "Chiamaka Eze",
-    email: "chiamaka@gmail.com",
-    status: "Active",
-    joinedAt: "10 Sep 2026",
-  },
-  {
-    id: 4,
-    name: "David Okon",
-    email: "david@gmail.com",
-    status: "Expired",
-    joinedAt: "09 Sep 2026",
-  },
-  {
-    id: 5,
-    name: "Blessing Johnson",
-    email: "blessing@gmail.com",
-    status: "Active",
-    joinedAt: "08 Sep 2026",
-  },
-];
+  student: string;
+  email?: string;
 
-const recentPayments: Payment[] = [
-  {
-    id: 1,
-    student: "Amaka Obi",
-    amount: 25000,
-    plan: "Yearly",
-    status: "Successful",
-    date: "12 Sep 2026",
-  },
-  {
-    id: 2,
-    student: "Ibrahim Musa",
-    amount: 8500,
-    plan: "Quarterly",
-    status: "Successful",
-    date: "11 Sep 2026",
-  },
-  {
-    id: 3,
-    student: "Blessing Johnson",
-    amount: 25000,
-    plan: "Yearly",
-    status: "Successful",
-    date: "10 Sep 2026",
-  },
-  {
-    id: 4,
-    student: "Tunde Bello",
-    amount: 3000,
-    plan: "Monthly",
-    status: "Pending",
-    date: "10 Sep 2026",
-  },
-  {
-    id: 5,
-    student: "Sarah James",
-    amount: 3000,
-    plan: "Monthly",
-    status: "Successful",
-    date: "09 Sep 2026",
-  },
-];
+  amount: number;
 
-const topTeachers: Teacher[] = [
-  {
-    id: 1,
-    name: "Mr. Okafor",
-    students: 124,
-    paidStudents: 98,
-  },
-  {
-    id: 2,
-    name: "Mrs. Adaeze",
-    students: 108,
-    paidStudents: 82,
-  },
-  {
-    id: 3,
-    name: "Mr. Adewale",
-    students: 96,
-    paidStudents: 79,
-  },
-  {
-    id: 4,
-    name: "Mr. Yusuf",
-    students: 91,
-    paidStudents: 72,
-  },
-  {
-    id: 5,
-    name: "Mrs. Grace",
-    students: 84,
-    paidStudents: 68,
-  },
-];
+  plan?: string;
 
-const revenueMax = Math.max(...revenueData.map((item) => item.value));
+  paymentPurpose?: string;
+  subscriptionType?: string;
 
-const growthMax = Math.max(...studentGrowth.map((item) => item.value));
+  paymentMethod?: string;
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(value);
+  status: string;
+
+  date: string;
+  paidAt?: string;
+}
+
+interface TokenPlan {
+  plan: string;
+  total: number;
+  revenue: number;
+}
+
+interface TokenStatus {
+  unused: number;
+  active: number;
+  used: number;
+  expired: number;
+  revoked: number;
+}
+
+interface TokenPurchase {
+  id?: string;
+
+  token: string;
+
+  plan: "Monthly" | "Quarterly" | "Yearly" | string;
+
+  amount: number;
+
+  status: string;
+
+  paymentReference?: string | null;
+
+  createdAt: string;
+
+  activatedAt?: string | null;
+
+  expiresAt?: string | null;
+
+  owner?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
+}
+
+interface DashboardResponse {
+  stats: DashboardStats;
+
+  users?: {
+    total: number;
+    students: number;
+    teachers: number;
+    admins: number;
+    active: number;
+    inactive: number;
+    suspended: number;
+    newThisMonth: number;
+    newStudentsThisMonth: number;
+    newTeachersThisMonth: number;
+  };
+
+  tokens?: {
+    total: number;
+    unused: number;
+    active: number;
+    currentlyActive: number;
+    used: number;
+    expired: number;
+    revoked: number;
+    currentlyExpired: number;
+
+    statuses: TokenStatus;
+
+    plans: TokenPlan[];
+  };
+
+  revenue: {
+    total: number;
+    tokenRevenue?: number;
+    currentMonth?: number;
+    previousMonth?: number;
+    growth: number;
+    data: RevenueItem[];
+  };
+
+  recentStudents: RecentStudent[];
+
+  recentPayments: Payment[];
+
+  recentTokenPurchases?: TokenPurchase[];
+
+  formattedTokenPurchases?: TokenPurchase[];
+
+  topTeachers: TopTeacher[];
+
+  studentGrowth: StudentGrowthItem[];
+}
+
+/*
+|--------------------------------------------------------------------------
+| STATE
+|--------------------------------------------------------------------------
+*/
+
+const loading = ref(true);
+const refreshing = ref(false);
+const errorMessage = ref("");
+
+const dashboard = ref<DashboardResponse>({
+  stats: {
+    totalUsers: 0,
+    totalStudents: 0,
+    totalTeachers: 0,
+    totalAdmins: 0,
+
+    activeUsers: 0,
+
+    totalTokens: 0,
+    activeTokens: 0,
+    unusedTokens: 0,
+    usedTokens: 0,
+    expiredTokens: 0,
+    revokedTokens: 0,
+
+    activeSubscriptions: 0,
+
+    totalRevenue: 0,
+    tokenRevenue: 0,
+
+    changes: {
+      students: 0,
+      teachers: 0,
+      admins: 0,
+      revenue: 0,
+    },
+  },
+
+  users: {
+    total: 0,
+    students: 0,
+    teachers: 0,
+    admins: 0,
+    active: 0,
+    inactive: 0,
+    suspended: 0,
+    newThisMonth: 0,
+    newStudentsThisMonth: 0,
+    newTeachersThisMonth: 0,
+  },
+
+  tokens: {
+    total: 0,
+    unused: 0,
+    active: 0,
+    currentlyActive: 0,
+    used: 0,
+    expired: 0,
+    revoked: 0,
+    currentlyExpired: 0,
+
+    statuses: {
+      unused: 0,
+      active: 0,
+      used: 0,
+      expired: 0,
+      revoked: 0,
+    },
+
+    plans: [],
+  },
+
+  recentStudents: [],
+  recentPayments: [],
+  recentTokenPurchases: [],
+  formattedTokenPurchases: [],
+  topTeachers: [],
+  studentGrowth: [],
+
+  revenue: {
+    total: 0,
+    tokenRevenue: 0,
+    currentMonth: 0,
+    previousMonth: 0,
+    growth: 0,
+    data: [],
+  },
+});
+
+/*
+|--------------------------------------------------------------------------
+| FETCH DASHBOARD
+|--------------------------------------------------------------------------
+*/
+
+const fetchDashboard = async (showRefresh = false) => {
+  if (showRefresh) {
+    refreshing.value = true;
+  } else {
+    loading.value = true;
+  }
+
+  errorMessage.value = "";
+
+  try {
+    /*
+     * Your route is:
+     * GET /superadmin/dashboard
+     *
+     * If your actual route is /super-admin/dashboard,
+     * change it here.
+     */
+
+    const response = await useApiFetch<{
+      success: boolean;
+      data: DashboardResponse;
+    }>("/superadmin/dashboard");
+
+    console.log(
+      "SUPER ADMIN DASHBOARD RESPONSE:",
+      response
+    );
+
+    if (!response.success) {
+      errorMessage.value =
+        response.message ||
+        "Failed to load dashboard.";
+
+      return;
+    }
+
+    if (!response.data?.data) {
+      errorMessage.value =
+        "Dashboard returned no data.";
+
+      return;
+    }
+
+    dashboard.value = response.data.data;
+  } catch (error: any) {
+    console.error(
+      "DASHBOARD FETCH ERROR:",
+      error
+    );
+
+    errorMessage.value =
+      error?.message ||
+      "Failed to load dashboard.";
+  } finally {
+    loading.value = false;
+    refreshing.value = false;
+  }
 };
 
-const formatCompactCurrency = (value: number) => {
+/*
+|--------------------------------------------------------------------------
+| STATS CARDS
+|--------------------------------------------------------------------------
+*/
+
+const stats = computed(() => {
+  const data = dashboard.value;
+
+  return [
+    {
+      label: "Total Users",
+      value:
+        data.stats.totalUsers.toLocaleString(),
+
+      change: "",
+
+      description: `${data.stats.activeUsers.toLocaleString()} active users`,
+
+      icon: "i-heroicons-users",
+
+      iconClass:
+        "bg-slate-50 text-slate-600 dark:bg-slate-500/10 dark:text-slate-400",
+
+      positive: true,
+    },
+
+    {
+      label: "Total Students",
+
+      value:
+        data.stats.totalStudents.toLocaleString(),
+
+      change:
+        `${data.stats.changes.students >= 0 ? "+" : ""}${data.stats.changes.students}%`,
+
+      description: "from last month",
+
+      icon:
+        "i-heroicons-academic-cap",
+
+      iconClass:
+        "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400",
+
+      positive:
+        data.stats.changes.students >= 0,
+    },
+
+    {
+      label: "Total Teachers",
+
+      value:
+        data.stats.totalTeachers.toLocaleString(),
+
+      change:
+        `${data.stats.changes.teachers >= 0 ? "+" : ""}${data.stats.changes.teachers}%`,
+
+      description: "from last month",
+
+      icon:
+        "i-heroicons-user-group",
+
+      iconClass:
+        "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400",
+
+      positive:
+        data.stats.changes.teachers >= 0,
+    },
+
+    {
+      label: "Total Admins",
+
+      value:
+        data.stats.totalAdmins.toLocaleString(),
+
+      change:
+        `${data.stats.changes.admins >= 0 ? "+" : ""}${data.stats.changes.admins}%`,
+
+      description: "administrators",
+
+      icon:
+        "i-heroicons-shield-check",
+
+      iconClass:
+        "bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400",
+
+      positive:
+        data.stats.changes.admins >= 0,
+    },
+
+    {
+      label: "Total Tokens",
+
+      value:
+        data.stats.totalTokens.toLocaleString(),
+
+      change: "",
+
+      description:
+        "software tokens generated",
+
+      icon:
+        "i-heroicons-key",
+
+      iconClass:
+        "bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400",
+
+      positive: true,
+    },
+
+    {
+      label: "Active Tokens",
+
+      value:
+        data.stats.activeTokens.toLocaleString(),
+
+      change: "",
+
+      description:
+        "currently active",
+
+      icon:
+        "i-heroicons-check-badge",
+
+      iconClass:
+        "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400",
+
+      positive: true,
+    },
+
+    {
+      label: "Unused Tokens",
+
+      value:
+        data.stats.unusedTokens.toLocaleString(),
+
+      change: "",
+
+      description:
+        "available for activation",
+
+      icon:
+        "i-heroicons-ticket",
+
+      iconClass:
+        "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
+
+      positive: true,
+    },
+
+    {
+      label: "Total Revenue",
+
+      value:
+        formatCompactCurrency(
+          data.stats.totalRevenue
+        ),
+
+      change:
+        data.revenue.growth !== 0
+          ? `${data.revenue.growth >= 0 ? "+" : ""}${data.revenue.growth}%`
+          : "",
+
+      description:
+        "verified platform revenue",
+
+      icon:
+        "i-heroicons-banknotes",
+
+      iconClass:
+        "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400",
+
+      positive:
+        data.revenue.growth >= 0,
+    },
+  ];
+});
+
+/*
+|--------------------------------------------------------------------------
+| DATA
+|--------------------------------------------------------------------------
+*/
+
+const revenueData = computed(
+  () =>
+    dashboard.value.revenue?.data || []
+);
+
+const studentGrowth = computed(
+  () =>
+    dashboard.value.studentGrowth || []
+);
+
+const recentStudents = computed(
+  () =>
+    dashboard.value.recentStudents || []
+);
+
+const recentPayments = computed(
+  () =>
+    dashboard.value.recentPayments || []
+);
+
+const topTeachers = computed(
+  () =>
+    dashboard.value.topTeachers || []
+);
+
+const tokenPurchases = computed(
+  () =>
+    dashboard.value
+      .formattedTokenPurchases ||
+    dashboard.value.recentTokenPurchases ||
+    []
+);
+
+const tokenPlans = computed(
+  () =>
+    dashboard.value.tokens?.plans || []
+);
+
+const tokenStatuses = computed(
+  () =>
+    dashboard.value.tokens?.statuses || {
+      unused: 0,
+      active: 0,
+      used: 0,
+      expired: 0,
+      revoked: 0,
+    }
+);
+
+/*
+|--------------------------------------------------------------------------
+| CHART MAXIMUMS
+|--------------------------------------------------------------------------
+*/
+
+const revenueMax = computed(() => {
+  if (!revenueData.value.length) {
+    return 1;
+  }
+
+  return Math.max(
+    ...revenueData.value.map(
+      (item) => item.value
+    ),
+    1
+  );
+});
+
+const growthMax = computed(() => {
+  if (!studentGrowth.value.length) {
+    return 1;
+  }
+
+  return Math.max(
+    ...studentGrowth.value.map(
+      (item) => item.value
+    ),
+    1
+  );
+});
+
+/*
+|--------------------------------------------------------------------------
+| FORMATTING
+|--------------------------------------------------------------------------
+*/
+
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat(
+    "en-NG",
+    {
+      style: "currency",
+      currency: "NGN",
+      maximumFractionDigits: 0,
+    }
+  ).format(value);
+};
+
+const formatCompactCurrency = (
+  value: number
+) => {
+  if (value >= 1000000000) {
+    return `₦${(
+      value / 1000000000
+    ).toFixed(1)}B`;
+  }
+
   if (value >= 1000000) {
-    return `₦${(value / 1000000).toFixed(1)}M`;
+    return `₦${(
+      value / 1000000
+    ).toFixed(1)}M`;
   }
 
   if (value >= 1000) {
-    return `₦${Math.round(value / 1000)}K`;
+    return `₦${Math.round(
+      value / 1000
+    )}K`;
   }
 
-  return `₦${value}`;
+  return `₦${Math.round(value)}`;
 };
 
-const initials = (name: string) => {
+const initials = (name = "") => {
   return name
     .split(" ")
-    .map((part) => part.charAt(0))
+    .filter(Boolean)
+    .map(
+      (part) =>
+        part.charAt(0)
+    )
     .slice(0, 2)
     .join("")
     .toUpperCase();
 };
+
+/*
+|--------------------------------------------------------------------------
+| DATE FORMAT
+|--------------------------------------------------------------------------
+*/
+
+const formatDate = (
+  date?: string | null
+) => {
+  if (!date) {
+    return "—";
+  }
+
+  const parsed = new Date(date);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat(
+    "en-NG",
+    {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }
+  ).format(parsed);
+};
+
+/*
+|--------------------------------------------------------------------------
+| AVATAR
+|--------------------------------------------------------------------------
+*/
 
 const avatarColors = [
   "bg-indigo-500",
@@ -255,199 +719,949 @@ const avatarColors = [
   "bg-orange-500",
 ];
 
-const avatarColor = (name: string) => {
-  const index = name.charCodeAt(0) % avatarColors.length;
+const avatarColor = (name = "") => {
+  if (!name) {
+    return avatarColors[0];
+  }
+
+  const index =
+    name.charCodeAt(0) %
+    avatarColors.length;
+
   return avatarColors[index];
 };
 
-const studentStatusClass = (status: Student["status"]) => {
-  const styles = {
-    Active: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
-    Pending: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
-    Expired: "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
-  };
+/*
+|--------------------------------------------------------------------------
+| STUDENT STATUS
+|--------------------------------------------------------------------------
+*/
 
-  return styles[status];
-};
-
-const paymentStatusClass = (status: Payment["status"]) => {
+const studentStatusClass = (
+  status: RecentStudent["status"]
+) => {
   const styles = {
-    Successful:
+    Active:
       "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
-    Pending: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
-    Failed: "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
+
+    Pending:
+      "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
+
+    Expired:
+      "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
+
+    Suspended:
+      "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
+
+    Inactive:
+      "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
   };
 
-  return styles[status];
+  return (
+    styles[status] ||
+    styles.Inactive
+  );
 };
 
-const teacherConversion = (teacher: Teacher) => {
-  if (!teacher.students) return 0;
+/*
+|--------------------------------------------------------------------------
+| PAYMENT STATUS
+|--------------------------------------------------------------------------
+*/
 
-  return Math.round((teacher.paidStudents / teacher.students) * 100);
+const paymentStatusClass = (
+  status: string
+) => {
+  const normalized =
+    status.toLowerCase();
+
+  if (
+    normalized === "success" ||
+    normalized === "successful"
+  ) {
+    return "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400";
+  }
+
+  if (
+    normalized === "pending" ||
+    normalized === "processing"
+  ) {
+    return "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400";
+  }
+
+  return "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400";
 };
+
+/*
+|--------------------------------------------------------------------------
+| TOKEN STATUS
+|--------------------------------------------------------------------------
+*/
+
+const tokenStatusClass = (
+  status: string
+) => {
+  const styles: Record<
+    string,
+    string
+  > = {
+    unused:
+      "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
+
+    active:
+      "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
+
+    used:
+      "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400",
+
+    expired:
+      "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
+
+    revoked:
+      "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+  };
+
+  return (
+    styles[status.toLowerCase()] ||
+    styles.revoked
+  );
+};
+
+/*
+|--------------------------------------------------------------------------
+| TOKEN STATUS LABEL
+|--------------------------------------------------------------------------
+*/
+
+const tokenStatusLabel = (
+  status: string
+) => {
+  return (
+    status.charAt(0).toUpperCase() +
+    status.slice(1)
+  );
+};
+
+/*
+|--------------------------------------------------------------------------
+| TEACHER CONVERSION
+|--------------------------------------------------------------------------
+*/
+
+const teacherConversion = (
+  teacher: TopTeacher
+) => {
+  if (
+    typeof teacher.conversion ===
+    "number"
+  ) {
+    return Math.round(
+      teacher.conversion
+    );
+  }
+
+  if (!teacher.students) {
+    return 0;
+  }
+
+  return Math.round(
+    (teacher.paidStudents /
+      teacher.students) *
+      100
+  );
+};
+
+/*
+|--------------------------------------------------------------------------
+| TOKEN PLAN ICON
+|--------------------------------------------------------------------------
+*/
+
+const planIcon = (plan: string) => {
+  if (plan === "Monthly") {
+    return "i-heroicons-calendar";
+  }
+
+  if (plan === "Quarterly") {
+    return "i-heroicons-calendar-days";
+  }
+
+  if (plan === "Yearly") {
+    return "i-heroicons-star";
+  }
+
+  return "i-heroicons-cube";
+};
+
+/*
+|--------------------------------------------------------------------------
+| REFRESH
+|--------------------------------------------------------------------------
+*/
+
+const refreshDashboard = () => {
+  fetchDashboard(true);
+};
+
+/*
+|--------------------------------------------------------------------------
+| INITIAL LOAD
+|--------------------------------------------------------------------------
+*/
+
+onMounted(() => {
+  fetchDashboard();
+});
 </script>
 
 <template>
   <div class="space-y-6 pb-8">
-    <!-- Header -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-          Super Admin Dashboard
-        </h1>
 
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Overview of your platform's performance.
+    <!-- ========================================================= -->
+    <!-- HEADER -->
+    <!-- ========================================================= -->
+
+    <div
+      class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div>
+        <div class="flex items-center gap-2">
+          <div
+            class="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+          >
+            <Icon
+              name="i-heroicons-squares-2x2"
+              class="h-5 w-5"
+            />
+          </div>
+
+          <h1
+            class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white"
+          >
+            Super Admin Dashboard
+          </h1>
+        </div>
+
+        <p
+          class="mt-2 text-sm text-gray-500 dark:text-gray-400"
+        >
+          Overview of users, software tokens,
+          payments and platform revenue.
         </p>
       </div>
 
       <div class="flex items-center gap-2">
+
         <NuxtLink
           to="/super-admin/reports"
           class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
         >
-          <Icon name="i-heroicons-chart-bar-square" class="h-4 w-4" />
+          <Icon
+            name="i-heroicons-chart-bar-square"
+            class="h-4 w-4"
+          />
+
           Reports
         </NuxtLink>
 
         <button
-          class="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
+          type="button"
+          :disabled="refreshing"
+          @click="refreshDashboard"
+          class="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
         >
-          <Icon name="i-heroicons-arrow-path" class="h-4 w-4" />
-          Refresh
+          <Icon
+            name="i-heroicons-arrow-path"
+            class="h-4 w-4"
+            :class="{
+              'animate-spin': refreshing,
+            }"
+          />
+
+          {{
+            refreshing
+              ? "Refreshing..."
+              : "Refresh"
+          }}
         </button>
       </div>
     </div>
 
-    <!-- Stats -->
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <!-- ========================================================= -->
+    <!-- ERROR -->
+    <!-- ========================================================= -->
+
+    <div
+      v-if="errorMessage"
+      class="flex items-center justify-between gap-4 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-500/10 dark:text-rose-400"
+    >
+      <div class="flex items-center gap-3">
+        <Icon
+          name="i-heroicons-exclamation-triangle"
+          class="h-5 w-5"
+        />
+
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <button
+        type="button"
+        @click="fetchDashboard()"
+        class="font-semibold underline"
+      >
+        Retry
+      </button>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- MAIN STATS -->
+    <!-- ========================================================= -->
+
+    <div
+      class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+    >
       <div
         v-for="stat in stats"
         :key="stat.label"
-        class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+        class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
       >
-        <div class="flex items-start justify-between gap-3">
+        <div
+          class="flex items-start justify-between gap-3"
+        >
           <div
             class="flex h-11 w-11 items-center justify-center rounded-xl"
             :class="stat.iconClass"
           >
-            <Icon :name="stat.icon" class="h-5 w-5" />
+            <Icon
+              :name="stat.icon"
+              class="h-5 w-5"
+            />
           </div>
 
           <span
-            class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
+            v-if="stat.change"
+            class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium"
+            :class="
+              stat.positive
+                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                : 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'
+            "
           >
-            <Icon name="i-heroicons-arrow-trending-up" class="h-3 w-3" />
+            <Icon
+              :name="
+                stat.positive
+                  ? 'i-heroicons-arrow-trending-up'
+                  : 'i-heroicons-arrow-trending-down'
+              "
+              class="h-3 w-3"
+            />
+
             {{ stat.change }}
           </span>
         </div>
 
         <div class="mt-4">
-          <p class="text-sm text-gray-500 dark:text-gray-400">
+          <p
+            class="text-sm text-gray-500 dark:text-gray-400"
+          >
             {{ stat.label }}
           </p>
 
-          <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+          <p
+            class="mt-1 text-2xl font-bold text-gray-900 dark:text-white"
+          >
             {{ stat.value }}
           </p>
 
-          <p class="mt-1 text-xs text-gray-400">
+          <p
+            class="mt-1 text-xs text-gray-400"
+          >
             {{ stat.description }}
           </p>
         </div>
       </div>
     </div>
 
-    <!-- Charts -->
-    <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-      <!-- Revenue -->
+    <!-- ========================================================= -->
+    <!-- TOKEN OVERVIEW -->
+    <!-- ========================================================= -->
+
+    <div
+      class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
+    >
       <div
-        class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+        class="border-b border-gray-100 px-5 py-4 dark:border-gray-800"
       >
-        <div class="flex items-center justify-between">
+        <div
+          class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+        >
           <div>
-            <h2 class="font-semibold text-gray-900 dark:text-white">Revenue Overview</h2>
-            <p class="mt-1 text-xs text-gray-400">
-              Revenue generated over the last 7 months
+            <h2
+              class="font-semibold text-gray-900 dark:text-white"
+            >
+              Software Token Overview
+            </h2>
+
+            <p
+              class="mt-1 text-xs text-gray-400"
+            >
+              Current state of all software tokens
+              in your platform.
             </p>
           </div>
 
-          <span
-            class="rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
+          <NuxtLink
+            to="/super-admin/tokens"
+            class="text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
           >
-            +18.4%
-          </span>
+            Manage tokens
+          </NuxtLink>
+        </div>
+      </div>
+
+      <div
+        class="grid grid-cols-2 divide-x divide-y divide-gray-100 sm:grid-cols-5 sm:divide-y-0 dark:divide-gray-800"
+      >
+        <!-- UNUSED -->
+
+        <div class="p-5">
+          <div
+            class="flex items-center gap-2"
+          >
+            <div
+              class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-500/10"
+            >
+              <Icon
+                name="i-heroicons-ticket"
+                class="h-4 w-4 text-amber-600 dark:text-amber-400"
+              />
+            </div>
+
+            <span
+              class="text-xs text-gray-400"
+            >
+              Unused
+            </span>
+          </div>
+
+          <p
+            class="mt-3 text-xl font-bold text-gray-900 dark:text-white"
+          >
+            {{ tokenStatuses.unused.toLocaleString() }}
+          </p>
+
+          <p class="mt-1 text-[11px] text-gray-400">
+            Available
+          </p>
         </div>
 
-        <div class="mt-6 flex h-64 items-end gap-3 sm:gap-5">
+        <!-- ACTIVE -->
+
+        <div class="p-5">
+          <div
+            class="flex items-center gap-2"
+          >
+            <div
+              class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/10"
+            >
+              <Icon
+                name="i-heroicons-check-badge"
+                class="h-4 w-4 text-emerald-600 dark:text-emerald-400"
+              />
+            </div>
+
+            <span
+              class="text-xs text-gray-400"
+            >
+              Active
+            </span>
+          </div>
+
+          <p
+            class="mt-3 text-xl font-bold text-gray-900 dark:text-white"
+          >
+            {{ tokenStatuses.active.toLocaleString() }}
+          </p>
+
+          <p class="mt-1 text-[11px] text-gray-400">
+            Activated
+          </p>
+        </div>
+
+        <!-- USED -->
+
+        <div class="p-5">
+          <div
+            class="flex items-center gap-2"
+          >
+            <div
+              class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-500/10"
+            >
+              <Icon
+                name="i-heroicons-check"
+                class="h-4 w-4 text-indigo-600 dark:text-indigo-400"
+              />
+            </div>
+
+            <span
+              class="text-xs text-gray-400"
+            >
+              Used
+            </span>
+          </div>
+
+          <p
+            class="mt-3 text-xl font-bold text-gray-900 dark:text-white"
+          >
+            {{ tokenStatuses.used.toLocaleString() }}
+          </p>
+
+          <p class="mt-1 text-[11px] text-gray-400">
+            Completed
+          </p>
+        </div>
+
+        <!-- EXPIRED -->
+
+        <div class="p-5">
+          <div
+            class="flex items-center gap-2"
+          >
+            <div
+              class="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-50 dark:bg-rose-500/10"
+            >
+              <Icon
+                name="i-heroicons-clock"
+                class="h-4 w-4 text-rose-600 dark:text-rose-400"
+              />
+            </div>
+
+            <span
+              class="text-xs text-gray-400"
+            >
+              Expired
+            </span>
+          </div>
+
+          <p
+            class="mt-3 text-xl font-bold text-gray-900 dark:text-white"
+          >
+            {{ tokenStatuses.expired.toLocaleString() }}
+          </p>
+
+          <p class="mt-1 text-[11px] text-gray-400">
+            No longer active
+          </p>
+        </div>
+
+        <!-- REVOKED -->
+
+        <div class="p-5">
+          <div
+            class="flex items-center gap-2"
+          >
+            <div
+              class="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800"
+            >
+              <Icon
+                name="i-heroicons-no-symbol"
+                class="h-4 w-4 text-gray-500"
+              />
+            </div>
+
+            <span
+              class="text-xs text-gray-400"
+            >
+              Revoked
+            </span>
+          </div>
+
+          <p
+            class="mt-3 text-xl font-bold text-gray-900 dark:text-white"
+          >
+            {{ tokenStatuses.revoked.toLocaleString() }}
+          </p>
+
+          <p class="mt-1 text-[11px] text-gray-400">
+            Disabled
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- REVENUE + STUDENT GROWTH -->
+    <!-- ========================================================= -->
+
+    <div
+      class="grid grid-cols-1 gap-6 xl:grid-cols-2"
+    >
+
+      <!-- REVENUE -->
+
+      <div
+        class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+      >
+        <div
+          class="flex items-center justify-between"
+        >
+          <div>
+            <h2
+              class="font-semibold text-gray-900 dark:text-white"
+            >
+              Revenue Overview
+            </h2>
+
+            <p
+              class="mt-1 text-xs text-gray-400"
+            >
+              Verified revenue generated over the
+              last 7 months
+            </p>
+          </div>
+
+          <div class="text-right">
+            <p
+              class="text-xl font-bold text-gray-900 dark:text-white"
+            >
+              {{
+                formatCompactCurrency(
+                  dashboard.revenue.total
+                )
+              }}
+            </p>
+
+            <p
+              class="text-xs"
+              :class="
+                dashboard.revenue.growth >= 0
+                  ? 'text-emerald-500'
+                  : 'text-rose-500'
+              "
+            >
+              {{
+                dashboard.revenue.growth >= 0
+                  ? "+"
+                  : ""
+              }}{{ dashboard.revenue.growth }}%
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="mt-6 flex h-64 items-end gap-3 sm:gap-5"
+        >
           <div
             v-for="item in revenueData"
             :key="item.month"
             class="flex h-full flex-1 flex-col justify-end"
           >
-            <div class="mb-2 text-center text-[10px] text-gray-400">
+            <div
+              class="mb-2 text-center text-[10px] text-gray-400"
+            >
               {{ formatCompactCurrency(item.value) }}
             </div>
 
             <div
               class="w-full rounded-t-lg bg-indigo-500 transition-all hover:bg-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400"
               :style="{
-                height: `${Math.max((item.value / revenueMax) * 75, 8)}%`,
+                height: `${Math.max(
+                  (item.value / revenueMax) * 75,
+                  item.value > 0 ? 8 : 2
+                )}%`,
               }"
-            />
+            ></div>
 
-            <div class="mt-2 text-center text-xs text-gray-400">
+            <div
+              class="mt-2 text-center text-xs text-gray-400"
+            >
               {{ item.month }}
             </div>
+          </div>
+
+          <div
+            v-if="!revenueData.length"
+            class="flex h-full w-full items-center justify-center text-sm text-gray-400"
+          >
+            No revenue data yet.
           </div>
         </div>
       </div>
 
-      <!-- Student Growth -->
+      <!-- STUDENT GROWTH -->
+
       <div
         class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
       >
-        <div class="flex items-center justify-between">
+        <div
+          class="flex items-center justify-between"
+        >
           <div>
-            <h2 class="font-semibold text-gray-900 dark:text-white">Student Growth</h2>
-            <p class="mt-1 text-xs text-gray-400">Total registered students</p>
+            <h2
+              class="font-semibold text-gray-900 dark:text-white"
+            >
+              Student Growth
+            </h2>
+
+            <p
+              class="mt-1 text-xs text-gray-400"
+            >
+              New students registered each month
+            </p>
           </div>
 
           <div class="text-right">
-            <p class="text-xl font-bold text-gray-900 dark:text-white">1,248</p>
-            <p class="text-xs text-emerald-500">+12.5%</p>
+            <p
+              class="text-xl font-bold text-gray-900 dark:text-white"
+            >
+              {{
+                dashboard.stats.totalStudents.toLocaleString()
+              }}
+            </p>
+
+            <p
+              class="text-xs text-emerald-500"
+            >
+              Total students
+            </p>
           </div>
         </div>
 
-        <div class="mt-6 flex h-64 items-end gap-3 sm:gap-5">
+        <div
+          class="mt-6 flex h-64 items-end gap-3 sm:gap-5"
+        >
           <div
             v-for="item in studentGrowth"
             :key="item.month"
             class="flex h-full flex-1 flex-col justify-end"
           >
-            <div class="mb-2 text-center text-[10px] text-gray-400">
+            <div
+              class="mb-2 text-center text-[10px] text-gray-400"
+            >
               {{ item.value }}
             </div>
 
             <div
               class="w-full rounded-t-lg bg-emerald-500 transition-all hover:bg-emerald-600 dark:bg-emerald-500 dark:hover:bg-emerald-400"
               :style="{
-                height: `${Math.max((item.value / growthMax) * 75, 8)}%`,
+                height: `${Math.max(
+                  (item.value / growthMax) * 75,
+                  item.value > 0 ? 8 : 2
+                )}%`,
               }"
-            />
+            ></div>
 
-            <div class="mt-2 text-center text-xs text-gray-400">
+            <div
+              class="mt-2 text-center text-xs text-gray-400"
+            >
               {{ item.month }}
             </div>
+          </div>
+
+          <div
+            v-if="!studentGrowth.length"
+            class="flex h-full w-full items-center justify-center text-sm text-gray-400"
+          >
+            No student data yet.
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Recent Students + Payments -->
-    <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-      <!-- Recent Students -->
+    <!-- ========================================================= -->
+    <!-- TOKEN PLANS + RECENT TOKEN PURCHASES -->
+    <!-- ========================================================= -->
+
+    <div
+      class="grid grid-cols-1 gap-6 xl:grid-cols-3"
+    >
+
+      <!-- PLAN BREAKDOWN -->
+
+      <div
+        class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+      >
+        <div>
+          <h2
+            class="font-semibold text-gray-900 dark:text-white"
+          >
+            Token Plans
+          </h2>
+
+          <p
+            class="mt-1 text-xs text-gray-400"
+          >
+            Token sales by subscription plan
+          </p>
+        </div>
+
+        <div
+          class="mt-5 space-y-4"
+        >
+          <div
+            v-for="plan in tokenPlans"
+            :key="plan.plan"
+          >
+            <div
+              class="flex items-center justify-between gap-3"
+            >
+              <div
+                class="flex items-center gap-3"
+              >
+                <div
+                  class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-500/10"
+                >
+                  <Icon
+                    :name="planIcon(plan.plan)"
+                    class="h-4 w-4 text-indigo-600 dark:text-indigo-400"
+                  />
+                </div>
+
+                <div>
+                  <p
+                    class="text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    {{ plan.plan }}
+                  </p>
+
+                  <p
+                    class="text-xs text-gray-400"
+                  >
+                    {{ plan.total }} tokens
+                  </p>
+                </div>
+              </div>
+
+              <p
+                class="text-sm font-semibold text-gray-900 dark:text-white"
+              >
+                {{ formatCurrency(plan.revenue) }}
+              </p>
+            </div>
+          </div>
+
+          <div
+            v-if="!tokenPlans.length"
+            class="py-8 text-center text-sm text-gray-400"
+          >
+            No token sales yet.
+          </div>
+        </div>
+      </div>
+
+      <!-- RECENT TOKEN PURCHASES -->
+
+      <div
+        class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm xl:col-span-2 dark:border-gray-800 dark:bg-gray-900"
+      >
+        <div
+          class="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-800"
+        >
+          <div>
+            <h2
+              class="font-semibold text-gray-900 dark:text-white"
+            >
+              Recent Token Activity
+            </h2>
+
+            <p
+              class="mt-1 text-xs text-gray-400"
+            >
+              Latest software token purchases
+            </p>
+          </div>
+
+          <NuxtLink
+            to="/super-admin/tokens"
+            class="text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+          >
+            View all
+          </NuxtLink>
+        </div>
+
+        <div
+          class="divide-y divide-gray-100 dark:divide-gray-800"
+        >
+          <div
+            v-for="token in tokenPurchases.slice(0, 5)"
+            :key="token.id || token.token"
+            class="flex items-center justify-between gap-4 px-5 py-4"
+          >
+            <div
+              class="flex min-w-0 items-center gap-3"
+            >
+              <div
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-50 dark:bg-cyan-500/10"
+              >
+                <Icon
+                  name="i-heroicons-key"
+                  class="h-5 w-5 text-cyan-600 dark:text-cyan-400"
+                />
+              </div>
+
+              <div class="min-w-0">
+                <p
+                  class="truncate font-mono text-sm font-medium text-gray-900 dark:text-white"
+                >
+                  {{ token.token }}
+                </p>
+
+                <p
+                  class="mt-0.5 text-xs text-gray-400"
+                >
+                  {{ token.plan }}
+                  ·
+                  {{ formatDate(token.createdAt) }}
+                </p>
+              </div>
+            </div>
+
+            <div
+              class="shrink-0 text-right"
+            >
+              <p
+                class="text-sm font-semibold text-gray-900 dark:text-white"
+              >
+                {{ formatCurrency(token.amount) }}
+              </p>
+
+              <span
+                class="mt-1 inline-flex rounded-full px-2 py-1 text-[10px] font-medium"
+                :class="
+                  tokenStatusClass(
+                    token.status
+                  )
+                "
+              >
+                {{
+                  tokenStatusLabel(
+                    token.status
+                  )
+                }}
+              </span>
+            </div>
+          </div>
+
+          <div
+            v-if="!tokenPurchases.length"
+            class="px-5 py-10 text-center text-sm text-gray-400"
+          >
+            No token purchases yet.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- RECENT STUDENTS + PAYMENTS -->
+    <!-- ========================================================= -->
+
+    <div
+      class="grid grid-cols-1 gap-6 xl:grid-cols-2"
+    >
+
+      <!-- RECENT STUDENTS -->
+
       <div
         class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
       >
@@ -455,8 +1669,17 @@ const teacherConversion = (teacher: Teacher) => {
           class="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-800"
         >
           <div>
-            <h2 class="font-semibold text-gray-900 dark:text-white">Recent Students</h2>
-            <p class="mt-1 text-xs text-gray-400">Recently registered students</p>
+            <h2
+              class="font-semibold text-gray-900 dark:text-white"
+            >
+              Recent Students
+            </h2>
+
+            <p
+              class="mt-1 text-xs text-gray-400"
+            >
+              Recently registered students
+            </p>
           </div>
 
           <NuxtLink
@@ -467,48 +1690,89 @@ const teacherConversion = (teacher: Teacher) => {
           </NuxtLink>
         </div>
 
-        <div class="divide-y divide-gray-100 dark:divide-gray-800">
+        <div
+          class="divide-y divide-gray-100 dark:divide-gray-800"
+        >
           <div
             v-for="student in recentStudents"
-            :key="student.id"
+            :key="
+              student.id ||
+              student._id ||
+              student.email
+            "
             class="flex items-center justify-between gap-3 px-5 py-4"
           >
-            <div class="flex min-w-0 items-center gap-3">
+            <div
+              class="flex min-w-0 items-center gap-3"
+            >
               <div
                 class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
-                :class="avatarColor(student.name)"
+                
               >
-                {{ initials(student.name) }}
+                {{
+                  initials(
+                    student.name ||
+                      `${student.firstName || ""} ${student.lastName || ""}`
+                  )
+                }}
               </div>
 
               <div class="min-w-0">
-                <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
-                  {{ student.name }}
+                <p
+                  class="truncate text-sm font-medium text-gray-900 dark:text-white"
+                >
+                  {{
+                    student.name ||
+                    `${student.firstName || ""} ${student.lastName || ""}`
+                  }}
                 </p>
 
-                <p class="mt-0.5 truncate text-xs text-gray-400">
+                <p
+                  class="mt-0.5 truncate text-xs text-gray-400"
+                >
                   {{ student.email }}
                 </p>
               </div>
             </div>
 
-            <div class="shrink-0 text-right">
+            <div
+              class="shrink-0 text-right"
+            >
               <span
                 class="inline-flex rounded-full px-2 py-1 text-[10px] font-medium"
-                :class="studentStatusClass(student.status)"
+                :class="
+                  studentStatusClass(
+                    student.status
+                  )
+                "
               >
                 {{ student.status }}
               </span>
 
-              <p class="mt-1 text-[10px] text-gray-400">
-                {{ student.joinedAt }}
+              <p
+                class="mt-1 text-[10px] text-gray-400"
+              >
+                {{
+                  formatDate(
+                    student.joinedAt ||
+                      student.createdAt
+                  )
+                }}
               </p>
             </div>
+          </div>
+
+          <div
+            v-if="!recentStudents.length"
+            class="px-5 py-10 text-center text-sm text-gray-400"
+          >
+            No students yet.
           </div>
         </div>
       </div>
 
-      <!-- Recent Payments -->
+      <!-- RECENT PAYMENTS -->
+
       <div
         class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
       >
@@ -516,8 +1780,17 @@ const teacherConversion = (teacher: Teacher) => {
           class="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-800"
         >
           <div>
-            <h2 class="font-semibold text-gray-900 dark:text-white">Recent Payments</h2>
-            <p class="mt-1 text-xs text-gray-400">Latest subscription payments</p>
+            <h2
+              class="font-semibold text-gray-900 dark:text-white"
+            >
+              Recent Payments
+            </h2>
+
+            <p
+              class="mt-1 text-xs text-gray-400"
+            >
+              Latest verified successful payments
+            </p>
           </div>
 
           <NuxtLink
@@ -528,13 +1801,20 @@ const teacherConversion = (teacher: Teacher) => {
           </NuxtLink>
         </div>
 
-        <div class="divide-y divide-gray-100 dark:divide-gray-800">
+        <div
+          class="divide-y divide-gray-100 dark:divide-gray-800"
+        >
           <div
-            v-for="payment in recentPayments"
+            v-for="payment in recentPayments.slice(
+              0,
+              5
+            )"
             :key="payment.id"
             class="flex items-center justify-between gap-3 px-5 py-4"
           >
-            <div class="flex min-w-0 items-center gap-3">
+            <div
+              class="flex min-w-0 items-center gap-3"
+            >
               <div
                 class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-500/10"
               >
@@ -545,34 +1825,72 @@ const teacherConversion = (teacher: Teacher) => {
               </div>
 
               <div class="min-w-0">
-                <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
+                <p
+                  class="truncate text-sm font-medium text-gray-900 dark:text-white"
+                >
                   {{ payment.student }}
                 </p>
 
-                <p class="mt-0.5 text-xs text-gray-400">
-                  {{ payment.plan }} · {{ payment.date }}
+                <p
+                  class="mt-0.5 truncate text-xs text-gray-400"
+                >
+                  {{
+                    payment.plan ||
+                    payment.paymentPurpose ||
+                    "Payment"
+                  }}
+
+                  ·
+
+                  {{
+                    formatDate(
+                      payment.date
+                    )
+                  }}
                 </p>
               </div>
             </div>
 
-            <div class="shrink-0 text-right">
-              <p class="text-sm font-semibold text-gray-900 dark:text-white">
-                {{ formatCurrency(payment.amount) }}
+            <div
+              class="shrink-0 text-right"
+            >
+              <p
+                class="text-sm font-semibold text-gray-900 dark:text-white"
+              >
+                {{
+                  formatCurrency(
+                    payment.amount
+                  )
+                }}
               </p>
 
               <span
                 class="mt-1 inline-flex rounded-full px-2 py-1 text-[10px] font-medium"
-                :class="paymentStatusClass(payment.status)"
+                :class="
+                  paymentStatusClass(
+                    payment.status
+                  )
+                "
               >
                 {{ payment.status }}
               </span>
             </div>
           </div>
+
+          <div
+            v-if="!recentPayments.length"
+            class="px-5 py-10 text-center text-sm text-gray-400"
+          >
+            No payments yet.
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Top Teachers -->
+    <!-- ========================================================= -->
+    <!-- TOP TEACHERS -->
+    <!-- ========================================================= -->
+
     <div
       class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
     >
@@ -580,10 +1898,17 @@ const teacherConversion = (teacher: Teacher) => {
         class="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-800"
       >
         <div>
-          <h2 class="font-semibold text-gray-900 dark:text-white">Top Teachers</h2>
+          <h2
+            class="font-semibold text-gray-900 dark:text-white"
+          >
+            Top Teachers
+          </h2>
 
-          <p class="mt-1 text-xs text-gray-400">
-            Teachers with the highest student activity
+          <p
+            class="mt-1 text-xs text-gray-400"
+          >
+            Teachers with the highest student
+            activity
           </p>
         </div>
 
@@ -596,7 +1921,10 @@ const teacherConversion = (teacher: Teacher) => {
       </div>
 
       <!-- Desktop -->
-      <div class="hidden overflow-x-auto md:block">
+
+      <div
+        class="hidden overflow-x-auto md:block"
+      >
         <table class="w-full text-left">
           <thead
             class="border-b border-gray-100 bg-gray-50/70 dark:border-gray-800 dark:bg-gray-800/30"
@@ -628,27 +1956,39 @@ const teacherConversion = (teacher: Teacher) => {
             </tr>
           </thead>
 
-          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          <tbody
+            class="divide-y divide-gray-100 dark:divide-gray-800"
+          >
             <tr
               v-for="teacher in topTeachers"
               :key="teacher.id"
               class="transition hover:bg-gray-50/70 dark:hover:bg-gray-800/30"
             >
               <td class="px-5 py-4">
-                <div class="flex items-center gap-3">
+                <div
+                  class="flex items-center gap-3"
+                >
                   <div
                     class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-50 text-xs font-semibold text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
                   >
-                    {{ initials(teacher.name) }}
+                    {{
+                      initials(
+                        teacher.name
+                      )
+                    }}
                   </div>
 
-                  <span class="text-sm font-medium text-gray-900 dark:text-white">
+                  <span
+                    class="text-sm font-medium text-gray-900 dark:text-white"
+                  >
                     {{ teacher.name }}
                   </span>
                 </div>
               </td>
 
-              <td class="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
+              <td
+                class="px-5 py-4 text-sm text-gray-600 dark:text-gray-300"
+              >
                 {{ teacher.students }}
               </td>
 
@@ -661,80 +2001,147 @@ const teacherConversion = (teacher: Teacher) => {
               </td>
 
               <td class="px-5 py-4">
-                <div class="flex min-w-[150px] items-center gap-3">
+                <div
+                  class="flex min-w-[150px] items-center gap-3"
+                >
                   <div
                     class="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800"
                   >
                     <div
                       class="h-full rounded-full bg-emerald-500"
                       :style="{
-                        width: `${teacherConversion(teacher)}%`,
+                        width: `${teacherConversion(
+                          teacher
+                        )}%`,
                       }"
-                    />
+                    ></div>
                   </div>
 
-                  <span class="w-10 text-xs text-gray-400">
-                    {{ teacherConversion(teacher) }}%
+                  <span
+                    class="w-10 text-xs text-gray-400"
+                  >
+                    {{
+                      teacherConversion(
+                        teacher
+                      )
+                    }}%
                   </span>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
+
+        <div
+          v-if="!topTeachers.length"
+          class="px-5 py-10 text-center text-sm text-gray-400"
+        >
+          No teacher activity yet.
+        </div>
       </div>
 
       <!-- Mobile -->
-      <div class="divide-y divide-gray-100 dark:divide-gray-800 md:hidden">
-        <div v-for="teacher in topTeachers" :key="teacher.id" class="px-5 py-4">
-          <div class="flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
+
+      <div
+        class="divide-y divide-gray-100 dark:divide-gray-800 md:hidden"
+      >
+        <div
+          v-for="teacher in topTeachers"
+          :key="teacher.id"
+          class="px-5 py-4"
+        >
+          <div
+            class="flex items-center justify-between gap-3"
+          >
+            <div
+              class="flex items-center gap-3"
+            >
               <div
                 class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-50 text-xs font-semibold text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
               >
-                {{ initials(teacher.name) }}
+                {{
+                  initials(
+                    teacher.name
+                  )
+                }}
               </div>
 
               <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                <p
+                  class="text-sm font-medium text-gray-900 dark:text-white"
+                >
                   {{ teacher.name }}
                 </p>
 
-                <p class="mt-0.5 text-xs text-gray-400">
-                  {{ teacher.students }} students
+                <p
+                  class="mt-0.5 text-xs text-gray-400"
+                >
+                  {{ teacher.students }}
+                  students
                 </p>
               </div>
             </div>
 
-            <span class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-              {{ teacher.paidStudents }} paid
+            <span
+              class="text-sm font-semibold text-emerald-600 dark:text-emerald-400"
+            >
+              {{ teacher.paidStudents }}
+              paid
             </span>
           </div>
 
-          <div class="mt-3 flex items-center gap-3">
+          <div
+            class="mt-3 flex items-center gap-3"
+          >
             <div
               class="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800"
             >
               <div
                 class="h-full rounded-full bg-emerald-500"
                 :style="{
-                  width: `${teacherConversion(teacher)}%`,
+                  width: `${teacherConversion(
+                    teacher
+                  )}%`,
                 }"
-              />
+              ></div>
             </div>
 
-            <span class="text-xs text-gray-400"> {{ teacherConversion(teacher) }}% </span>
+            <span
+              class="text-xs text-gray-400"
+            >
+              {{
+                teacherConversion(
+                  teacher
+                )
+              }}%
+            </span>
           </div>
+        </div>
+
+        <div
+          v-if="!topTeachers.length"
+          class="px-5 py-10 text-center text-sm text-gray-400"
+        >
+          No teacher activity yet.
         </div>
       </div>
     </div>
 
-    <!-- Quick Links -->
+    <!-- ========================================================= -->
+    <!-- QUICK ACCESS -->
+    <!-- ========================================================= -->
+
     <div>
-      <h2 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
+      <h2
+        class="mb-4 text-sm font-semibold text-gray-900 dark:text-white"
+      >
         Quick Access
       </h2>
 
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div
+        class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6"
+      >
+
         <NuxtLink
           to="/super-admin/admins"
           class="group rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-indigo-500/30"
@@ -748,7 +2155,11 @@ const teacherConversion = (teacher: Teacher) => {
             />
           </div>
 
-          <p class="mt-3 text-sm font-medium text-gray-900 dark:text-white">Admins</p>
+          <p
+            class="mt-3 text-sm font-medium text-gray-900 dark:text-white"
+          >
+            Admins
+          </p>
         </NuxtLink>
 
         <NuxtLink
@@ -764,7 +2175,11 @@ const teacherConversion = (teacher: Teacher) => {
             />
           </div>
 
-          <p class="mt-3 text-sm font-medium text-gray-900 dark:text-white">Teachers</p>
+          <p
+            class="mt-3 text-sm font-medium text-gray-900 dark:text-white"
+          >
+            Teachers
+          </p>
         </NuxtLink>
 
         <NuxtLink
@@ -780,7 +2195,31 @@ const teacherConversion = (teacher: Teacher) => {
             />
           </div>
 
-          <p class="mt-3 text-sm font-medium text-gray-900 dark:text-white">Students</p>
+          <p
+            class="mt-3 text-sm font-medium text-gray-900 dark:text-white"
+          >
+            Students
+          </p>
+        </NuxtLink>
+
+        <NuxtLink
+          to="/super-admin/tokens"
+          class="group rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-indigo-500/30"
+        >
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-50 dark:bg-cyan-500/10"
+          >
+            <Icon
+              name="i-heroicons-key"
+              class="h-5 w-5 text-cyan-600 dark:text-cyan-400"
+            />
+          </div>
+
+          <p
+            class="mt-3 text-sm font-medium text-gray-900 dark:text-white"
+          >
+            Tokens
+          </p>
         </NuxtLink>
 
         <NuxtLink
@@ -796,9 +2235,35 @@ const teacherConversion = (teacher: Teacher) => {
             />
           </div>
 
-          <p class="mt-3 text-sm font-medium text-gray-900 dark:text-white">Payments</p>
+          <p
+            class="mt-3 text-sm font-medium text-gray-900 dark:text-white"
+          >
+            Payments
+          </p>
         </NuxtLink>
+
+        <NuxtLink
+          to="/super-admin/reports"
+          class="group rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-indigo-500/30"
+        >
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 dark:bg-rose-500/10"
+          >
+            <Icon
+              name="i-heroicons-chart-bar-square"
+              class="h-5 w-5 text-rose-600 dark:text-rose-400"
+            />
+          </div>
+
+          <p
+            class="mt-3 text-sm font-medium text-gray-900 dark:text-white"
+          >
+            Reports
+          </p>
+        </NuxtLink>
+
       </div>
     </div>
   </div>
 </template>
+

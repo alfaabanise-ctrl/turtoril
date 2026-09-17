@@ -48,17 +48,18 @@ const stats = [
 <template>
   <main class=" h-100vh bg-[#f7fafc] text-slate-900">
     <!-- HERO -->
-    <Container class="relative ">
+     <div class=" w-full h-screen  bg-top bg-no-repeat bg-cover bg-[url('/images/slider5.jpg')]  flex items-center justify-center">
+      <div class=" flex items-center justify-left bg-black/60 w-full h-full">
+     
+    <Container class="relative b fr ">
       <!-- Background decoration -->
-      <div   class="pointer-events-none absolute -left-40  h-[500px] w-[500px] rounded-full bg-cyan-200/30 blur-3xl" />
 
-      <div  class="pointer-events-none absolute -right-40 top-20 h-[500px] w-[500px] rounded-full bg-blue-200/30 blur-3xl"  />
 
-      <div   class="relative mx-auto grid min-h-full  w-full items-center gap-16   lg:grid-cols-[1.05fr_.95fr] " >
+      <div   class="relative flex  h-full  items-center mx-auto grid min-h-full  w-full items-center gap-16   lg:grid-cols-[1.05fr_.95fr] " >
         <!-- LEFT CONTENT -->
-        <div class="relative z-10">
+        <div class="relative  z-10">
           <!-- Badge -->
-          <div  class="mb- inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white/80 px-4 py-2 text-sm font-medium text-[#067a9d] shadow-sm backdrop-blur"    >
+          <div  class="mb- hidden e-flex items-center gap-2 rounded-full border border-cyan-200 bg-white/80 px-4 py-2 text-sm font-medium text-[#067a9d] shadow-sm backdrop-blur"    >
             <span class="relative flex h-2.5 w-2.5">
               <span   class="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-60" />
                  <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-cyan-500" />
@@ -69,7 +70,7 @@ const stats = [
 
           <!-- Heading -->
           <h1
-            class="max-w-[760px] text-5xl font-black leading-[1.02] tracking-[-0.04em] text-slate-950 sm:text-5xl lg:text-6xl"
+            class="max-w-[760px] text-4xl text-white font-semibold leading-[1.02] tracking-[-0.04em] text-slate-950 sm:text-4xl lg:text-5xl"
           >
             Prepare.
             <span class="text-[#0794bd]">Practice.</span>
@@ -78,9 +79,9 @@ const stats = [
           </h1>
 
           <!-- Description -->
-          <p class="mt-1 max-w-[650px] text-base leading-7 text-slate-600 sm:text-lg">
+          <p class="mt-1  text-gray-50 max-w-[650px] text-base leading-7  sm:text-lg">
             Your all-in-one examination preparation platform for
-            <strong class="font-semibold text-slate-800"> ICAN, JAMB, WAEC </strong>
+            <strong class="font-semibold text-gray-50"> ICAN, JAMB, WAEC </strong>
             and other professional and academic examinations.
           </p>
 
@@ -109,10 +110,10 @@ const stats = [
 
           <!-- Stats -->
           <div
-            class="mt-12 flex flex-wrap gap-x-10 gap-y-6 border-t border-slate-200 pt-8"
+            class="mt-12  text-white flex flex-wrap gap-x-10 gap-y-6 border-t border-slate-200 pt-8"
           >
             <div v-for="stat in stats" :key="stat.label">
-              <p class="text-2xl font-black tracking-tight text-slate-950">
+              <p class="text-2xl text-white  font-medium tracking-tight text-slate-950">
                 {{ stat.value }}
               </p>
 
@@ -122,13 +123,12 @@ const stats = [
             </div>
           </div>
         </div>
-        <div>
-         <img src="/images/01-min.jpeg" alt="Hero Image" class="w-full max-w-[560px] rounded-[30px]" />
-        </div>
+        
        
       </div>
     </Container>
-
+    </div>
+    </div>
     <!-- PRODUCTS -->
     <Container class="border-t  border-slate-200 bg-white">
       <div class="mx-auto max-w-[1400px] px-6 py-2 sm:px-10 lg:px-">
