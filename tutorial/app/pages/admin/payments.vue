@@ -344,7 +344,7 @@ const currentPage = computed({
 });
 
 const totalPages = computed(
-  () => pagination.value.totalPages
+  () => pagination.value.total
 );
 
 const totalRecords = computed(
