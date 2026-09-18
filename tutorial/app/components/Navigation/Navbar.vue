@@ -63,7 +63,7 @@ function closeMobileMenu() {
 </script>
 
 <template>
-  <header class="w-full bg-[#0794bd] text-white shadow-sm relative z-50">
+  <header class="w-full  fixed text-white shadow-sm relative z-50">
     <div class="mx-auto flex min-h-[64px] max-w-[1350px]  justify-center items-stretch px-2 sm:px-0">
       <!-- LOGO -->
       <NuxtLink to="/" class="flex shrink-0 items-center px-3 sm:px-5" @click="closeMobileMenu">

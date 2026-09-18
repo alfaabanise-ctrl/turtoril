@@ -1,365 +1,733 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue"
 
 definePageMeta({
   layout: "nav",
-});
+})
 
 /* --------------------------------------------------
- * Types
+ * TYPES
  * -------------------------------------------------- */
 
+type WalletTransactionType =
+  | "Commission"
+  | "Withdrawal"
+  | "Refund"
+  | "Adjustment"
+
+type WalletTransactionStatus =
+  | "Completed"
+  | "Pending"
+  | "Failed"
+
 interface WalletTransaction {
-  id: number;
-  type: "Commission" | "Withdrawal" | "Refund";
-  description: string;
-  source: string;
-  amount: number;
-  direction: "Credit" | "Debit";
-  status: "Completed" | "Pending" | "Failed";
-  date: string;
-  reference: string;
+  id: string
+  type: WalletTransactionType
+  description: string
+  source: string
+  amount: number
+  direction: "Credit" | "Debit"
+  status: WalletTransactionStatus
+  date: string
+  reference: string
 }
 
 interface Withdrawal {
-  id: number;
-  amount: number;
-  bankName: string;
-  accountName: string;
-  accountNumber: string;
-  status: "Pending" | "Processing" | "Completed" | "Rejected";
-  requestedAt: string;
-  processedAt?: string;
-  reference: string;
+  id: string
+  amount: number
+  bankName: string
+  accountName: string
+  accountNumber: string
+  status:
+    | "Pending"
+    | "Processing"
+    | "Completed"
+    | "Rejected"
+  requestedAt: string
+  processedAt?: string
+  reference: string
 }
 
 /* --------------------------------------------------
- * Currency
+ * CURRENCY
  * -------------------------------------------------- */
 
 const currency = new Intl.NumberFormat("en-NG", {
   style: "currency",
   currency: "NGN",
   maximumFractionDigits: 0,
-});
+})
 
 /* --------------------------------------------------
- * Wallet Overview
+ * STATE
  * -------------------------------------------------- */
 
-const walletBalance = ref(485000);
-const totalEarned = ref(1250000);
-const totalWithdrawn = ref(765000);
-const pendingWithdrawal = ref(50000);
+const loading = ref(true)
+const errorMessage = ref("")
+
+const walletBalance = ref(0)
+const totalEarned = ref(0)
+const totalWithdrawn = ref(0)
+const pendingWithdrawal = ref(0)
+
+const commissionRate = ref(0)
+
+const totalCredits = ref(0)
+const totalDebits = ref(0)
+
+const minimumWithdrawal = ref(5000)
+
+const transactions = ref<WalletTransaction[]>([])
+const withdrawals = ref<Withdrawal[]>([])
 
 /* --------------------------------------------------
- * Commission
+ * FILTERS
  * -------------------------------------------------- */
 
-const commissionRate = ref(10);
+const selectedTransactionType = ref("All Types")
+const selectedTransactionStatus = ref("All Status")
+const search = ref("")
 
 /* --------------------------------------------------
- * Wallet Transactions
+ * HELPERS
  * -------------------------------------------------- */
 
-const transactions = ref<WalletTransaction[]>([
-  {
-    id: 1,
-    type: "Commission",
-    description: "Commission from Amaka Obi subscription",
-    source: "Amaka Obi",
-    amount: 2500,
-    direction: "Credit",
-    status: "Completed",
-    date: "12 September 2026",
-    reference: "COM-20260912-001",
-  },
-  {
-    id: 2,
-    type: "Commission",
-    description: "Commission from Chiamaka Eze subscription",
-    source: "Chiamaka Eze",
-    amount: 2500,
-    direction: "Credit",
-    status: "Completed",
-    date: "10 September 2026",
-    reference: "COM-20260910-002",
-  },
-  {
-    id: 3,
-    type: "Commission",
-    description: "Commission from Tunde Bello subscription",
-    source: "Tunde Bello",
-    amount: 300,
-    direction: "Credit",
-    status: "Completed",
-    date: "08 September 2026",
-    reference: "COM-20260908-003",
-  },
-  {
-    id: 4,
-    type: "Commission",
-    description: "Commission from Ibrahim Musa subscription",
-    source: "Ibrahim Musa",
-    amount: 900,
-    direction: "Credit",
-    status: "Completed",
-    date: "05 September 2026",
-    reference: "COM-20260905-004",
-  },
-  {
-    id: 5,
-    type: "Withdrawal",
-    description: "Withdrawal to GTBank account",
-    source: "GTBank",
-    amount: 100000,
-    direction: "Debit",
-    status: "Completed",
-    date: "01 September 2026",
-    reference: "WTH-20260901-001",
-  },
-  {
-    id: 6,
-    type: "Commission",
-    description: "Commission from Esther Daniel subscription",
-    source: "Esther Daniel",
-    amount: 2500,
-    direction: "Credit",
-    status: "Completed",
-    date: "30 August 2026",
-    reference: "COM-20260830-005",
-  },
-  {
-    id: 7,
-    type: "Commission",
-    description: "Commission from Grace Peter subscription",
-    source: "Grace Peter",
-    amount: 2500,
-    direction: "Credit",
-    status: "Completed",
-    date: "25 August 2026",
-    reference: "COM-20260825-006",
-  },
-  {
-    id: 8,
-    type: "Withdrawal",
-    description: "Withdrawal to GTBank account",
-    source: "GTBank",
-    amount: 50000,
-    direction: "Debit",
-    status: "Pending",
-    date: "20 August 2026",
-    reference: "WTH-20260820-002",
-  },
-]);
+// Backend wallet values are KOBO.
+// Frontend displays NAIRA.
+const koboToNaira = (value: unknown) => {
+  const amount = Number(value ?? 0)
+
+  if (!Number.isFinite(amount)) {
+    return 0
+  }
+
+  return amount / 100
+}
+
+const formatDate = (value: unknown) => {
+  if (!value) {
+    return ""
+  }
+
+  const date = new Date(String(value))
+
+  if (Number.isNaN(date.getTime())) {
+    return ""
+  }
+
+  return date.toLocaleDateString("en-NG", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  })
+}
+
+const formatDateTime = (value: unknown) => {
+  if (!value) {
+    return ""
+  }
+
+  const date = new Date(String(value))
+
+  if (Number.isNaN(date.getTime())) {
+    return ""
+  }
+
+  return date.toLocaleDateString("en-NG", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
 
 /* --------------------------------------------------
- * Withdrawals
+ * NORMALIZE TYPE
  * -------------------------------------------------- */
 
-const withdrawals = ref<Withdrawal[]>([
-  {
-    id: 1,
-    amount: 100000,
-    bankName: "GTBank",
-    accountName: "Mr. Okafor",
-    accountNumber: "**** 4589",
-    status: "Completed",
-    requestedAt: "01 September 2026",
-    processedAt: "02 September 2026",
-    reference: "WTH-20260901-001",
-  },
-  {
-    id: 2,
-    amount: 50000,
-    bankName: "GTBank",
-    accountName: "Mr. Okafor",
-    accountNumber: "**** 4589",
-    status: "Pending",
-    requestedAt: "20 August 2026",
-    reference: "WTH-20260820-002",
-  },
-  {
-    id: 3,
-    amount: 150000,
-    bankName: "Access Bank",
-    accountName: "Mr. Okafor",
-    accountNumber: "**** 7712",
-    status: "Completed",
-    requestedAt: "05 August 2026",
-    processedAt: "06 August 2026",
-    reference: "WTH-20260805-003",
-  },
-]);
+const normalizeTransactionType = (
+  value: unknown,
+): WalletTransactionType => {
+  const type = String(value || "").toUpperCase()
+
+  switch (type) {
+    case "COMMISSION":
+      return "Commission"
+
+    case "WITHDRAWAL":
+    case "PAYOUT":
+      return "Withdrawal"
+
+    case "REFUND":
+    case "REVERSAL":
+      return "Refund"
+
+    default:
+      return "Adjustment"
+  }
+}
 
 /* --------------------------------------------------
- * Filters
+ * NORMALIZE STATUS
  * -------------------------------------------------- */
 
-const selectedTransactionType = ref("All Types");
-const selectedTransactionStatus = ref("All Status");
-const search = ref("");
+const normalizeTransactionStatus = (
+  value: unknown,
+): WalletTransactionStatus => {
+  const status = String(value || "").toUpperCase()
+
+  switch (status) {
+    case "COMPLETED":
+    case "SUCCESS":
+    case "SUCCESSFUL":
+      return "Completed"
+
+    case "PENDING":
+    case "PROCESSING":
+      return "Pending"
+
+    case "FAILED":
+    case "REJECTED":
+    case "CANCELLED":
+      return "Failed"
+
+    default:
+      return "Pending"
+  }
+}
 
 /* --------------------------------------------------
- * Filtered Transactions
+ * NORMALIZE WITHDRAWAL STATUS
+ * -------------------------------------------------- */
+
+const normalizeWithdrawalStatus = (
+  value: unknown,
+): Withdrawal["status"] => {
+  const status = String(value || "").toUpperCase()
+
+  switch (status) {
+    case "PROCESSING":
+      return "Processing"
+
+    case "COMPLETED":
+      return "Completed"
+
+    case "REJECTED":
+    case "FAILED":
+      return "Rejected"
+
+    default:
+      return "Pending"
+  }
+}
+
+/* --------------------------------------------------
+ * LOAD WALLET
+ * -------------------------------------------------- */
+
+const loadWallet = async () => {
+  loading.value = true
+  errorMessage.value = ""
+
+  try {
+    const response = await useApiFetch("/admin/wallet", {
+      method: "GET",
+    })
+
+    console.log("WALLET API RESPONSE:", response)
+
+    if (!response?.success) {
+      throw new Error(
+        response?.message || "Unable to load wallet",
+      )
+    }
+
+    const apiData =
+      response.data?.data ??
+      response.data ??
+      response
+
+    const wallet =
+      apiData?.wallet ?? {}
+
+    /* ----------------------------------------------
+     * WALLET SUMMARY
+     * ---------------------------------------------- */
+
+    walletBalance.value = koboToNaira(
+      wallet.availableBalance ??
+        wallet.balance ??
+        0,
+    )
+
+    totalEarned.value = koboToNaira(
+      wallet.totalEarned ??
+        0,
+    )
+
+    totalWithdrawn.value = koboToNaira(
+      wallet.totalWithdrawn ??
+        0,
+    )
+
+    pendingWithdrawal.value = koboToNaira(
+      wallet.pendingWithdrawal ??
+        0,
+    )
+
+    /*
+     * Commission rate can come from wallet or admin
+     */
+    commissionRate.value = Number(
+      wallet.commissionRate ??
+        apiData?.admin?.commissionPercentage ??
+        apiData?.admin?.commissionRate ??
+        0,
+    )
+
+    /*
+     * Minimum withdrawal
+     */
+    minimumWithdrawal.value =
+      koboToNaira(
+        apiData?.minimumWithdrawal ??
+          500000,
+      )
+
+    /* ----------------------------------------------
+     * TRANSACTIONS
+     * ---------------------------------------------- */
+
+    const apiTransactions =
+      Array.isArray(apiData?.transactions)
+        ? apiData.transactions
+        : []
+
+    transactions.value =
+      apiTransactions.map(
+        (transaction: any, index: number) => {
+          const direction =
+            String(
+              transaction.direction || "",
+            ).toUpperCase()
+          console.log(transaction);
+          
+          return {
+            id: String(
+              transaction.id ??
+                transaction._id ??
+                index,
+            ),
+
+            type:
+              normalizeTransactionType(
+                transaction.entryType ??
+                  transaction.type,
+              ),
+
+            description:
+              transaction.description ||
+              "Wallet transaction",
+
+            source:
+              transaction.source ||
+              transaction.description ||
+              "",
+
+            /*
+             * IMPORTANT:
+             * Backend = KOBO
+             * Frontend = NAIRA
+             */
+            amount:
+              koboToNaira(
+                transaction.amount,
+              ),
+
+            /*
+             * IMPORTANT:
+             * CREDIT = Credit
+             * DEBIT  = Debit
+             */
+            direction:
+              direction === "DEBIT"
+                ? "Debit"
+                : "Credit",
+
+            /*
+             * IMPORTANT:
+             * COMPLETED = Completed
+             * PENDING   = Pending
+             * FAILED    = Failed
+             */
+            status:
+              normalizeTransactionStatus(
+                transaction.status,
+              ),
+
+            /*
+             * Use createdAt from backend
+             */
+            date:
+              transaction.createdAt ??
+              transaction.date ??
+              "",
+
+            reference:
+              transaction.reference ||
+              transaction.externalReference ||
+              "",
+          }
+        },
+      )
+
+    /* ----------------------------------------------
+     * WITHDRAWALS
+     * ---------------------------------------------- */
+
+    const apiWithdrawals =
+      Array.isArray(apiData?.withdrawals)
+        ? apiData.withdrawals
+        : []
+
+    withdrawals.value =
+      apiWithdrawals.map(
+        (withdrawal: any, index: number) => ({
+          id: String(
+            withdrawal.id ??
+              withdrawal._id ??
+              index,
+          ),
+
+          amount:
+            koboToNaira(
+              withdrawal.amount,
+            ),
+
+          bankName:
+            withdrawal.bankName ||
+            withdrawal.bankDetails
+              ?.bankName ||
+            "",
+
+          accountName:
+            withdrawal.accountName ||
+            withdrawal.bankDetails
+              ?.accountName ||
+            "",
+
+          accountNumber:
+            withdrawal.accountNumber ||
+            withdrawal.bankDetails
+              ?.accountNumber ||
+            "",
+
+          status:
+            normalizeWithdrawalStatus(
+              withdrawal.status,
+            ),
+
+          requestedAt:
+            withdrawal.requestedAt ??
+            withdrawal.createdAt ??
+            "",
+
+          processedAt:
+            withdrawal.processedAt ??
+            undefined,
+
+          reference:
+            withdrawal.reference ||
+            "",
+        }),
+      )
+
+    /* ----------------------------------------------
+     * CALCULATE CREDITS / DEBITS
+     *
+     * Only use loaded completed transactions here.
+     * If backend later sends lifetime totals,
+     * those can be used instead.
+     * ---------------------------------------------- */
+
+    totalCredits.value =
+      transactions.value
+        .filter(
+          (transaction) =>
+            transaction.direction === "Credit" &&
+            transaction.status === "Completed",
+        )
+        .reduce(
+          (total, transaction) =>
+            total + transaction.amount,
+          0,
+        )
+
+    totalDebits.value =
+      transactions.value
+        .filter(
+          (transaction) =>
+            transaction.direction === "Debit" &&
+            transaction.status === "Completed",
+        )
+        .reduce(
+          (total, transaction) =>
+            total + transaction.amount,
+          0,
+        )
+
+  } catch (error: any) {
+    console.error(
+      "Unable to load wallet:",
+      error,
+    )
+
+    errorMessage.value =
+      error?.message ||
+      "Unable to load wallet."
+  } finally {
+    loading.value = false
+  }
+}
+
+/* --------------------------------------------------
+ * FILTERED TRANSACTIONS
  * -------------------------------------------------- */
 
 const filteredTransactions = computed(() => {
-  const query = search.value.trim().toLowerCase();
+  const query =
+    search.value
+      .trim()
+      .toLowerCase()
 
-  return transactions.value.filter((transaction) => {
-    const matchesType =
-      selectedTransactionType.value === "All Types" ||
-      transaction.type === selectedTransactionType.value;
+  return transactions.value.filter(
+    (transaction) => {
+      const matchesType =
+        selectedTransactionType.value ===
+          "All Types" ||
+        transaction.type ===
+          selectedTransactionType.value
 
-    const matchesStatus =
-      selectedTransactionStatus.value === "All Status" ||
-      transaction.status === selectedTransactionStatus.value;
+      const matchesStatus =
+        selectedTransactionStatus.value ===
+          "All Status" ||
+        transaction.status ===
+          selectedTransactionStatus.value
 
-    const matchesSearch =
-      !query ||
-      transaction.description.toLowerCase().includes(query) ||
-      transaction.source.toLowerCase().includes(query) ||
-      transaction.reference.toLowerCase().includes(query);
+      const matchesSearch =
+        !query ||
+        transaction.description
+          .toLowerCase()
+          .includes(query) ||
+        transaction.source
+          .toLowerCase()
+          .includes(query) ||
+        transaction.reference
+          .toLowerCase()
+          .includes(query)
 
-    return matchesType && matchesStatus && matchesSearch;
-  });
-});
+      return (
+        matchesType &&
+        matchesStatus &&
+        matchesSearch
+      )
+    },
+  )
+})
 
 /* --------------------------------------------------
- * Commission Calculations
+ * COMMISSION TRANSACTIONS
  * -------------------------------------------------- */
 
 const commissionTransactions = computed(() =>
   transactions.value.filter(
     (transaction) =>
-      transaction.type === "Commission" && transaction.direction === "Credit"
-  )
-);
+      transaction.type === "Commission" &&
+      transaction.direction === "Credit",
+  ),
+)
 
-const completedCommissionTransactions = computed(() =>
-  commissionTransactions.value.filter((transaction) => transaction.status === "Completed")
-);
+const completedCommissionTransactions =
+  computed(() =>
+    commissionTransactions.value.filter(
+      (transaction) =>
+        transaction.status === "Completed",
+    ),
+  )
 
 const totalCommission = computed(() =>
   completedCommissionTransactions.value.reduce(
-    (total, transaction) => total + transaction.amount,
-    0
-  )
-);
+    (total, transaction) =>
+      total + transaction.amount,
+    0,
+  ),
+)
 
-const thisMonthCommission = computed(() =>
-  completedCommissionTransactions.value
-    .filter((transaction) => transaction.date.includes("September 2026"))
-    .reduce((total, transaction) => total + transaction.amount, 0)
-);
+/* --------------------------------------------------
+ * THIS MONTH COMMISSION
+ * -------------------------------------------------- */
+
+const thisMonthCommission = computed(() => {
+  const now = new Date()
+
+  return completedCommissionTransactions.value
+    .filter((transaction) => {
+      if (!transaction.date) {
+        return false
+      }
+
+      const date =
+        new Date(transaction.date)
+
+      if (Number.isNaN(date.getTime())) {
+        return false
+      }
+
+      return (
+        date.getMonth() ===
+          now.getMonth() &&
+        date.getFullYear() ===
+          now.getFullYear()
+      )
+    })
+    .reduce(
+      (total, transaction) =>
+        total + transaction.amount,
+      0,
+    )
+})
+
+/* --------------------------------------------------
+ * PENDING COMMISSION
+ * -------------------------------------------------- */
 
 const pendingCommission = computed(() =>
   commissionTransactions.value
-    .filter((transaction) => transaction.status === "Pending")
-    .reduce((total, transaction) => total + transaction.amount, 0)
-);
-
-/* --------------------------------------------------
- * Wallet Calculations
- * -------------------------------------------------- */
-
-const totalCredits = computed(() =>
-  transactions.value
     .filter(
       (transaction) =>
-        transaction.direction === "Credit" && transaction.status === "Completed"
+        transaction.status === "Pending",
     )
-    .reduce((total, transaction) => total + transaction.amount, 0)
-);
-
-const totalDebits = computed(() =>
-  transactions.value
-    .filter(
-      (transaction) =>
-        transaction.direction === "Debit" && transaction.status === "Completed"
-    )
-    .reduce((total, transaction) => total + transaction.amount, 0)
-);
+    .reduce(
+      (total, transaction) =>
+        total + transaction.amount,
+      0,
+    ),
+)
 
 /* --------------------------------------------------
- * Withdrawal Calculations
+ * WITHDRAWALS
  * -------------------------------------------------- */
 
 const completedWithdrawals = computed(() =>
-  withdrawals.value.filter((withdrawal) => withdrawal.status === "Completed")
-);
+  withdrawals.value.filter(
+    (withdrawal) =>
+      withdrawal.status === "Completed",
+  ),
+)
 
 const pendingWithdrawals = computed(() =>
   withdrawals.value.filter(
-    (withdrawal) => withdrawal.status === "Pending" || withdrawal.status === "Processing"
-  )
-);
+    (withdrawal) =>
+      withdrawal.status === "Pending" ||
+      withdrawal.status === "Processing",
+  ),
+)
 
 const withdrawalValue = computed(() =>
-  completedWithdrawals.value.reduce((total, withdrawal) => total + withdrawal.amount, 0)
-);
+  completedWithdrawals.value.reduce(
+    (total, withdrawal) =>
+      total + withdrawal.amount,
+    0,
+  ),
+)
 
 const pendingWithdrawalValue = computed(() =>
-  pendingWithdrawals.value.reduce((total, withdrawal) => total + withdrawal.amount, 0)
-);
+  pendingWithdrawals.value.reduce(
+    (total, withdrawal) =>
+      total + withdrawal.amount,
+    0,
+  ),
+)
 
 /* --------------------------------------------------
- * Statistics
+ * TRANSACTION STATS
  * -------------------------------------------------- */
 
 const transactionStats = computed(() => [
   {
     label: "Wallet Balance",
-    value: currency.format(walletBalance.value),
+    value: currency.format(
+      walletBalance.value,
+    ),
     icon: "heroicons:wallet",
   },
+
   {
     label: "Total Commission",
-    value: currency.format(totalCommission.value),
+    value: currency.format(
+      totalCommission.value ||
+        totalEarned.value,
+    ),
     icon: "heroicons:banknotes",
   },
+
   {
     label: "Total Withdrawn",
-    value: currency.format(totalWithdrawn.value),
+    value: currency.format(
+      totalWithdrawn.value,
+    ),
     icon: "heroicons:arrow-up-right",
   },
+
   {
     label: "Pending Withdrawal",
-    value: currency.format(pendingWithdrawal.value),
+    value: currency.format(
+      pendingWithdrawal.value,
+    ),
     icon: "heroicons:clock",
   },
-]);
+])
 
 /* --------------------------------------------------
- * Commission Statistics
+ * COMMISSION STATS
  * -------------------------------------------------- */
 
 const commissionStats = computed(() => [
   {
     label: "Total Commission",
-    value: currency.format(totalCommission.value),
+    value: currency.format(
+      totalCommission.value ||
+        totalEarned.value,
+    ),
     icon: "heroicons:banknotes",
   },
+
   {
     label: "This Month",
-    value: currency.format(thisMonthCommission.value),
+    value: currency.format(
+      thisMonthCommission.value,
+    ),
     icon: "heroicons:calendar-days",
   },
+
   {
     label: "Commission Rate",
     value: `${commissionRate.value}%`,
     icon: "heroicons:percent-badge",
   },
+
   {
     label: "Pending Commission",
-    value: currency.format(pendingCommission.value),
+    value: currency.format(
+      pendingCommission.value,
+    ),
     icon: "heroicons:clock",
   },
-]);
+])
 
 /* --------------------------------------------------
- * Table Columns
+ * TABLE COLUMNS
  * -------------------------------------------------- */
 
 const transactionColumns = [
@@ -383,69 +751,105 @@ const transactionColumns = [
     key: "date",
     label: "Date",
   },
-];
+]
 
 /* --------------------------------------------------
- * Status Classes
+ * STATUS CLASSES
  * -------------------------------------------------- */
 
-const transactionStatusClass = (status: WalletTransaction["status"]) => {
+const transactionStatusClass = (
+  status: WalletTransaction["status"],
+) => {
   const classes = {
     Completed:
       "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
 
-    Pending: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
+    Pending:
+      "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
 
-    Failed: "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400",
-  };
+    Failed:
+      "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400",
+  }
 
-  return classes[status];
-};
+  return classes[status]
+}
 
-const withdrawalStatusClass = (status: Withdrawal["status"]) => {
+const withdrawalStatusClass = (
+  status: Withdrawal["status"],
+) => {
   const classes = {
-    Pending: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
+    Pending:
+      "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
 
-    Processing: "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400",
+    Processing:
+      "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400",
 
     Completed:
       "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
 
-    Rejected: "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400",
-  };
+    Rejected:
+      "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400",
+  }
 
-  return classes[status];
-};
+  return classes[status]
+}
 
-const transactionTypeClass = (type: WalletTransaction["type"]) => {
+const transactionTypeClass = (
+  type: WalletTransaction["type"],
+) => {
   const classes = {
-    Commission: "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400",
+    Commission:
+      "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400",
 
-    Withdrawal: "bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400",
+    Withdrawal:
+      "bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400",
 
-    Refund: "bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400",
-  };
+    Refund:
+      "bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400",
 
-  return classes[type];
-};
+    Adjustment:
+      "bg-gray-100 text-gray-700 dark:bg-gray-500/10 dark:text-gray-400",
+  }
+
+  return classes[type]
+}
 
 /* --------------------------------------------------
- * Actions
+ * ACTIONS
  * -------------------------------------------------- */
 
 const requestWithdrawal = () => {
-  console.log("Open withdrawal request modal");
-};
+  console.log(
+    "Open withdrawal request modal",
+  )
+}
 
-const viewTransaction = (transaction: WalletTransaction) => {
-  console.log("View transaction:", transaction);
-};
+const viewTransaction = (
+  transaction: WalletTransaction,
+) => {
+  console.log(
+    "View transaction:",
+    transaction,
+  )
+}
 
-const viewWithdrawal = (withdrawal: Withdrawal) => {
-  console.log("View withdrawal:", withdrawal);
-};
+const viewWithdrawal = (
+  withdrawal: Withdrawal,
+) => {
+  console.log(
+    "View withdrawal:",
+    withdrawal,
+  )
+}
+
+/* --------------------------------------------------
+ * LOAD PAGE
+ * -------------------------------------------------- */
+
+onMounted(() => {
+  loadWallet()
+})
 </script>
-
 <template>
   <div class="space-y-6 pb-10">
     <!-- Header -->
@@ -737,7 +1141,7 @@ const viewWithdrawal = (withdrawal: Withdrawal) => {
                 ? 'text-emerald-600 dark:text-emerald-400'
                 : 'text-red-600 dark:text-red-400'
             "
-          >
+          >{{ item.direction  }}
             {{ item.direction === "Credit" ? "+" : "-" }}
             {{ currency.format(item.amount) }}
           </span>

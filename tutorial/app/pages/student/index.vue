@@ -16,6 +16,7 @@ definePageMeta({
 type PaymentStatus =
   | "Successful"
   | "Pending"
+  | "Completed"
   | "Failed"
   | "Refunded";
 
@@ -219,11 +220,11 @@ const loadPaymentHistory =
         response.data?.data ??
         response.data ??
         [];
-        console.log(data,'fgfdgdfdfgdf');
+       
       if (!Array.isArray(data.payments)) {
         return;
       }
-      console.log(data,'fgfdgdfdfgdf');
+     
       
       payments.value =
         data.payments.map(
@@ -319,9 +320,10 @@ const onPaymentSuccess =
 
     paymentSuccess.value =
       "Payment successful. Your access has been activated.";
-
+      console.log(payment?.data?.data,'payment?.data?.token');
+      
     activationCode.value =
-      payment?.activationCode ||
+      payment?.data?.data?.token ||
       payment?.data?.activationCode ||
       "";
 
@@ -593,7 +595,7 @@ onMounted(async () => {
             </div>
 
             <div
-              class="mt-4 flex w-full items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 p-1.5 dark:border-gray-700 dark:bg-gray-800 sm:mt-0 sm:w-auto"
+              class="mt-4 flex w-full items-center gap-2  justify-between rounded-lg border border-gray-300 bg-gray-50 p-1.5 dark:border-gray-700 dark:bg-gray-800 sm:mt-0 sm:w-auto"
             >
               <code
                 class="px-3 font-mono text-base font-bold tracking-widest text-gray-900 dark:text-white"

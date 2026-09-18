@@ -115,7 +115,7 @@ const startPayment = async () => {
             )
           }
 
-          emit("success", verification.data)
+          emit("success", verification)
         } catch (error: any) {
           console.error("Verification error:", error)
 

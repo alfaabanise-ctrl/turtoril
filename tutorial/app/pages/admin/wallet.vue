@@ -1,750 +1,764 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue"
 
 definePageMeta({
   layout: "nav",
-});
+})
 
-/* =========================================================
+/* --------------------------------------------------
  * TYPES
- * ========================================================= */
+ * -------------------------------------------------- */
 
 type WalletTransactionType =
   | "Commission"
   | "Withdrawal"
   | "Refund"
-  | "Adjustment";
+  | "Adjustment"
 
 type WalletTransactionStatus =
   | "Completed"
   | "Pending"
-  | "Failed";
-
-type WithdrawalStatus =
-  | "Pending"
-  | "Processing"
-  | "Completed"
-  | "Rejected";
+  | "Failed"
 
 interface WalletTransaction {
-  id: string;
-  type: WalletTransactionType;
-  description: string;
-  source: string;
-  amount: number;
-  direction: "Credit" | "Debit";
-  status: WalletTransactionStatus;
-  date: string;
-  reference: string;
+  id: string
+  type: WalletTransactionType
+  description: string
+  source: string
+  amount: number
+  direction: "Credit" | "Debit"
+  status: WalletTransactionStatus
+  date: string
+  reference: string
 }
 
 interface Withdrawal {
-  id: string;
-  amount: number;
-  bankName: string;
-  accountName: string;
-  accountNumber: string;
-  status: WithdrawalStatus;
-  requestedAt: string;
-  processedAt?: string;
-  reference: string;
+  id: string
+  amount: number
+  bankName: string
+  accountName: string
+  accountNumber: string
+  status:
+    | "Pending"
+    | "Processing"
+    | "Completed"
+    | "Rejected"
+  requestedAt: string
+  processedAt?: string
+  reference: string
 }
 
-interface WalletSummary {
-  balance: number;
-  totalEarned: number;
-  totalWithdrawn: number;
-  pendingWithdrawal: number;
-  commissionRate: number;
-  totalCredits: number;
-  totalDebits: number;
-}
-
-interface WalletApiResponse {
-  success: boolean;
-
-  wallet: WalletSummary;
-
-  admin?: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-
-  transactions: any[];
-
-  withdrawals: any[];
-
-  minimumWithdrawal: number;
-}
-
-/* =========================================================
- * CONFIG
- * ========================================================= */
-
-const config = useRuntimeConfig();
-
-/* =========================================================
+/* --------------------------------------------------
  * CURRENCY
- * ========================================================= */
+ * -------------------------------------------------- */
 
 const currency = new Intl.NumberFormat("en-NG", {
   style: "currency",
   currency: "NGN",
   maximumFractionDigits: 0,
-});
+})
 
-/* =========================================================
- * LOADING / ERROR
- * ========================================================= */
+/* --------------------------------------------------
+ * STATE
+ * -------------------------------------------------- */
 
-const loadingWallet = ref(false);
+const loading = ref(true)
+const errorMessage = ref("")
 
-const walletError = ref<string | null>(null);
+const walletBalance = ref(0)
+const totalEarned = ref(0)
+const totalWithdrawn = ref(0)
+const pendingWithdrawal = ref(0)
 
-/* =========================================================
- * WALLET DATA
- * ========================================================= */
+const commissionRate = ref(0)
 
-const walletBalance = ref(0);
+const totalCredits = ref(0)
+const totalDebits = ref(0)
 
-const totalEarned = ref(0);
+const minimumWithdrawal = ref(5000)
 
-const totalWithdrawn = ref(0);
+const transactions = ref<WalletTransaction[]>([])
+const withdrawals = ref<Withdrawal[]>([])
 
-const pendingWithdrawal = ref(0);
-
-const commissionRate = ref(0);
-
-const totalCredits = ref(0);
-
-const totalDebits = ref(0);
-
-const minimumWithdrawal = ref(5000);
-
-/* =========================================================
- * TRANSACTIONS
- * ========================================================= */
-
-const transactions = ref<WalletTransaction[]>([]);
-
-/* =========================================================
- * WITHDRAWALS
- * ========================================================= */
-
-const withdrawals = ref<Withdrawal[]>([]);
-
-/* =========================================================
- * WITHDRAWAL MODAL
- * ========================================================= */
-
-const showWithdrawalModal = ref(false);
-
-const withdrawalAmount = ref("");
-
-const withdrawalSubmitting = ref(false);
-
-const withdrawalError = ref<string | null>(null);
-
-const withdrawalSuccess = ref<string | null>(null);
-
-/* =========================================================
- * VIEW MODALS
- * ========================================================= */
-
-const selectedTransaction =
-  ref<WalletTransaction | null>(null);
-
-const selectedWithdrawal =
-  ref<Withdrawal | null>(null);
-
-/* =========================================================
+/* --------------------------------------------------
  * FILTERS
- * ========================================================= */
+ * -------------------------------------------------- */
 
-const selectedTransactionType =
-  ref("All Types");
+const selectedTransactionType = ref("All Types")
+const selectedTransactionStatus = ref("All Status")
+const search = ref("")
 
-const selectedTransactionStatus =
-  ref("All Status");
+/* --------------------------------------------------
+ * HELPERS
+ * -------------------------------------------------- */
 
-const search = ref("");
+// Backend wallet values are KOBO.
+// Frontend displays NAIRA.
+const koboToNaira = (value: unknown) => {
+  const amount = Number(value ?? 0)
 
-/* =========================================================
+  if (!Number.isFinite(amount)) {
+    return 0
+  }
+
+  return amount / 100
+}
+
+const formatDate = (value: unknown) => {
+  if (!value) {
+    return ""
+  }
+
+  const date = new Date(String(value))
+
+  if (Number.isNaN(date.getTime())) {
+    return ""
+  }
+
+  return date.toLocaleDateString("en-NG", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  })
+}
+
+const formatDateTime = (value: unknown) => {
+  if (!value) {
+    return ""
+  }
+
+  const date = new Date(String(value))
+
+  if (Number.isNaN(date.getTime())) {
+    return ""
+  }
+
+  return date.toLocaleDateString("en-NG", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
+
+/* --------------------------------------------------
+ * NORMALIZE TYPE
+ * -------------------------------------------------- */
+
+const normalizeTransactionType = (
+  value: unknown,
+): WalletTransactionType => {
+  const type = String(value || "").toUpperCase()
+
+  switch (type) {
+    case "COMMISSION":
+      return "Commission"
+
+    case "WITHDRAWAL":
+    case "PAYOUT":
+      return "Withdrawal"
+
+    case "REFUND":
+    case "REVERSAL":
+      return "Refund"
+
+    default:
+      return "Adjustment"
+  }
+}
+
+/* --------------------------------------------------
+ * NORMALIZE STATUS
+ * -------------------------------------------------- */
+
+const normalizeTransactionStatus = (
+  value: unknown,
+): WalletTransactionStatus => {
+  const status = String(value || "").toUpperCase()
+
+  switch (status) {
+    case "COMPLETED":
+    case "SUCCESS":
+    case "SUCCESSFUL":
+      return "Completed"
+
+    case "PENDING":
+    case "PROCESSING":
+      return "Pending"
+
+    case "FAILED":
+    case "REJECTED":
+    case "CANCELLED":
+      return "Failed"
+
+    default:
+      return "Pending"
+  }
+}
+
+/* --------------------------------------------------
+ * NORMALIZE WITHDRAWAL STATUS
+ * -------------------------------------------------- */
+
+const normalizeWithdrawalStatus = (
+  value: unknown,
+): Withdrawal["status"] => {
+  const status = String(value || "").toUpperCase()
+
+  switch (status) {
+    case "PROCESSING":
+      return "Processing"
+
+    case "COMPLETED":
+      return "Completed"
+
+    case "REJECTED":
+    case "FAILED":
+      return "Rejected"
+
+    default:
+      return "Pending"
+  }
+}
+
+/* --------------------------------------------------
  * LOAD WALLET
- * ========================================================= */
+ * -------------------------------------------------- */
 
-async function loadWallet() {
-  loadingWallet.value = true;
-  walletError.value = null;
+const loadWallet = async () => {
+  loading.value = true
+  errorMessage.value = ""
 
   try {
-    console.log(
-      "Loading admin wallet:",
-      `${config.public.apiUrl}/admin/wallet`
-    );
+    const response = await useApiFetch("/admin/wallet", {
+      method: "GET",
+    })
 
-    const response =
-      await $fetch<WalletApiResponse>(
-        "/admin/wallet",
-        {
-          baseURL:
-            config.public.apiUrl,
-
-          credentials: "include",
-
-          method: "GET",
-        }
-      );
-
-    console.log(
-      "Wallet response:",
-      response
-    );
+    console.log("WALLET API RESPONSE:", response)
 
     if (!response?.success) {
       throw new Error(
-        "Unable to load wallet."
-      );
+        response?.message || "Unable to load wallet",
+      )
     }
 
-    /* --------------------------------------------------
-     * Wallet
-     * -------------------------------------------------- */
+    const apiData =
+      response.data?.data ??
+      response.data ??
+      response
 
-    walletBalance.value =
-      Number(
-        response.wallet?.balance
-      ) || 0;
+    const wallet =
+      apiData?.wallet ?? {}
 
-    totalEarned.value =
-      Number(
-        response.wallet?.totalEarned
-      ) || 0;
+    /* ----------------------------------------------
+     * WALLET SUMMARY
+     * ---------------------------------------------- */
 
-    totalWithdrawn.value =
-      Number(
-        response.wallet?.totalWithdrawn
-      ) || 0;
+    walletBalance.value = koboToNaira(
+      wallet.availableBalance ??
+        wallet.balance ??
+        0,
+    )
 
-    pendingWithdrawal.value =
-      Number(
-        response.wallet?.pendingWithdrawal
-      ) || 0;
+    totalEarned.value = koboToNaira(
+      wallet.totalEarned ??
+        0,
+    )
 
-    commissionRate.value =
-      Number(
-        response.wallet?.commissionRate
-      ) || 0;
+    totalWithdrawn.value = koboToNaira(
+      wallet.totalWithdrawn ??
+        0,
+    )
 
-    totalCredits.value =
-      Number(
-        response.wallet?.totalCredits
-      ) || 0;
+    pendingWithdrawal.value = koboToNaira(
+      wallet.pendingWithdrawal ??
+        0,
+    )
 
-    totalDebits.value =
-      Number(
-        response.wallet?.totalDebits
-      ) || 0;
+    /*
+     * Commission rate can come from wallet or admin
+     */
+    commissionRate.value = Number(
+      wallet.commissionRate ??
+        apiData?.admin?.commissionPercentage ??
+        apiData?.admin?.commissionRate ??
+        0,
+    )
 
+    /*
+     * Minimum withdrawal
+     */
     minimumWithdrawal.value =
-      Number(
-        response.minimumWithdrawal
-      ) || 5000;
+      koboToNaira(
+        apiData?.minimumWithdrawal ??
+          500000,
+      )
 
-    /* --------------------------------------------------
-     * Transactions
-     * -------------------------------------------------- */
+    /* ----------------------------------------------
+     * TRANSACTIONS
+     * ---------------------------------------------- */
+
+    const apiTransactions =
+      Array.isArray(apiData?.transactions)
+        ? apiData.transactions
+        : []
 
     transactions.value =
-      (response.transactions || []).map(
-        (transaction: any) => ({
-          id:
+      apiTransactions.map(
+        (transaction: any, index: number) => {
+          const direction =
             String(
-              transaction?._id ||
-                transaction?.id ||
-                transaction?.reference ||
-                ""
+              transaction.direction || "",
+            ).toUpperCase()
+          console.log(transaction);
+          
+          return {
+            id: String(
+              transaction.id ??
+                transaction._id ??
+                index,
             ),
 
-          type:
-            transaction?.type ||
-            "Adjustment",
+            type:
+              normalizeTransactionType(
+                transaction.entryType ??
+                  transaction.type,
+              ),
 
-          description:
-            transaction?.description ||
-            "Wallet transaction",
+            description:
+              transaction.description ||
+              "Wallet transaction",
 
-          source:
-            transaction?.source ||
-            "",
+            source:
+              transaction.source ||
+              transaction.description ||
+              "",
 
-          amount:
-            Number(
-              transaction?.amount
-            ) || 0,
+            /*
+             * IMPORTANT:
+             * Backend = KOBO
+             * Frontend = NAIRA
+             */
+            amount:
+              koboToNaira(
+                transaction.amount,
+              ),
 
-          direction:
-            transaction?.direction ||
-            "Credit",
+            /*
+             * IMPORTANT:
+             * CREDIT = Credit
+             * DEBIT  = Debit
+             */
+            direction:
+              direction === "DEBIT"
+                ? "Debit"
+                : "Credit",
 
-          status:
-            transaction?.status ||
-            "Completed",
+            /*
+             * IMPORTANT:
+             * COMPLETED = Completed
+             * PENDING   = Pending
+             * FAILED    = Failed
+             */
+            status:
+              normalizeTransactionStatus(
+                transaction.status,
+              ),
 
-          date:
-            transaction?.createdAt ||
-            transaction?.date ||
-            "",
+            /*
+             * Use createdAt from backend
+             */
+            date:
+              transaction.createdAt ??
+              transaction.date ??
+              "",
 
-          reference:
-            transaction?.reference ||
-            "—",
-        })
-      );
+            reference:
+              transaction.reference ||
+              transaction.externalReference ||
+              "",
+          }
+        },
+      )
 
-    /* --------------------------------------------------
-     * Withdrawals
-     * -------------------------------------------------- */
+    /* ----------------------------------------------
+     * WITHDRAWALS
+     * ---------------------------------------------- */
+
+    const apiWithdrawals =
+      Array.isArray(apiData?.withdrawals)
+        ? apiData.withdrawals
+        : []
 
     withdrawals.value =
-      (response.withdrawals || []).map(
-        (withdrawal: any) => ({
-          id:
-            String(
-              withdrawal?._id ||
-                withdrawal?.id ||
-                withdrawal?.reference ||
-                ""
-            ),
+      apiWithdrawals.map(
+        (withdrawal: any, index: number) => ({
+          id: String(
+            withdrawal.id ??
+              withdrawal._id ??
+              index,
+          ),
 
           amount:
-            Number(
-              withdrawal?.amount
-            ) || 0,
+            koboToNaira(
+              withdrawal.amount,
+            ),
 
           bankName:
-            withdrawal?.bankName ||
-            "—",
+            withdrawal.bankName ||
+            withdrawal.bankDetails
+              ?.bankName ||
+            "",
 
           accountName:
-            withdrawal?.accountName ||
-            "—",
+            withdrawal.accountName ||
+            withdrawal.bankDetails
+              ?.accountName ||
+            "",
 
           accountNumber:
-            withdrawal?.accountNumber ||
-            withdrawal?.accountNumberMasked ||
-            "****",
+            withdrawal.accountNumber ||
+            withdrawal.bankDetails
+              ?.accountNumber ||
+            "",
 
           status:
-            withdrawal?.status ||
-            "Pending",
+            normalizeWithdrawalStatus(
+              withdrawal.status,
+            ),
 
           requestedAt:
-            withdrawal?.requestedAt ||
-            withdrawal?.createdAt ||
+            withdrawal.requestedAt ??
+            withdrawal.createdAt ??
             "",
 
           processedAt:
-            withdrawal?.processedAt ||
+            withdrawal.processedAt ??
             undefined,
 
           reference:
-            withdrawal?.reference ||
-            "—",
-        })
-      );
+            withdrawal.reference ||
+            "",
+        }),
+      )
+
+    /* ----------------------------------------------
+     * CALCULATE CREDITS / DEBITS
+     *
+     * Only use loaded completed transactions here.
+     * If backend later sends lifetime totals,
+     * those can be used instead.
+     * ---------------------------------------------- */
+
+    totalCredits.value =
+      transactions.value
+        .filter(
+          (transaction) =>
+            transaction.direction === "Credit" &&
+            transaction.status === "Completed",
+        )
+        .reduce(
+          (total, transaction) =>
+            total + transaction.amount,
+          0,
+        )
+
+    totalDebits.value =
+      transactions.value
+        .filter(
+          (transaction) =>
+            transaction.direction === "Debit" &&
+            transaction.status === "Completed",
+        )
+        .reduce(
+          (total, transaction) =>
+            total + transaction.amount,
+          0,
+        )
 
   } catch (error: any) {
     console.error(
-      "Failed to load wallet:",
-      error
-    );
+      "Unable to load wallet:",
+      error,
+    )
 
-    walletError.value =
-      error?.data?.message ||
+    errorMessage.value =
       error?.message ||
-      "Failed to load wallet.";
-
+      "Unable to load wallet."
   } finally {
-    loadingWallet.value = false;
+    loading.value = false
   }
 }
 
-/* =========================================================
- * CLIENT SIDE ONLY
- * ========================================================= */
+/* --------------------------------------------------
+ * FILTERED TRANSACTIONS
+ * -------------------------------------------------- */
 
-onMounted(() => {
-  loadWallet();
-});
+const filteredTransactions = computed(() => {
+  const query =
+    search.value
+      .trim()
+      .toLowerCase()
 
-/* =========================================================
- * FORMAT DATE
- * ========================================================= */
-
-function formatDate(
-  value: string | Date | null | undefined
-) {
-  if (!value) {
-    return "—";
-  }
-
-  const date = new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return String(value);
-  }
-
-  return new Intl.DateTimeFormat(
-    "en-NG",
-    {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }
-  ).format(date);
-}
-
-/* =========================================================
- * COMMISSION TRANSACTIONS
- * ========================================================= */
-
-const commissionTransactions =
-  computed(() =>
-    transactions.value.filter(
-      (transaction) =>
+  return transactions.value.filter(
+    (transaction) => {
+      const matchesType =
+        selectedTransactionType.value ===
+          "All Types" ||
         transaction.type ===
-          "Commission" &&
-        transaction.direction ===
-          "Credit"
-    )
-  );
+          selectedTransactionType.value
 
-/* =========================================================
- * COMPLETED COMMISSIONS
- * ========================================================= */
+      const matchesStatus =
+        selectedTransactionStatus.value ===
+          "All Status" ||
+        transaction.status ===
+          selectedTransactionStatus.value
+
+      const matchesSearch =
+        !query ||
+        transaction.description
+          .toLowerCase()
+          .includes(query) ||
+        transaction.source
+          .toLowerCase()
+          .includes(query) ||
+        transaction.reference
+          .toLowerCase()
+          .includes(query)
+
+      return (
+        matchesType &&
+        matchesStatus &&
+        matchesSearch
+      )
+    },
+  )
+})
+
+/* --------------------------------------------------
+ * COMMISSION TRANSACTIONS
+ * -------------------------------------------------- */
+
+const commissionTransactions = computed(() =>
+  transactions.value.filter(
+    (transaction) =>
+      transaction.type === "Commission" &&
+      transaction.direction === "Credit",
+  ),
+)
 
 const completedCommissionTransactions =
   computed(() =>
     commissionTransactions.value.filter(
       (transaction) =>
-        transaction.status ===
-        "Completed"
-    )
-  );
+        transaction.status === "Completed",
+    ),
+  )
 
-/* =========================================================
- * TOTAL COMMISSION
- *
- * Use backend totalEarned instead of calculating
- * from only the last 50 transactions.
- * ========================================================= */
+const totalCommission = computed(() =>
+  completedCommissionTransactions.value.reduce(
+    (total, transaction) =>
+      total + transaction.amount,
+    0,
+  ),
+)
 
-const totalCommission = computed(
-  () => totalEarned.value
-);
-
-/* =========================================================
+/* --------------------------------------------------
  * THIS MONTH COMMISSION
- * ========================================================= */
+ * -------------------------------------------------- */
 
-const thisMonthCommission =
-  computed(() => {
-    const now = new Date();
+const thisMonthCommission = computed(() => {
+  const now = new Date()
 
-    const month =
-      now.getMonth();
-
-    const year =
-      now.getFullYear();
-
-    return completedCommissionTransactions.value
-      .filter((transaction) => {
-        const date =
-          new Date(
-            transaction.date
-          );
-
-        return (
-          !Number.isNaN(
-            date.getTime()
-          ) &&
-          date.getMonth() ===
-            month &&
-          date.getFullYear() ===
-            year
-        );
-      })
-      .reduce(
-        (total, transaction) =>
-          total + transaction.amount,
-        0
-      );
-  });
-
-/* =========================================================
- * PENDING COMMISSION
- * ========================================================= */
-
-const pendingCommission =
-  computed(() =>
-    commissionTransactions.value
-      .filter(
-        (transaction) =>
-          transaction.status ===
-          "Pending"
-      )
-      .reduce(
-        (total, transaction) =>
-          total + transaction.amount,
-        0
-      )
-  );
-
-/* =========================================================
- * COMPLETED WITHDRAWALS
- * ========================================================= */
-
-const completedWithdrawals =
-  computed(() =>
-    withdrawals.value.filter(
-      (withdrawal) =>
-        withdrawal.status ===
-        "Completed"
-    )
-  );
-
-/* =========================================================
- * PENDING WITHDRAWALS
- * ========================================================= */
-
-const pendingWithdrawals =
-  computed(() =>
-    withdrawals.value.filter(
-      (withdrawal) =>
-        withdrawal.status ===
-          "Pending" ||
-        withdrawal.status ===
-          "Processing"
-    )
-  );
-
-/* =========================================================
- * WITHDRAWAL TOTAL
- * ========================================================= */
-
-const withdrawalValue =
-  computed(() =>
-    totalWithdrawn.value
-  );
-
-/* =========================================================
- * PENDING WITHDRAWAL TOTAL
- * ========================================================= */
-
-const pendingWithdrawalValue =
-  computed(() =>
-    pendingWithdrawal.value
-  );
-
-/* =========================================================
- * FILTERED TRANSACTIONS
- * ========================================================= */
-
-const filteredTransactions =
-  computed(() => {
-    const query =
-      search.value
-        .trim()
-        .toLowerCase();
-
-    return transactions.value.filter(
-      (transaction) => {
-        const matchesType =
-          selectedTransactionType.value ===
-            "All Types" ||
-          transaction.type ===
-            selectedTransactionType.value;
-
-        const matchesStatus =
-          selectedTransactionStatus.value ===
-            "All Status" ||
-          transaction.status ===
-            selectedTransactionStatus.value;
-
-        const matchesSearch =
-          !query ||
-          transaction.description
-            .toLowerCase()
-            .includes(query) ||
-          transaction.source
-            .toLowerCase()
-            .includes(query) ||
-          transaction.reference
-            .toLowerCase()
-            .includes(query);
-
-        return (
-          matchesType &&
-          matchesStatus &&
-          matchesSearch
-        );
+  return completedCommissionTransactions.value
+    .filter((transaction) => {
+      if (!transaction.date) {
+        return false
       }
-    );
-  });
 
-/* =========================================================
+      const date =
+        new Date(transaction.date)
+
+      if (Number.isNaN(date.getTime())) {
+        return false
+      }
+
+      return (
+        date.getMonth() ===
+          now.getMonth() &&
+        date.getFullYear() ===
+          now.getFullYear()
+      )
+    })
+    .reduce(
+      (total, transaction) =>
+        total + transaction.amount,
+      0,
+    )
+})
+
+/* --------------------------------------------------
+ * PENDING COMMISSION
+ * -------------------------------------------------- */
+
+const pendingCommission = computed(() =>
+  commissionTransactions.value
+    .filter(
+      (transaction) =>
+        transaction.status === "Pending",
+    )
+    .reduce(
+      (total, transaction) =>
+        total + transaction.amount,
+      0,
+    ),
+)
+
+/* --------------------------------------------------
+ * WITHDRAWALS
+ * -------------------------------------------------- */
+
+const completedWithdrawals = computed(() =>
+  withdrawals.value.filter(
+    (withdrawal) =>
+      withdrawal.status === "Completed",
+  ),
+)
+
+const pendingWithdrawals = computed(() =>
+  withdrawals.value.filter(
+    (withdrawal) =>
+      withdrawal.status === "Pending" ||
+      withdrawal.status === "Processing",
+  ),
+)
+
+const withdrawalValue = computed(() =>
+  completedWithdrawals.value.reduce(
+    (total, withdrawal) =>
+      total + withdrawal.amount,
+    0,
+  ),
+)
+
+const pendingWithdrawalValue = computed(() =>
+  pendingWithdrawals.value.reduce(
+    (total, withdrawal) =>
+      total + withdrawal.amount,
+    0,
+  ),
+)
+
+/* --------------------------------------------------
  * TRANSACTION STATS
- * ========================================================= */
+ * -------------------------------------------------- */
 
-const transactionStats =
-  computed(() => [
-    {
-      label: "Wallet Balance",
+const transactionStats = computed(() => [
+  {
+    label: "Wallet Balance",
+    value: currency.format(
+      walletBalance.value,
+    ),
+    icon: "heroicons:wallet",
+  },
 
-      value:
-        currency.format(
-          walletBalance.value
-        ),
+  {
+    label: "Total Commission",
+    value: currency.format(
+      totalCommission.value ||
+        totalEarned.value,
+    ),
+    icon: "heroicons:banknotes",
+  },
 
-      icon:
-        "i-heroicons-wallet",
-    },
+  {
+    label: "Total Withdrawn",
+    value: currency.format(
+      totalWithdrawn.value,
+    ),
+    icon: "heroicons:arrow-up-right",
+  },
 
-    {
-      label: "Total Commission",
+  {
+    label: "Pending Withdrawal",
+    value: currency.format(
+      pendingWithdrawal.value,
+    ),
+    icon: "heroicons:clock",
+  },
+])
 
-      value:
-        currency.format(
-          totalCommission.value
-        ),
-
-      icon:
-        "i-heroicons-banknotes",
-    },
-
-    {
-      label: "Total Withdrawn",
-
-      value:
-        currency.format(
-          totalWithdrawn.value
-        ),
-
-      icon:
-        "i-heroicons-arrow-up-right",
-    },
-
-    {
-      label: "Pending Withdrawal",
-
-      value:
-        currency.format(
-          pendingWithdrawal.value
-        ),
-
-      icon:
-        "i-heroicons-clock",
-    },
-  ]);
-
-/* =========================================================
+/* --------------------------------------------------
  * COMMISSION STATS
- * ========================================================= */
+ * -------------------------------------------------- */
 
-const commissionStats =
-  computed(() => [
-    {
-      label: "Total Commission",
+const commissionStats = computed(() => [
+  {
+    label: "Total Commission",
+    value: currency.format(
+      totalCommission.value ||
+        totalEarned.value,
+    ),
+    icon: "heroicons:banknotes",
+  },
 
-      value:
-        currency.format(
-          totalCommission.value
-        ),
+  {
+    label: "This Month",
+    value: currency.format(
+      thisMonthCommission.value,
+    ),
+    icon: "heroicons:calendar-days",
+  },
 
-      icon:
-        "i-heroicons-banknotes",
-    },
+  {
+    label: "Commission Rate",
+    value: `${commissionRate.value}%`,
+    icon: "heroicons:percent-badge",
+  },
 
-    {
-      label: "This Month",
+  {
+    label: "Pending Commission",
+    value: currency.format(
+      pendingCommission.value,
+    ),
+    icon: "heroicons:clock",
+  },
+])
 
-      value:
-        currency.format(
-          thisMonthCommission.value
-        ),
-
-      icon:
-        "i-heroicons-calendar-days",
-    },
-
-    {
-      label: "Commission Rate",
-
-      value:
-        `${commissionRate.value}%`,
-
-      icon:
-        "i-heroicons-percent-badge",
-    },
-
-    {
-      label: "Pending Commission",
-
-      value:
-        currency.format(
-          pendingCommission.value
-        ),
-
-      icon:
-        "i-heroicons-clock",
-    },
-  ]);
-
-/* =========================================================
- * TRANSACTION COLUMNS
- * ========================================================= */
+/* --------------------------------------------------
+ * TABLE COLUMNS
+ * -------------------------------------------------- */
 
 const transactionColumns = [
   {
     key: "description",
     label: "Transaction",
   },
-
   {
     key: "type",
     label: "Type",
   },
-
   {
     key: "amount",
     label: "Amount",
   },
-
   {
     key: "status",
     label: "Status",
   },
-
   {
     key: "date",
     label: "Date",
   },
-];
+]
 
-/* =========================================================
- * TRANSACTION STATUS
- * ========================================================= */
+/* --------------------------------------------------
+ * STATUS CLASSES
+ * -------------------------------------------------- */
 
 const transactionStatusClass = (
-  status: WalletTransactionStatus
+  status: WalletTransaction["status"],
 ) => {
   const classes = {
     Completed:
@@ -755,17 +769,13 @@ const transactionStatusClass = (
 
     Failed:
       "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400",
-  };
+  }
 
-  return classes[status];
-};
-
-/* =========================================================
- * WITHDRAWAL STATUS
- * ========================================================= */
+  return classes[status]
+}
 
 const withdrawalStatusClass = (
-  status: WithdrawalStatus
+  status: Withdrawal["status"],
 ) => {
   const classes = {
     Pending:
@@ -779,17 +789,13 @@ const withdrawalStatusClass = (
 
     Rejected:
       "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400",
-  };
+  }
 
-  return classes[status];
-};
-
-/* =========================================================
- * TRANSACTION TYPE
- * ========================================================= */
+  return classes[status]
+}
 
 const transactionTypeClass = (
-  type: WalletTransactionType
+  type: WalletTransaction["type"],
 ) => {
   const classes = {
     Commission:
@@ -803,198 +809,49 @@ const transactionTypeClass = (
 
     Adjustment:
       "bg-gray-100 text-gray-700 dark:bg-gray-500/10 dark:text-gray-400",
-  };
-
-  return classes[type];
-};
-
-/* =========================================================
- * REQUEST WITHDRAWAL MODAL
- * ========================================================= */
-
-function requestWithdrawal() {
-  withdrawalAmount.value = "";
-
-  withdrawalError.value = null;
-
-  withdrawalSuccess.value = null;
-
-  showWithdrawalModal.value = true;
-}
-
-/* =========================================================
- * CLOSE WITHDRAWAL MODAL
- * ========================================================= */
-
-function closeWithdrawalModal() {
-  if (withdrawalSubmitting.value) {
-    return;
   }
 
-  showWithdrawalModal.value = false;
-
-  withdrawalAmount.value = "";
-
-  withdrawalError.value = null;
+  return classes[type]
 }
 
-/* =========================================================
- * SUBMIT WITHDRAWAL
- * ========================================================= */
+/* --------------------------------------------------
+ * ACTIONS
+ * -------------------------------------------------- */
 
-async function submitWithdrawal() {
-  withdrawalError.value = null;
-  withdrawalSuccess.value = null;
-
-  const amount =
-    Number(
-      withdrawalAmount.value
-    );
-
-  if (
-    !Number.isFinite(amount) ||
-    amount <= 0
-  ) {
-    withdrawalError.value =
-      "Enter a valid withdrawal amount.";
-
-    return;
-  }
-
-  if (
-    amount <
-    minimumWithdrawal.value
-  ) {
-    withdrawalError.value =
-      `Minimum withdrawal is ${currency.format(
-        minimumWithdrawal.value
-      )}.`;
-
-    return;
-  }
-
-  if (
-    amount >
-    walletBalance.value
-  ) {
-    withdrawalError.value =
-      "Withdrawal amount cannot be greater than your wallet balance.";
-
-    return;
-  }
-
-  withdrawalSubmitting.value = true;
-
-  try {
-    const response =
-      await $fetch<any>(
-        "/admin/wallet/withdrawals",
-        {
-          baseURL:
-            config.public.apiUrl,
-
-          credentials: "include",
-
-          method: "POST",
-
-          body: {
-            amount,
-          },
-        }
-      );
-
-    if (!response?.success) {
-      throw new Error(
-        response?.message ||
-          "Withdrawal request failed."
-      );
-    }
-
-    withdrawalSuccess.value =
-      response.message ||
-      "Withdrawal request submitted successfully.";
-
-    /*
-     * Reload the wallet so:
-     *
-     * balance
-     * transactions
-     * withdrawals
-     *
-     * are immediately updated.
-     */
-    await loadWallet();
-
-    setTimeout(() => {
-      closeWithdrawalModal();
-    }, 1000);
-
-  } catch (error: any) {
-    console.error(
-      "Withdrawal request error:",
-      error
-    );
-
-    withdrawalError.value =
-      error?.data?.message ||
-      error?.message ||
-      "Failed to submit withdrawal.";
-
-  } finally {
-    withdrawalSubmitting.value = false;
-  }
+const requestWithdrawal = () => {
+  console.log(
+    "Open withdrawal request modal",
+  )
 }
 
-/* =========================================================
- * VIEW TRANSACTION
- * ========================================================= */
-
-function viewTransaction(
-  transaction: WalletTransaction
-) {
-  selectedTransaction.value =
-    transaction;
+const viewTransaction = (
+  transaction: WalletTransaction,
+) => {
+  console.log(
+    "View transaction:",
+    transaction,
+  )
 }
 
-/* =========================================================
- * CLOSE TRANSACTION
- * ========================================================= */
-
-function closeTransaction() {
-  selectedTransaction.value =
-    null;
+const viewWithdrawal = (
+  withdrawal: Withdrawal,
+) => {
+  console.log(
+    "View withdrawal:",
+    withdrawal,
+  )
 }
 
-/* =========================================================
- * VIEW WITHDRAWAL
- * ========================================================= */
+/* --------------------------------------------------
+ * LOAD PAGE
+ * -------------------------------------------------- */
 
-function viewWithdrawal(
-  withdrawal: Withdrawal
-) {
-  selectedWithdrawal.value =
-    withdrawal;
-}
-
-/* =========================================================
- * CLOSE WITHDRAWAL VIEW
- * ========================================================= */
-
-function closeWithdrawalView() {
-  selectedWithdrawal.value =
-    null;
-}
-
-/* =========================================================
- * RELOAD
- * ========================================================= */
-
-async function reloadWallet() {
-  await loadWallet();
-}
+onMounted(() => {
+  loadWallet()
+})
 </script>
 <template>
-  <div class="space-y-6 pb-10">
+  <Container class="space-y-6  pb-10">
     <!-- Header -->
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
@@ -1003,16 +860,16 @@ async function reloadWallet() {
         </h1>
 
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Manage your earnings, commissions and withdrawals.
+          Manage your commission earnings and withdrawals.
         </p>
       </div>
-
+      <PaymentWithdraw/>
       <button
         type="button"
         @click="requestWithdrawal"
         class="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
       >
-        <span class="i-heroicons-arrow-up-right h-5 w-5"></span>
+        <Icon name="heroicons:arrow-up-right" class="h-5 w-5" />
         Request Withdrawal
       </button>
     </div>
@@ -1027,7 +884,7 @@ async function reloadWallet() {
 
       <div class="relative">
         <div class="flex items-center gap-2 text-sm font-medium text-white/80">
-          <span class="i-heroicons-wallet h-5 w-5"></span>
+          <Icon name="heroicons:wallet" class="h-5 w-5" />
           Available Wallet Balance
         </div>
 
@@ -1037,16 +894,20 @@ async function reloadWallet() {
 
         <div class="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
           <div class="flex items-center gap-2 text-white/80">
-            <span class="i-heroicons-arrow-trending-up h-4 w-4"></span>
+            <Icon name="heroicons:arrow-trending-up" class="h-4 w-4" />
+
             Total earned:
+
             <span class="font-semibold text-white">
               {{ currency.format(totalEarned) }}
             </span>
           </div>
 
           <div class="flex items-center gap-2 text-white/80">
-            <span class="i-heroicons-arrow-up-right h-4 w-4"></span>
+            <Icon name="heroicons:arrow-up-right" class="h-4 w-4" />
+
             Withdrawn:
+
             <span class="font-semibold text-white">
               {{ currency.format(totalWithdrawn) }}
             </span>
@@ -1076,13 +937,13 @@ async function reloadWallet() {
           <div
             class="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
           >
-            <span :class="[stat.icon, 'h-5 w-5']"></span>
+            <Icon :name="stat.icon" class="h-5 w-5" />
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Commission Section -->
+    <!-- Commission -->
     <section
       class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900"
     >
@@ -1092,19 +953,21 @@ async function reloadWallet() {
             <h2 class="text-lg font-bold text-gray-900 dark:text-white">Commission</h2>
 
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Earnings generated from successful student subscriptions.
+              Earnings generated from successful subscriptions by your students.
             </p>
           </div>
 
           <div
             class="inline-flex w-fit items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-sm font-semibold text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400"
           >
-            <span class="i-heroicons-percent-badge h-4 w-4"></span>
+            <Icon name="heroicons:percent-badge" class="h-4 w-4" />
+
             {{ commissionRate }}% Commission
           </div>
         </div>
       </div>
 
+      <!-- Commission Stats -->
       <div class="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 xl:grid-cols-4">
         <div
           v-for="stat in commissionStats"
@@ -1115,7 +978,7 @@ async function reloadWallet() {
             <div
               class="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
             >
-              <span :class="[stat.icon, 'h-5 w-5']"></span>
+              <Icon :name="stat.icon" class="h-5 w-5" />
             </div>
 
             <div>
@@ -1140,7 +1003,7 @@ async function reloadWallet() {
             <div
               class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
             >
-              <span class="i-heroicons-information-circle h-5 w-5"></span>
+              <Icon name="heroicons:information-circle" class="h-5 w-5" />
             </div>
 
             <div class="min-w-0">
@@ -1153,9 +1016,8 @@ async function reloadWallet() {
               >
                 You receive
                 <strong>{{ commissionRate }}%</strong>
-                commission from successful subscriptions made by students connected to
-                your network. Commission is added to your wallet only after the payment
-                has been successfully verified.
+                commission from successful subscriptions made by your students. Commission
+                is added to your wallet after the payment has been successfully verified.
               </p>
 
               <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -1195,7 +1057,7 @@ async function reloadWallet() {
         </h2>
 
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          View all commissions, withdrawals and wallet adjustments.
+          View your commissions, withdrawals and wallet transactions.
         </p>
       </div>
 
@@ -1210,9 +1072,10 @@ async function reloadWallet() {
           <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
             <!-- Search -->
             <div class="relative min-w-0 flex-1">
-              <span
-                class="i-heroicons-magnifying-glass pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
-              ></span>
+              <Icon
+                name="heroicons:magnifying-glass"
+                class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+              />
 
               <input
                 v-model="search"
@@ -1231,7 +1094,6 @@ async function reloadWallet() {
               <option>Commission</option>
               <option>Withdrawal</option>
               <option>Refund</option>
-              <option>Adjustment</option>
             </select>
 
             <!-- Status -->
@@ -1279,7 +1141,7 @@ async function reloadWallet() {
                 ? 'text-emerald-600 dark:text-emerald-400'
                 : 'text-red-600 dark:text-red-400'
             "
-          >
+          >{{ direction }}
             {{ item.direction === "Credit" ? "+" : "-" }}
             {{ currency.format(item.amount) }}
           </span>
@@ -1310,7 +1172,7 @@ async function reloadWallet() {
             class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
             title="View transaction"
           >
-            <span class="i-heroicons-eye h-5 w-5"></span>
+            <Icon name="heroicons:eye" class="h-5 w-5" />
           </button>
         </template>
       </UiDataList>
@@ -1320,6 +1182,7 @@ async function reloadWallet() {
     <section
       class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900"
     >
+      <!-- Header -->
       <div class="border-b border-gray-200 px-5 py-5 dark:border-gray-800 sm:px-6">
         <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -1334,6 +1197,7 @@ async function reloadWallet() {
 
           <div class="text-sm text-gray-500 dark:text-gray-400">
             Completed:
+
             <span class="font-semibold text-gray-900 dark:text-white">
               {{ currency.format(withdrawalValue) }}
             </span>
@@ -1392,12 +1256,14 @@ async function reloadWallet() {
               :key="withdrawal.id"
               class="transition hover:bg-gray-50 dark:hover:bg-gray-800/30"
             >
+              <!-- Reference -->
               <td class="whitespace-nowrap px-6 py-4">
                 <p class="text-sm font-semibold text-gray-900 dark:text-white">
                   {{ withdrawal.reference }}
                 </p>
               </td>
 
+              <!-- Bank -->
               <td class="px-6 py-4">
                 <div>
                   <p class="text-sm font-medium text-gray-900 dark:text-white">
@@ -1412,18 +1278,21 @@ async function reloadWallet() {
                 </div>
               </td>
 
+              <!-- Amount -->
               <td class="whitespace-nowrap px-6 py-4">
                 <span class="text-sm font-bold text-gray-900 dark:text-white">
                   {{ currency.format(withdrawal.amount) }}
                 </span>
               </td>
 
+              <!-- Requested -->
               <td class="whitespace-nowrap px-6 py-4">
                 <span class="text-sm text-gray-600 dark:text-gray-300">
                   {{ withdrawal.requestedAt }}
                 </span>
               </td>
 
+              <!-- Status -->
               <td class="whitespace-nowrap px-6 py-4">
                 <span
                   class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
@@ -1433,6 +1302,7 @@ async function reloadWallet() {
                 </span>
               </td>
 
+              <!-- Action -->
               <td class="px-6 py-4 text-right">
                 <button
                   type="button"
@@ -1440,7 +1310,7 @@ async function reloadWallet() {
                   class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
                   title="View withdrawal"
                 >
-                  <span class="i-heroicons-eye h-5 w-5"></span>
+                  <Icon name="heroicons:eye" class="h-5 w-5" />
                 </button>
               </td>
             </tr>
@@ -1448,7 +1318,7 @@ async function reloadWallet() {
         </table>
       </div>
 
-      <!-- Mobile Withdrawal Cards -->
+      <!-- Mobile -->
       <div class="divide-y divide-gray-100 dark:divide-gray-800 md:hidden">
         <div v-for="withdrawal in withdrawals" :key="withdrawal.id" class="p-5">
           <div class="flex items-start justify-between gap-3">
@@ -1495,7 +1365,7 @@ async function reloadWallet() {
             @click="viewWithdrawal(withdrawal)"
             class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
           >
-            <span class="i-heroicons-eye h-4 w-4"></span>
+            <Icon name="heroicons:eye" class="h-4 w-4" />
             View withdrawal
           </button>
         </div>
@@ -1547,7 +1417,7 @@ async function reloadWallet() {
         <div
           class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
         >
-          <span class="i-heroicons-currency-dollar h-5 w-5"></span>
+          <Icon name="heroicons:currency-dollar" class="h-5 w-5" />
         </div>
 
         <div>
@@ -1556,28 +1426,29 @@ async function reloadWallet() {
           </h3>
 
           <p class="mt-1 text-sm leading-6 text-emerald-800/80 dark:text-emerald-300/80">
-            Your wallet receives a
+            You earn
             <strong>{{ commissionRate }}%</strong>
-            commission from successful student subscription payments. Commission is
-            automatically credited after payment verification.
+            commission from successful subscription payments made by your students.
+            Commission is automatically credited to your wallet after payment
+            verification.
           </p>
 
           <div
             class="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-emerald-800 dark:text-emerald-300"
           >
             <span class="inline-flex items-center gap-1.5">
-              <span class="i-heroicons-check-circle h-4 w-4"></span>
+              <Icon name="heroicons:check-circle" class="h-4 w-4" />
               Successful payments only
             </span>
 
             <span class="inline-flex items-center gap-1.5">
-              <span class="i-heroicons-check-circle h-4 w-4"></span>
+              <Icon name="heroicons:check-circle" class="h-4 w-4" />
               Minimum withdrawal ₦5,000
             </span>
 
             <span class="inline-flex items-center gap-1.5">
-              <span class="i-heroicons-check-circle h-4 w-4"></span>
-              Secure wallet tracking
+              <Icon name="heroicons:check-circle" class="h-4 w-4" />
+              Automatic wallet credit
             </span>
           </div>
         </div>
@@ -1592,11 +1463,12 @@ async function reloadWallet() {
         <h2 class="text-lg font-bold text-gray-900 dark:text-white">Wallet Summary</h2>
 
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Overview of money moving through your wallet.
+          Overview of your wallet credits and withdrawals.
         </p>
       </div>
 
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <!-- Credits -->
         <div class="rounded-xl border border-gray-100 p-4 dark:border-gray-800">
           <div class="flex items-center justify-between">
             <div>
@@ -1612,11 +1484,12 @@ async function reloadWallet() {
             <div
               class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
             >
-              <span class="i-heroicons-arrow-down-left h-5 w-5"></span>
+              <Icon name="heroicons:arrow-down-left" class="h-5 w-5" />
             </div>
           </div>
         </div>
 
+        <!-- Debits -->
         <div class="rounded-xl border border-gray-100 p-4 dark:border-gray-800">
           <div class="flex items-center justify-between">
             <div>
@@ -1632,11 +1505,11 @@ async function reloadWallet() {
             <div
               class="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400"
             >
-              <span class="i-heroicons-arrow-up-right h-5 w-5"></span>
+              <Icon name="heroicons:arrow-up-right" class="h-5 w-5" />
             </div>
           </div>
         </div>
       </div>
     </section>
-  </div>
+  </Container>
 </template>
