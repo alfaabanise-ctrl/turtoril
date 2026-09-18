@@ -74,96 +74,72 @@ export const useNavItems = () => {
       roles: ['admin'],
     },
     {
-      label: 'Subscriptions',
-      icon: 'i-heroicons-rectangle-stack',
-      to: '/admin/subscriptions',
-      roles: ['admin'],
+      label: 'Dashboard',
+      icon: 'i-heroicons-squares-2x2',
+      to: '/teacher',
+      roles: ['teacher'],
     },
+
+    {
+      label: 'Students',
+      icon: 'i-heroicons-users',
+      to: '/teacher/students',
+      roles: ['teacher'],
+    },
+
     {
       label: 'Payments',
       icon: 'i-heroicons-banknotes',
-      to: '/admin/payments',
-      roles: ['admin'],
+      to: '/payments',
+      roles: ['admin', 'teacher'],
     },
     {
       label: 'Wallet',
       icon: 'i-heroicons-wallet',
-      to: '/admin/wallet',
-      roles: ['admin'],
-    },
-    {
-      label: 'Reports',
-      icon: 'i-heroicons-chart-bar-square',
-      to: '/admin/reports',
-      roles: ['admin'],
+      to: '/wallet',
+      roles: ['admin', 'teacher'],
     },
 
-{
-    label: 'Dashboard',
-    icon: 'i-heroicons-squares-2x2',
-    to: '/teacher',
-    roles: ['teacher'],
-  },
 
-  {
-    label: 'Students',
-    icon: 'i-heroicons-users',
-    to: '/teacher/students',
-    roles: ['teacher'],
-  },
 
-  {
-    label: 'Subscriptions',
-    icon: 'i-heroicons-credit-card',
-    to: '/teacher/subscriptions',
-    roles: ['teacher'],
-  },
 
-  {
-    label: 'Payments',
-    icon: 'i-heroicons-banknotes',
-    to: '/teacher/payments',
-    roles: ['teacher'],
-  },
 
-  {
-    label: 'Wallet',
-    icon: 'i-heroicons-wallet',
-    to: '/teacher/wallet',
-    roles: ['teacher'],
-  },
+
+
+
+
 
     {
-    label: "Dashboard",
-    icon: "heroicons:squares-2x2",
-    to: "/student",
-    roles: ["student"],
-  },
-  {
-    label: "Subscription",
-    icon: "heroicons:credit-card",
-    to: "/student/subscription",
-    roles: ["student"],
-  },
-  {
-    label: "Payments",
-    icon: "heroicons:banknotes",
-    to: "/student/payments",
-    roles: ["student"],
-  },
- 
-
-
-  
+      label: "Dashboard",
+      icon: "heroicons:squares-2x2",
+      to: "/student",
+      roles: ["student"],
+    },
+    {
+      label: "Subscription",
+      icon: "heroicons:credit-card",
+      to: "/student/subscription",
+      roles: ["student"],
+    },
+    {
+      label: "Payments",
+      icon: "heroicons:banknotes",
+      to: "/student/payments",
+      roles: ["student"],
+    },
 
 
 
-  {
-  label: "Settings",
-  icon: "heroicons:cog-6-tooth",
-  to: "/settings",
-  roles: ["student", "teacher", "admin"]
-  }
+
+
+
+
+    {
+      label: "Settings",
+      icon: "heroicons:cog-6-tooth",
+      to: "/settings",
+      roles: ["student", "teacher", "admin"]
+    }
   ]
 
   const getVisibleItems = (role: UserRole): NavItem[] => {

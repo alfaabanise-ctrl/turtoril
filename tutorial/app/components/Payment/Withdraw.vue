@@ -1,408 +1,144 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue"
+import { computed, ref } from "vue"
 
-const auth = useAuth()
+interface Props {
+  open: boolean
+  balance: number
+  minimumWithdrawal?: number
+  endpoint?: string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  minimumWithdrawal: 5000,
+  endpoint: "/admin/wallet/withdraw",
+})
+
+const emit = defineEmits<{
+  close: []
+  success: [response: any]
+  error: [error: any]
+}>()
 
 /* --------------------------------------------------
  * STATE
  * -------------------------------------------------- */
 
-const show = ref(false)
-const loadingAccount = ref(false)
-const submitting = ref(false)
-
-const accountDetails = ref<any>(null)
-const amount = ref("")
-
+const amount = ref<number | null>(null)
+const loading = ref(false)
 const errorMessage = ref("")
 const successMessage = ref("")
-
-/* --------------------------------------------------
- * EVENTS
- * -------------------------------------------------- */
-
-const emit = defineEmits<{
-  success: [response: any]
-  error: [error: any]
-  "edit-account": []
-}>()
-
-/* --------------------------------------------------
- * QUICK AMOUNTS
- * -------------------------------------------------- */
-
-const quickAmount = [
-  5000,
-  10000,
-  25000,
-  50000,
-  100000,
-  250000,
-]
-
-/* --------------------------------------------------
- * MINIMUM WITHDRAWAL
- * -------------------------------------------------- */
-
-const minimumWithdrawal = 5000
 
 /* --------------------------------------------------
  * CURRENCY
  * -------------------------------------------------- */
 
-const formatMoney = (value: unknown) => {
-  const amountInKobo = Number(value || 0)
+const currency = new Intl.NumberFormat("en-NG", {
+  style: "currency",
+  currency: "NGN",
+  maximumFractionDigits: 0,
+})
 
-  return (amountInKobo / 100).toLocaleString(
-    "en-NG",
-    {
-      style: "currency",
-      currency: "NGN",
-      minimumFractionDigits: 2,
-    },
-  )
+/* --------------------------------------------------
+ * HELPERS
+ * -------------------------------------------------- */
+
+const nairaToKobo = (value: number) => {
+  return Math.round(value * 100)
 }
 
-/* --------------------------------------------------
- * GET WALLET BALANCE
- * -------------------------------------------------- */
+const closeModal = () => {
+  if (loading.value) return
 
-const walletBalanceKobo = computed(() => {
-  return Number(
-    auth.value?.user?.wallet?.balance ||
-      auth.value?.user?.wallet?.availableBalance ||
-      0,
-  )
-})
+  amount.value = null
+  errorMessage.value = ""
+  successMessage.value = ""
 
-const walletBalanceNaira = computed(() => {
-  return Math.floor(
-    walletBalanceKobo.value / 100,
-  )
-})
-
-/* --------------------------------------------------
- * MAX WITHDRAWAL
- * -------------------------------------------------- */
-
-const maxWithdrawal = computed(() => {
-  return walletBalanceNaira.value
-})
-
-/* --------------------------------------------------
- * REMAINING BALANCE
- * -------------------------------------------------- */
-
-const remainingBalance = computed(() => {
-  const balance = walletBalanceKobo.value
-
-  const withdrawal =
-    Number(amount.value || 0) * 100
-
-  return Math.max(
-    balance - withdrawal,
-    0,
-  )
-})
-
-/* --------------------------------------------------
- * CHECK ACCOUNT
- * -------------------------------------------------- */
-
-const hasAccount = computed(() => {
-  return Boolean(
-    accountDetails.value?.accountNumber,
-  )
-})
-
-const accountIsPending = computed(() => {
-  return (
-    accountDetails.value?.status ===
-    "PENDING"
-  )
-})
-
-const accountIsRejected = computed(() => {
-  return (
-    accountDetails.value?.status ===
-    "REJECTED"
-  )
-})
-
-const accountIsApproved = computed(() => {
-  return (
-    accountDetails.value?.status ===
-    "APPROVED"
-  )
-})
+  emit("close")
+}
 
 /* --------------------------------------------------
  * VALIDATION
  * -------------------------------------------------- */
 
-const withdrawalAmount = computed(() => {
+const enteredAmount = computed(() => {
   return Number(amount.value || 0)
 })
 
-const canWithdraw = computed(() => {
-  const value = withdrawalAmount.value
-
+const canSubmit = computed(() => {
   return (
-    !submitting.value &&
-    hasAccount.value &&
-    accountIsApproved.value &&
-    value >= minimumWithdrawal &&
-    value <= maxWithdrawal.value
+    !loading.value &&
+    enteredAmount.value >= props.minimumWithdrawal &&
+    enteredAmount.value <= props.balance
   )
 })
-
-/* --------------------------------------------------
- * OPEN MODAL
- * -------------------------------------------------- */
-
-const openWithdrawal = async () => {
-  errorMessage.value = ""
-  successMessage.value = ""
-
-  amount.value = ""
-
-  show.value = true
-
-  await loadBankAccount()
-}
-
-/* --------------------------------------------------
- * CLOSE MODAL
- * -------------------------------------------------- */
-
-const close = () => {
-  if (submitting.value) {
-    return
-  }
-
-  show.value = false
-  errorMessage.value = ""
-  successMessage.value = ""
-  amount.value = ""
-}
-
-/* --------------------------------------------------
- * SANITIZE AMOUNT
- * -------------------------------------------------- */
-
-const sanitizeAmount = (
-  event: Event,
-) => {
-  const input =
-    event.target as HTMLInputElement
-
-  let value =
-    input.value.replace(/\D/g, "")
-
-  value =
-    value.replace(
-      /^0+(?=\d)/,
-      "",
-    )
-
-  let number =
-    Number(value || 0)
-
-  if (
-    number >
-    maxWithdrawal.value
-  ) {
-    number =
-      maxWithdrawal.value
-  }
-
-  amount.value =
-    number > 0
-      ? String(number)
-      : ""
-}
-
-/* --------------------------------------------------
- * SET QUICK AMOUNT
- * -------------------------------------------------- */
-
-const setQuickAmount = (
-  value: number,
-) => {
-  if (
-    value > maxWithdrawal.value
-  ) {
-    amount.value =
-      String(maxWithdrawal.value)
-    return
-  }
-
-  amount.value =
-    String(value)
-}
-
-/* --------------------------------------------------
- * LOAD BANK ACCOUNT
- * -------------------------------------------------- */
-
-const loadBankAccount = async () => {
-  loadingAccount.value = true
-
-  try {
-    const response =
-      await useApiFetch(
-        "/payout/bank-details",
-        {
-          method: "GET",
-        },
-      )
-
-    console.log(
-      "BANK ACCOUNT RESPONSE:",
-      response,
-    )
-
-    if (
-      !response?.success
-    ) {
-      accountDetails.value =
-        null
-
-      return
-    }
-
-    const data =
-      response.data?.data ??
-      response.data ??
-      null
-
-    accountDetails.value =
-      data
-
-  } catch (error) {
-    console.error(
-      "Unable to load bank account:",
-      error,
-    )
-
-    accountDetails.value =
-      null
-  } finally {
-    loadingAccount.value = false
-  }
-}
 
 /* --------------------------------------------------
  * SUBMIT WITHDRAWAL
  * -------------------------------------------------- */
 
-const submit = async () => {
+const submitWithdrawal = async () => {
   errorMessage.value = ""
   successMessage.value = ""
 
-  const nairaAmount =
-    Number(amount.value || 0)
+  const withdrawalAmount = enteredAmount.value
 
   /* ----------------------------------------------
-   * VALIDATE BANK ACCOUNT
+   * Validate amount
    * ---------------------------------------------- */
 
-  if (!hasAccount.value) {
-    errorMessage.value =
-      "Please add a withdrawal bank account first."
-
-    return
-  }
-
-  if (accountIsPending.value) {
-    errorMessage.value =
-      "Your bank account is still pending verification."
-
-    return
-  }
-
-  if (accountIsRejected.value) {
-    errorMessage.value =
-      "Your bank account was rejected. Please update your bank account details."
-
-    return
-  }
-
-  if (!accountIsApproved.value) {
-    errorMessage.value =
-      "Your bank account is not approved for withdrawal."
-
-    return
-  }
-
-  /* ----------------------------------------------
-   * VALIDATE AMOUNT
-   * ---------------------------------------------- */
-
-  if (
-    !nairaAmount ||
-    nairaAmount <= 0
-  ) {
+  if (!withdrawalAmount || withdrawalAmount <= 0) {
     errorMessage.value =
       "Please enter a withdrawal amount."
-
     return
   }
 
   if (
-    nairaAmount <
-    minimumWithdrawal
+    withdrawalAmount <
+    props.minimumWithdrawal
   ) {
     errorMessage.value =
-      `Minimum withdrawal is ${formatMoney(
-        minimumWithdrawal * 100,
+      `Minimum withdrawal is ${currency.format(
+        props.minimumWithdrawal,
       )}.`
-
     return
   }
 
   if (
-    nairaAmount >
-    maxWithdrawal.value
+    withdrawalAmount >
+    props.balance
   ) {
     errorMessage.value =
       "Withdrawal amount cannot be greater than your available balance."
-
     return
   }
 
   /* ----------------------------------------------
-   * CONVERT NAIRA TO KOBO
+   * Convert Naira → Kobo
    * ---------------------------------------------- */
 
   const amountInKobo =
-    Math.round(
-      nairaAmount * 100,
-    )
+    nairaToKobo(withdrawalAmount)
 
-  submitting.value = true
+  loading.value = true
 
   try {
-    const response =
-      await useApiFetch(
-        "/admin/wallet/withdraw",
-        {
-          method: "POST",
+    const response = await useApiFetch(
+      props.endpoint,
+      {
+        method: "POST",
 
-          body: {
-            amount: amountInKobo,
-          },
+        body: {
+          amount: amountInKobo,
         },
-      )
+      },
+    )
 
     console.log(
       "WITHDRAWAL RESPONSE:",
       response,
     )
 
-    if (
-      !response?.success
-    ) {
+    if (!response?.success) {
       throw new Error(
         response?.message ||
           "Unable to submit withdrawal request.",
@@ -413,35 +149,18 @@ const submit = async () => {
       response?.message ||
       "Withdrawal request submitted successfully."
 
-    emit(
-      "success",
-      response,
-    )
+    /*
+     * Send complete backend response
+     * to parent
+     */
+    emit("success", response)
 
     /*
-     * Refresh bank/account data
-     * in case backend returns updated details.
+     * Close after successful request
      */
-    await loadBankAccount()
-
-    /*
-     * Refresh auth user if your
-     * auth composable supports it.
-     */
-    try {
-      if (
-        typeof auth.refresh ===
-        "function"
-      ) {
-        await auth.refresh()
-      }
-    } catch {
-      // Ignore auth refresh errors
-    }
-
     setTimeout(() => {
-      close()
-    }, 1200)
+      closeModal()
+    }, 1000)
 
   } catch (error: any) {
     console.error(
@@ -454,492 +173,264 @@ const submit = async () => {
       error?.message ||
       "Unable to submit withdrawal request."
 
-    emit(
-      "error",
-      error,
-    )
+    emit("error", error)
 
   } finally {
-    submitting.value = false
+    loading.value = false
   }
 }
-
-/* --------------------------------------------------
- * INITIAL LOAD
- * -------------------------------------------------- */
-
-onMounted(() => {
-  loadBankAccount()
-})
 </script>
 
 <template>
-  <div>
-  <!-- ==================================================
-       OPEN WITHDRAWAL BUTTON
-  =================================================== -->
-
-  <button
-    type="button"
-    class="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
-    @click="openWithdrawal"
-  >
-    <Icon
-      name="heroicons:arrow-up-right"
-      class="h-5 w-5"
-    />
-
-    Request Withdrawal
-  </button>
-
-  <!-- ==================================================
-       MODAL
-  =================================================== -->
-
-  <Transition
-    enter-active-class="duration-300"
-    enter-from-class="opacity-0 scale-95"
-    enter-to-class="opacity-100 scale-100"
-    leave-active-class="duration-200"
-    leave-from-class="opacity-100 scale-100"
-    leave-to-class="opacity-0 scale-95"
-  >
+  <Teleport to="body">
     <div
-      v-if="show"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-1 backdrop-blur-sm sm:p-4"
-      @click.self="close"
+      v-if="open"
+      class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      @click.self="closeModal"
     >
       <div
-        class="h-[80%] w-full max-w-md overflow-y-auto overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-gray-900"
+        class="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900"
       >
-
-        <!-- ==================================================
-             HEADER
-        =================================================== -->
-
+        <!-- Header -->
         <div
-          class="bg-primary px-2 py-5 text-white sm:px-6"
+          class="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-800"
         >
-          <div
-            class="flex items-center justify-between"
-          >
-            <div>
-              <h2 class="text-xl font-bold">
-                Withdrawal Account
-              </h2>
-
-              <p
-                class="text-sm text-indigo-100"
-              >
-                Withdraw directly to your linked bank account.
-              </p>
-            </div>
-
-            <div
-              class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 text-2xl"
+          <div>
+            <h2
+              class="text-lg font-bold text-gray-900 dark:text-white"
             >
-              💼
-            </div>
+              Request Withdrawal
+            </h2>
+
+            <p
+              class="mt-1 text-sm text-gray-500 dark:text-gray-400"
+            >
+              Withdraw your available commission balance.
+            </p>
           </div>
+
+          <button
+            type="button"
+            :disabled="loading"
+            class="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-gray-800 dark:hover:text-white"
+            @click="closeModal"
+          >
+            <Icon
+              name="heroicons:x-mark"
+              class="h-5 w-5"
+            />
+          </button>
         </div>
 
-        <!-- ==================================================
-             CONTENT
-        =================================================== -->
+        <!-- Body -->
+        <div class="space-y-5 p-5">
 
-        <div class="p-2 sm:p-6">
-
-          <!-- Loading -->
+          <!-- Available Balance -->
           <div
-            v-if="loadingAccount"
-            class="mb-5 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800/50"
+            class="rounded-xl border border-indigo-100 bg-indigo-50 p-4 dark:border-indigo-500/20 dark:bg-indigo-500/10"
           >
-            <div class="flex items-center gap-3">
-              <Icon
-                name="heroicons:arrow-path"
-                class="h-5 w-5 animate-spin text-indigo-600"
-              />
-
+            <div
+              class="flex items-center justify-between"
+            >
               <span
-                class="text-sm text-gray-600 dark:text-gray-300"
+                class="text-sm font-medium text-indigo-700 dark:text-indigo-300"
               >
-                Loading withdrawal account...
+                Available Balance
               </span>
+
+              <Icon
+                name="heroicons:wallet"
+                class="h-5 w-5 text-indigo-600 dark:text-indigo-400"
+              />
             </div>
-          </div>
-
-          <!-- ==================================================
-               NO ACCOUNT
-          =================================================== -->
-
-          <div
-            v-else-if="!hasAccount"
-            class="mb-5 rounded-xl border border-blue-200 bg-blue-50 p-4"
-          >
-            <p
-              class="font-semibold text-blue-800"
-            >
-              No withdrawal account found.
-            </p>
 
             <p
-              class="mt-1 text-sm text-blue-700"
+              class="mt-2 text-2xl font-bold text-indigo-900 dark:text-white"
             >
-              Please set up your bank account before requesting a withdrawal.
-            </p>
-
-            <button
-              type="button"
-              class="mt-3 text-sm font-semibold text-blue-700 underline"
-              @click="emit('edit-account')"
-            >
-              Set up bank account
-            </button>
-          </div>
-
-          <!-- ==================================================
-               PENDING
-          =================================================== -->
-
-          <div
-            v-else-if="accountIsPending"
-            class="mb-5 rounded-xl border border-yellow-200 bg-yellow-50 p-4"
-          >
-            <p
-              class="font-semibold text-yellow-800"
-            >
-              Bank account verification is pending.
-            </p>
-
-            <p
-              class="mt-1 text-sm text-yellow-700"
-            >
-              Your bank account is currently under review. Withdrawals will be available once it has been approved.
+              {{ currency.format(balance) }}
             </p>
           </div>
 
-          <!-- ==================================================
-               REJECTED
-          =================================================== -->
-
-          <div
-            v-else-if="accountIsRejected"
-            class="mb-5 rounded-xl border border-red-200 bg-red-50 p-4"
-          >
-            <p
-              class="font-semibold text-red-800"
-            >
-              Bank account verification was rejected.
-            </p>
-
-            <p
-              class="mt-1 text-sm text-red-700"
-            >
-              Please update your bank account details and submit them again for verification before you can withdraw funds.
-            </p>
-          </div>
-
-          <!-- ==================================================
-               BANK CARD
-          =================================================== -->
-
-          <div
-            v-if="hasAccount"
-            class="rounded-2xl border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800/50 sm:p-5"
-          >
-            <div class="space-y-4">
-
-              <!-- Account Name -->
-              <div
-                class="flex items-start justify-between"
-              >
-                <div>
-                  <p
-                    class="text-xs text-gray-500 dark:text-gray-400"
-                  >
-                    Account Name
-                  </p>
-
-                  <h3
-                    class="text-sm font-semibold text-gray-900 dark:text-white"
-                  >
-                    {{
-                      accountDetails?.accountName ||
-                      "Not available"
-                    }}
-                  </h3>
-                </div>
-
-                <span
-                  :class="[
-                    'rounded-full px-3 py-1 text-xs font-semibold',
-
-                    accountDetails?.status ===
-                    'APPROVED'
-                      ? 'bg-green-100 text-green-700'
-
-                      : accountDetails?.status ===
-                        'PENDING'
-                      ? 'bg-yellow-100 text-yellow-700'
-
-                      : accountDetails?.status ===
-                        'REJECTED'
-                      ? 'bg-red-100 text-red-700'
-
-                      : 'bg-gray-100 text-gray-700',
-                  ]"
-                >
-                  {{
-                    accountDetails?.status ||
-                    "UNKNOWN"
-                  }}
-                </span>
-              </div>
-
-              <!-- Bank -->
-              <div>
-                <p
-                  class="text-xs text-gray-500 dark:text-gray-400"
-                >
-                  Bank
-                </p>
-
-                <p
-                  class="text-md font-medium text-gray-900 dark:text-white"
-                >
-                  {{
-                    accountDetails?.bankName ||
-                    "Not available"
-                  }}
-                </p>
-              </div>
-
-              <!-- Account Number -->
-              <div>
-                <p
-                  class="text-xs text-gray-500 dark:text-gray-400"
-                >
-                  Account Number
-                </p>
-
-                <p
-                  class="font-medium text-gray-900 dark:text-white"
-                >
-                  {{
-                    accountDetails?.accountNumber ||
-                    "Not available"
-                  }}
-                </p>
-              </div>
-
-              <!-- Balance -->
-              <div
-                class="border-t pt-2 dark:border-gray-700"
-              >
-                <p
-                  class="text-xs text-gray-500 dark:text-gray-400"
-                >
-                  Available Balance
-                </p>
-
-                <h2
-                  class="text-xl font-bold text-indigo-600 dark:text-indigo-400"
-                >
-                  {{
-                    formatMoney(
-                      walletBalanceKobo,
-                    )
-                  }}
-                </h2>
-              </div>
-
-            </div>
-          </div>
-
-          <!-- ==================================================
-               AMOUNT
-          =================================================== -->
-
-          <div
-            v-if="hasAccount"
-            class="mt-6"
-          >
+          <!-- Amount -->
+          <div>
             <label
-              class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200"
+              for="withdrawal-amount"
+              class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-200"
             >
               Withdrawal Amount
             </label>
 
-            <div
-              class="flex items-center rounded-xl border border-gray-300 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-100 dark:border-gray-700"
-            >
+            <div class="relative">
               <span
-                class="px-4 text-lg font-semibold text-gray-500"
+                class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-500 dark:text-gray-400"
               >
                 ₦
               </span>
 
               <input
-                :value="amount"
-                type="text"
-                inputmode="numeric"
-                placeholder="0"
-                :disabled="submitting"
-                class="w-full py-3 pr-4 text-lg font-semibold outline-none disabled:cursor-not-allowed disabled:opacity-60 dark:bg-transparent dark:text-white"
-                @input="sanitizeAmount"
+                id="withdrawal-amount"
+                v-model.number="amount"
+                type="number"
+                min="0"
+                :max="balance"
+                :disabled="loading"
+                placeholder="Enter amount"
+                class="h-12 w-full rounded-xl border border-gray-300 bg-white pl-8 pr-4 text-sm font-medium text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                @keyup.enter="submitWithdrawal"
               />
+            </div>
+
+            <div
+              class="mt-2 flex items-center justify-between text-xs"
+            >
+              <span
+                class="text-gray-500 dark:text-gray-400"
+              >
+                Minimum:
+                {{ currency.format(minimumWithdrawal) }}
+              </span>
+
+              <button
+                type="button"
+                :disabled="loading"
+                class="font-semibold text-indigo-600 hover:text-indigo-700 disabled:opacity-50 dark:text-indigo-400"
+                @click="
+                  amount = balance
+                "
+              >
+                Use all
+              </button>
+            </div>
+          </div>
+
+          <!-- Amount Preview -->
+          <div
+            v-if="enteredAmount > 0"
+            class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800/50"
+          >
+            <div
+              class="flex items-center justify-between"
+            >
+              <span
+                class="text-sm text-gray-500 dark:text-gray-400"
+              >
+                Withdrawal amount
+              </span>
+
+              <span
+                class="text-sm font-bold text-gray-900 dark:text-white"
+              >
+                {{ currency.format(enteredAmount) }}
+              </span>
             </div>
 
             <div
               class="mt-2 flex items-center justify-between"
             >
               <span
-                class="text-xs text-gray-500 dark:text-gray-400"
+                class="text-sm text-gray-500 dark:text-gray-400"
               >
-                Minimum:
-                {{ formatMoney(minimumWithdrawal * 100) }}
+                Balance after request
               </span>
 
               <span
-                class="text-sm font-semibold"
-                :class="
-                  remainingBalance < 0
-                    ? 'text-red-600'
-                    : 'text-gray-500 dark:text-gray-400'
-                "
+                class="text-sm font-bold text-gray-900 dark:text-white"
               >
-                Remaining
                 {{
-                  amount
-                    ? formatMoney(
-                        remainingBalance,
-                      )
-                    : "—"
+                  currency.format(
+                    Math.max(
+                      balance - enteredAmount,
+                      0,
+                    ),
+                  )
                 }}
               </span>
             </div>
           </div>
 
-          <!-- ==================================================
-               QUICK AMOUNTS
-          =================================================== -->
-
-          <div
-            v-if="hasAccount"
-            class="mt-5 grid grid-cols-3 gap-2"
-          >
-            <button
-              v-for="item in quickAmount"
-              :key="item"
-              type="button"
-              :disabled="
-                submitting ||
-                item > maxWithdrawal
-              "
-              class="rounded-xl border border-gray-200 py-2 text-sm font-medium transition hover:border-indigo-500 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-indigo-500/10"
-              @click="setQuickAmount(item)"
-            >
-              ₦{{ item.toLocaleString() }}
-            </button>
-          </div>
-
-          <!-- ==================================================
-               ERROR
-          =================================================== -->
-
+          <!-- Error -->
           <div
             v-if="errorMessage"
-            class="mt-5 rounded-xl border border-red-200 bg-red-50 p-4"
+            class="flex gap-3 rounded-xl bg-red-50 p-4 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-400"
           >
-            <div class="flex gap-3">
-              <Icon
-                name="heroicons:exclamation-circle"
-                class="h-5 w-5 shrink-0 text-red-600"
-              />
+            <Icon
+              name="heroicons:exclamation-circle"
+              class="mt-0.5 h-5 w-5 shrink-0"
+            />
 
-              <p
-                class="text-sm text-red-700"
-              >
-                {{ errorMessage }}
-              </p>
-            </div>
+            <p>{{ errorMessage }}</p>
           </div>
 
-          <!-- ==================================================
-               SUCCESS
-          =================================================== -->
-
+          <!-- Success -->
           <div
             v-if="successMessage"
-            class="mt-5 rounded-xl border border-green-200 bg-green-50 p-4"
+            class="flex gap-3 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
           >
-            <div class="flex gap-3">
-              <Icon
-                name="heroicons:check-circle"
-                class="h-5 w-5 shrink-0 text-green-600"
-              />
+            <Icon
+              name="heroicons:check-circle"
+              class="mt-0.5 h-5 w-5 shrink-0"
+            />
 
-              <p
-                class="text-sm text-green-700"
-              >
-                {{ successMessage }}
-              </p>
-            </div>
+            <p>{{ successMessage }}</p>
           </div>
 
-          <!-- ==================================================
-               BUTTONS
-          =================================================== -->
+          <!-- Information -->
+          <div
+            class="flex gap-3 rounded-xl bg-gray-50 p-4 dark:bg-gray-800/50"
+          >
+            <Icon
+              name="heroicons:information-circle"
+              class="mt-0.5 h-5 w-5 shrink-0 text-gray-500 dark:text-gray-400"
+            />
 
-          <div class="mt-6 space-y-3">
-
-            <button
-              type="button"
-              :disabled="!canWithdraw"
-              class="w-full rounded-xl bg-indigo-600 py-3 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500"
-              @click="submit"
+            <p
+              class="text-xs leading-5 text-gray-500 dark:text-gray-400"
             >
-              <span
-                v-if="submitting"
-                class="inline-flex items-center gap-2"
-              >
-                <Icon
-                  name="heroicons:arrow-path"
-                  class="h-5 w-5 animate-spin"
-                />
-
-                Submitting...
-              </span>
-
-              <span
-                v-else
-              >
-                Withdraw Funds
-              </span>
-            </button>
-
-            <button
-              type="button"
-              class="w-full rounded-xl border border-gray-300 py-3 font-medium transition hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
-              @click="emit('edit-account')"
-            >
-              Edit Bank Account
-            </button>
-
-            <button
-              type="button"
-              :disabled="submitting"
-              class="w-full py-2 text-gray-500 transition hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
-              @click="close"
-            >
-              Cancel
-            </button>
-
+              Your withdrawal will be sent to the bank account
+              registered with your wallet.
+            </p>
           </div>
+        </div>
 
+        <!-- Footer -->
+        <div
+          class="flex gap-3 border-t border-gray-200 p-5 dark:border-gray-800"
+        >
+          <button
+            type="button"
+            :disabled="loading"
+            class="flex-1 rounded-xl border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+            @click="closeModal"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            :disabled="!canSubmit"
+            class="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+            @click="submitWithdrawal"
+          >
+            <Icon
+              v-if="loading"
+              name="heroicons:arrow-path"
+              class="h-4 w-4 animate-spin"
+            />
+
+            <Icon
+              v-else
+              name="heroicons:paper-airplane"
+              class="h-4 w-4"
+            />
+
+            {{
+              loading
+                ? "Submitting..."
+                : "Submit Request"
+            }}
+          </button>
         </div>
       </div>
     </div>
-  </Transition>
-</div>
+  </Teleport>
 </template>

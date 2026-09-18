@@ -294,7 +294,7 @@ const onPaymentInitialized =
     const amount =
       Number(payment?.amount || 0) /
       100;
-
+    
     if (amount > 0) {
       paymentAmount.value =
         formatCurrency(amount);
