@@ -267,7 +267,7 @@ const reviews = [
             </p>
 
             <NuxtLink
-              to="/register"
+              to="/auth"
               class="mt-7 inline-flex items-center gap-2 rounded-xl bg-[#0794bd] px-6 py-3 text-sm font-semibold text-white shadow-lg transition duration-300 hover:-translate-y-1 hover:bg-[#0685aa]"
             >
 

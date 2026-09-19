@@ -1,6 +1,12 @@
 <template>
   <NavigationNavbar/>
-  <div class="bg-gray-50 min-h-screen py-12 px-4 sm:px-6">
+
+  <div class="bg-[#6b6b6b] bg-no-repeat bg-cover"  style="background-image: url('/images/slider5.jpg')">
+      <div   class="py-20 px-2  sm:px-12 bg-black/50">
+        <h1 class="text-3xl font-bold text-white tracking-wide">Contact Us</h1>
+      </div>
+    </div>
+  <div class="bg-gray-50  min-h-screen py-12 px-4 sm:px-6">
     
     <div class="max-w-6xl mx-auto">
       <!-- Page heading -->
@@ -176,7 +182,7 @@
               </div>
               <div>
                 <p class="text-sm text-gray-500">Tel</p>
-                <p class="font-medium text-gray-900">09037778195, 08077778195</p>
+                <p class="font-medium text-gray-900">07068393706, 08166988715</p>
               </div>
             </div>
 
@@ -187,8 +193,8 @@
               <div>
                 <p class="text-sm text-gray-500">Head Office</p>
                 <p class="font-medium text-gray-900 leading-snug">
-                  NSPRI Building, 32/34, Barikisu Iyede, UNILAG Road,
-                  Abule Oja, Lagos, Nigeria
+                  Arround Total Filling station, Ibadan Expressway,Iwo, Osun,
+                   Nigeria
                 </p>
               </div>
             </div>

@@ -4,8 +4,10 @@
 
   <section class="w-full bg-white text-gray-800">
     <!-- Header -->
-    <div class="bg-[#6b6b6b] px-6 py-8 sm:px-12">
-      <h1 class="text-3xl font-bold text-white tracking-wide">Buy Our Products</h1>
+    <div class="bg-[#6b6b6b] bg-no-repeat bg-cover"  style="background-image: url('/images/slider5.jpg')">
+      <div   class="py-20 px-2  sm:px-12 bg-black/50">
+        <h1 class="text-3xl font-bold text-white tracking-wide">Buy Our Products</h1>
+      </div>
     </div>
 
     <!-- Main Content -->
@@ -56,10 +58,10 @@
 
             <!-- Zenith Bank -->
             <div>
-              <h3 class="mb-3 font-bold text-gray-900">Zenith Bank</h3>
+              <h3 class="mb-3 font-bold text-gray-900">Opay </h3>
               <ul class="space-y-2 text-sm text-gray-700">
-                <li><span class="font-semibold">Account Name:</span> IAF SAWII Limited</li>
-                <li><span class="font-semibold">Account Number:</span> 1014381194</li>
+                <li><span class="font-semibold">Account Name:</span> Waheed Ambali</li>
+                <li><span class="font-semibold">Account Number:</span> 7068393706</li>
                 <li><span class="font-semibold">Account Type:</span> Current</li>
               </ul>
             </div>
@@ -73,11 +75,11 @@
               <li>Product Name</li>
               <li>Product Key</li>
               <li>Amount Paid</li>
-              <li>Bank Name (GTBank or Zenith)</li>
+              <li>Bank Name (Wema Bank or Opay)</li>
               <li>Depositor's Name or Payment Details</li>
             </ol>
             <p class="mt-4 font-semibold">To:</p>
-            <p class="mt-1 font-semibold">09037778195, 08077778195</p>
+            <p class="mt-1 font-semibold">07068393706, 08166988715</p>
           </div>
         </div>
 

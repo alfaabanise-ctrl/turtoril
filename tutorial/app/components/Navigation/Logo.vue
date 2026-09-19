@@ -1,6 +1,6 @@
 <template>
   <button @click="handleLogoClick" class="flex items-center font-bold gap-3 text-4xl text-secondary marcellus">
-    <img src="/images/logo.png" alt="Logo"   class="w  sm:w-28 w-20 object-contain" />
+    <img src="/images/logo.png" alt="Logo"   class="w w   w-40 object-contain" />
      
 
       

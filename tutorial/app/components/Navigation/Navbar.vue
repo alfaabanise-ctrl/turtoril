@@ -63,19 +63,11 @@ function closeMobileMenu() {
 </script>
 
 <template>
-  <header class="w-fullw-full bg-[#0794bd] text-white shadow-sm  text-white shadow-sm relative z-50">
-    <div class="mx-auto flex min-h-[40px] max-w-[1350px]  justify-center items-stretch px-2 sm:px-0">
+  <header class="w-fullw-fullbg-[#0794bd] text-white shadow-sm  text-white shadow-sm relative z-50">
+    <div class="mx-auto absolute  pt-5 w-full  flex min-h-[40px] max-w-[1350px]  justify-center items-stretch px-2 sm:px-0">
       <!-- LOGO -->
       <NuxtLink to="/" class="flex shrink-0 items-center px-3 sm:px-5" @click="closeMobileMenu">
-        <div class="flex items-center gap-2">
-          <div class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-yellow-400 bg-white font-bold text-[#0794bd]">
-            ET
-          </div>
-
-          <span class="text-[18px] sm:text-[20px] font-medium tracking-tight">
-            ExamTips
-          </span>
-        </div>
+         <NavigationLogo />
       </NuxtLink>
 
       <!-- DESKTOP NAVIGATION -->
