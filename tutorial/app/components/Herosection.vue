@@ -1,36 +1,30 @@
 <script setup lang="ts">
 
-const products = [
+/* ================================================================
+ * DOWNLOAD OPTIONS
+ * ================================================================ */
+
+const downloads = [
   {
-    title: "ICAN",
-    subtitle: "Professional Exam Preparation",
+    title: "Desktop Software",
+    subtitle: "Windows Application",
     description:
-      "Master ICAN examinations with structured practice questions, realistic CBT simulations, detailed explanations and performance tracking.",
-    image: "/ico.webp",
-    link: "/products/ican",
-    icon: "lucide:briefcase-business",
+      "Download the ExamTips desktop application for a faster and more reliable examination experience on your Windows computer.",
+    icon: "lucide:monitor-down",
+    link: "/downloads/desktop",
+    button: "Download for Desktop",
   },
 
   {
-    title: "JAMB",
-    subtitle: "UTME Preparation",
+    title: "Android App",
+    subtitle: "Mobile Application",
     description:
-      "Prepare smarter with thousands of JAMB practice questions, timed CBT simulations and detailed performance analysis.",
-    image: "/ico.webp",
-    link: "/products/jamb",
-    icon: "lucide:graduation-cap",
+      "Take your practice questions and CBT exams with you anywhere. Download the ExamTips Android application on your phone.",
+    icon: "lucide:smartphone",
+    link: "/downloads/android",
+    button: "Download Android App",
   },
-
-  {
-    title: "WAEC",
-    subtitle: "WASSCE Preparation",
-    description:
-      "Practice WAEC past questions, identify weak areas and build the confidence you need for your examination.",
-    image: "/ico.webp",
-    link: "/products/waec",
-    icon: "lucide:book-open-check",
-  },
-]
+];
 
 const stats = [
   {
@@ -47,7 +41,7 @@ const stats = [
     value: "20+",
     label: "Subjects",
   },
-]
+];
 
 </script>
 
@@ -55,9 +49,9 @@ const stats = [
 
   <main class="min-h-screen bg-[#f8fafc] font-[Poppins] text-slate-900">
 
-    <!-- =====================================================
+    <!-- =========================================================
          HERO
-    ====================================================== -->
+    ========================================================== -->
 
     <section
       class="relative min-h-[720px] overflow-hidden bg-cover bg-center bg-no-repeat"
@@ -76,7 +70,6 @@ const stats = [
         class="absolute -right-32 bottom-0 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl"
       ></div>
 
-
       <Container class="relative z-10">
 
         <div
@@ -86,6 +79,7 @@ const stats = [
           <div class="w-full max-w-4xl py-20">
 
             <!-- Badge -->
+
             <div
               class="mb-7 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur-md"
             >
@@ -106,7 +100,6 @@ const stats = [
 
             </div>
 
-
             <!-- Heading -->
 
             <h1
@@ -125,7 +118,6 @@ const stats = [
 
             </h1>
 
-
             <!-- Description -->
 
             <p
@@ -142,25 +134,25 @@ const stats = [
 
             </p>
 
-
             <!-- Buttons -->
 
-            <div class="mt-9 flex flex-col gap-3 sm:flex-row">
+            <div
+              class="mt-9 flex flex-col gap-3 sm:flex-row"
+            >
 
               <NuxtLink
-                to="/products"
+                to="/downloads"
                 class="group inline-flex items-center justify-center gap-3 rounded-xl bg-[#0794bd] px-7 py-4 text-sm font-semibold text-white shadow-xl shadow-cyan-950/20 transition duration-300 hover:-translate-y-1 hover:bg-[#0685aa]"
               >
 
-                Start Mock Exams
+                Download App
 
                 <Icon
-                  name="lucide:arrow-right"
-                  class="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
+                  name="lucide:download"
+                  class="h-4 w-4 transition-transform duration-300 group-hover:translate-y-0.5"
                 />
 
               </NuxtLink>
-
 
               <NuxtLink
                 to="/about"
@@ -177,7 +169,6 @@ const stats = [
               </NuxtLink>
 
             </div>
-
 
             <!-- Stats -->
 
@@ -215,16 +206,16 @@ const stats = [
     </section>
 
 
-    <!-- =====================================================
-         PRODUCTS
-    ====================================================== -->
+    <!-- =========================================================
+         DOWNLOAD APPS
+    ========================================================== -->
 
     <section class="bg-white">
 
       <Container>
 
         <div
-          class=" py-20 sm:px-10 lg:px-12"
+          class="py-20 sm:px-10 lg:px-12"
         >
 
           <!-- Section heading -->
@@ -236,36 +227,36 @@ const stats = [
             <p
               class="text-xs font-bold uppercase tracking-[0.2em] text-[#0794bd]"
             >
-              Our Platform
+              Get the App
             </p>
 
             <h2
               class="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl lg:text-5xl"
             >
-              Everything you need to prepare better.
+              Take your exam preparation anywhere.
             </h2>
 
             <p
               class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-500 sm:text-base"
             >
-              Choose an examination and start practising with a focused
-              preparation experience built around your goals.
+              Download ExamTips on your computer or Android phone and
+              enjoy a faster, more convenient examination experience.
             </p>
 
           </div>
 
 
-          <!-- Product Cards -->
+          <!-- Download Cards -->
 
           <div
-            class="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+            class="mx-auto mt-14 grid max-w-5xl gap-6 md:grid-cols-2"
           >
 
             <NuxtLink
-              v-for="(product, index) in products"
-              :key="product.title"
-              :to="product.link"
-              class="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fafc] p-2 sm:p-7 transition-all duration-500 hover:-translate-y-2 hover:border-cyan-200 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/70"
+              v-for="(download, index) in downloads"
+              :key="download.title"
+              :to="download.link"
+              class="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fafc] p-7 transition-all duration-500 hover:-translate-y-2 hover:border-cyan-200 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/70 sm:p-9"
             >
 
               <!-- Background number -->
@@ -280,12 +271,12 @@ const stats = [
               <!-- Icon -->
 
               <div
-                class="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-[#0794bd]/10 text-[#0794bd] transition duration-300 group-hover:bg-[#0794bd] group-hover:text-white"
+                class="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0794bd]/10 text-[#0794bd] transition duration-300 group-hover:bg-[#0794bd] group-hover:text-white"
               >
 
                 <Icon
-                  :name="product.icon"
-                  class="h-7 w-7"
+                  :name="download.icon"
+                  class="h-8 w-8"
                 />
 
               </div>
@@ -296,7 +287,7 @@ const stats = [
               <p
                 class="relative mt-7 text-xs font-bold uppercase tracking-[0.12em] text-[#0794bd]"
               >
-                {{ product.subtitle }}
+                {{ download.subtitle }}
               </p>
 
 
@@ -305,7 +296,7 @@ const stats = [
               <h3
                 class="relative mt-2 text-2xl font-bold text-slate-950"
               >
-                ExamTips {{ product.title }}
+                {{ download.title }}
               </h3>
 
 
@@ -314,22 +305,22 @@ const stats = [
               <p
                 class="relative mt-4 text-sm leading-7 text-slate-500"
               >
-                {{ product.description }}
+                {{ download.description }}
               </p>
 
 
-              <!-- Link -->
+              <!-- Download button -->
 
               <div
-                class="relative mt-7 inline-flex items-center gap-2 text-sm font-semibold text-slate-900"
+                class="relative mt-7 inline-flex items-center gap-2 rounded-xl bg-[#0794bd] px-5 py-3 text-sm font-semibold text-white transition duration-300 group-hover:bg-[#0685aa]"
               >
 
-                Explore {{ product.title }}
-
                 <Icon
-                  name="lucide:arrow-right"
-                  class="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
+                  name="lucide:download"
+                  class="h-4 w-4"
                 />
+
+                {{ download.button }}
 
               </div>
 
@@ -344,70 +335,79 @@ const stats = [
     </section>
 
 
-    <!-- =====================================================
-         SIMPLE CTA
-    ====================================================== -->
+    <!-- =========================================================
+         CTA
+    ========================================================== -->
 
     <section class="bg-[#f8fafc]">
 
       <Container>
 
         <div
-          class="py-20  sm:px-10 lg:px-12"
+          class="py-20 sm:px-10 lg:px-12"
         >
 
           <div
-            class="relative overflow-hidden bg-[url('./images/01-min.jpeg')] bg-no-repeat rounded-[32px] shadow-xl "
+            class="relative overflow-hidden rounded-[32px] bg-[url('/images/01-min.jpeg')] bg-cover bg-center bg-no-repeat shadow-xl"
           >
-          <div class="bg-[#051f27]/70 sm:px-12  px-8 py-14 text-center   w-full h-full">
-            <div
-              class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-2xl"
-            ></div>
 
             <div
-              class="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-blue-900/20 blur-2xl"
-            ></div>
+              class="h-full w-full bg-[#051f27]/70 px-8 py-14 text-center sm:px-12"
+            >
+
+              <!-- Decorative glow -->
+
+              <div
+                class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-2xl"
+              ></div>
+
+              <div
+                class="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-blue-900/20 blur-2xl"
+              ></div>
 
 
-            <div class="relative">
+              <div class="relative">
 
-              <p
-                class="text-xs font-bold uppercase tracking-[0.2em] text-cyan-100"
-              >
-                Start preparing today
-              </p>
+                <p
+                  class="text-xs font-bold uppercase tracking-[0.2em] text-cyan-100"
+                >
+                  Start preparing today
+                </p>
 
-              <h2
-                class="mx-auto mt-4 max-w-2xl text-3xl font-bold text-white sm:text-4xl"
-              >
-                Turn your preparation into confidence.
-              </h2>
+                <h2
+                  class="mx-auto mt-4 max-w-2xl text-3xl font-bold text-white sm:text-4xl"
+                >
+                  Your preparation. Your device. Your success.
+                </h2>
 
-              <p
-                class="mx-auto mt-4 max-w-xl text-sm leading-7 text-cyan-50 sm:text-base"
-              >
-                Practice with realistic questions, improve your weak areas
-                and get ready for your next examination.
-              </p>
+                <p
+                  class="mx-auto mt-4 max-w-xl text-sm leading-7 text-cyan-50 sm:text-base"
+                >
+                  Download the ExamTips application and practice
+                  your questions wherever you are.
+                </p>
 
-              <NuxtLink
-                to="/products"
-                class="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-7 py-4 text-sm font-semibold text-[#0794bd] shadow-lg transition hover:-translate-y-1 hover:bg-slate-50"
-              >
 
-                Explore Exams
+                <NuxtLink
+                  to="/downloads"
+                  class="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-7 py-4 text-sm font-semibold text-[#0794bd] shadow-lg transition hover:-translate-y-1 hover:bg-slate-50"
+                >
 
-                <Icon
-                  name="lucide:arrow-right"
-                  class="h-4 w-4"
-                />
+                  Download Now
 
-              </NuxtLink>
+                  <Icon
+                    name="lucide:download"
+                    class="h-4 w-4"
+                  />
+
+                </NuxtLink>
+
+              </div>
 
             </div>
 
           </div>
-          </div>
+
         </div>
 
       </Container>

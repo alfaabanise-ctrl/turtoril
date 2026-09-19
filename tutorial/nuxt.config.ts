@@ -8,7 +8,7 @@ export default defineNuxtConfig({
   },
 
   modules: [
-    "@nuxt/icon",
+    "@nuxt/icon","@nuxt/fonts",
   ],
 
   // Tauri application
@@ -50,4 +50,14 @@ export default defineNuxtConfig({
        
     },
   },
+  fonts: {
+    families: [
+      {
+        name: "Poppins",
+        provider: "google",
+        weights: [400, 500, 600, 700, 800],
+      },
+    ],
+  },
+  
 })

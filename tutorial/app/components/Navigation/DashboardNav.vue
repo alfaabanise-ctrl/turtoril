@@ -2,15 +2,45 @@
 import type { UserRole } from '~/types/nav'
 
 const props = defineProps<{ role: UserRole }>()
+const route = useRoute();
+const { isHidden } = useNavVisibility()
+const {
+  getVisibleItems,
+  isRouteAuthorized,
+  getDashboard,
+} = useNavItems();
 
-const { getVisibleItems } = useNavItems()
+
+watch(
+  () => [route.path, props.role],
+  async () => {
+    if (!props.role) {
+      return;
+    }
+
+    const allowed =
+      isRouteAuthorized(
+        route.path,
+        props.role
+      );
+
+    if (!allowed) {
+      await navigateTo(
+        getDashboard(props.role)
+      );
+    }
+  },
+  {
+    immediate: true,
+  }
+);
 const visibleItems = computed(() => getVisibleItems(props.role))
-const route = useRoute()
+
 
 const isExpanded = ref(false)
 const toggleExpand = () => (isExpanded.value = !isExpanded.value)
 
-const isHidden = ref(false)
+
 const toggleHidden = () => (isHidden.value = !isHidden.value)
 
 const activeItemPath = computed(() => {
@@ -47,22 +77,7 @@ function isItemActive(to: string) {
 
 <template>
   <div>
-  <!-- Trigger button: fixed, same spot always, icon crossfades between bars/x -->
-  <button
-    @click="toggleHidden"
-    class="fixed  m-5 flex items-center justify-center w-10 h-10 rounded-full bg-gray-900 border border-gray-800 text-gray-300 hover:text-white hover:bg-gray-800 shadow-xl transition-all duration-300 ease-in-out z-50"
-  >
-    <Icon
-      name="i-heroicons-bars-3"
-      class="absolute w-5 h-5 transition-all duration-300"
-      :class="isHidden ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-75 rotate-90'"
-    />
-    <Icon
-      name="i-heroicons-x-mark"
-      class="absolute w-5 h-5 transition-all duration-300"
-      :class="isHidden ? 'opacity-0 scale-75 -rotate-90' : 'opacity-100 scale-100 rotate-0'"
-    />
-  </button>
+
 
   <!-- The nav itself -->
   <aside
