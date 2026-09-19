@@ -292,7 +292,7 @@ const loadWallet = async () => {
     minimumWithdrawal.value =
       koboToNaira(
         apiData?.minimumWithdrawal ??
-          500000,
+          200000,
       )
 
     /* ----------------------------------------------
@@ -864,14 +864,7 @@ onMounted(() => {
         </p>
       </div>
       <PaymentWithdraw/>
-      <button
-        type="button"
-        @click="requestWithdrawal"
-        class="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
-      >
-        <Icon name="heroicons:arrow-up-right" class="h-5 w-5" />
-        Request Withdrawal
-      </button>
+     
     </div>
 
     <!-- Wallet Balance -->
@@ -1404,7 +1397,7 @@ onMounted(() => {
             Minimum Withdrawal
           </p>
 
-          <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white">₦5,000</p>
+          <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white">₦2,000</p>
         </div>
       </div>
     </section>
@@ -1443,7 +1436,7 @@ onMounted(() => {
 
             <span class="inline-flex items-center gap-1.5">
               <Icon name="heroicons:check-circle" class="h-4 w-4" />
-              Minimum withdrawal ₦5,000
+              Minimum withdrawal ₦2,000
             </span>
 
             <span class="inline-flex items-center gap-1.5">

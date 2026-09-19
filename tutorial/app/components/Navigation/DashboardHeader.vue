@@ -120,12 +120,16 @@ const toggleUserMenu = () => {
 |--------------------------------------------------------------------------
 */
 
-const logout = () => {
-    isUserMenuOpen.value = false;
+const logout = async () => {
+  isUserMenuOpen.value = false;
 
-    // Add your logout logic here
+  try {
+    await useApiFetch('/auth/logout', { method: 'POST' });
+  } catch (e) {
+    console.error('Logout failed', e);
+  }
 
-    console.log("Logout");
+  await navigateTo('/auth');
 };
 
 /*
@@ -186,7 +190,7 @@ onUnmounted(() => {
 
                     <input v-model="search" type="text" placeholder="Search..."
                         class="h-10 w-full rounded-xl border border-gray-200 bg-gray-50 pl-9 pr-14 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 dark:border-gray-800 dark:bg-gray-900 dark:text-white dark:focus:bg-gray-900" />
-
+                    
                     <kbd
                         class="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-gray-400 lg:block dark:border-gray-700 dark:bg-gray-800">
                         ⌘ K

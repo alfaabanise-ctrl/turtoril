@@ -12,9 +12,41 @@ const toggleExpand = () => (isExpanded.value = !isExpanded.value)
 
 const isHidden = ref(false)
 const toggleHidden = () => (isHidden.value = !isHidden.value)
+
+const activeItemPath = computed(() => {
+  const currentPath = route.path;
+
+  const matches = visibleItems.value.filter((item) => {
+    const itemPath = item.to;
+
+    return (
+      currentPath === itemPath ||
+      currentPath.startsWith(itemPath + "/")
+    );
+  });
+
+  if (!matches.length) {
+    return null;
+  }
+
+  return matches.reduce((longest, item) => {
+    return item.to.length > longest.to.length
+      ? item
+      : longest;
+  }).to;
+});
+
+/* ================================================================
+ * CHECK ACTIVE
+ * ================================================================ */
+
+function isItemActive(to: string) {
+  return activeItemPath.value === to;
+}
 </script>
 
 <template>
+  <div>
   <!-- Trigger button: fixed, same spot always, icon crossfades between bars/x -->
   <button
     @click="toggleHidden"
@@ -65,7 +97,7 @@ const toggleHidden = () => (isHidden.value = !isHidden.value)
             class="flex items-center rounded-2xl text-sm font-medium transition-all duration-200 overflow-hidden"
             :class="[
               isExpanded ? 'gap-3 px-3 py-2.5 w-full justify-start' : 'justify-center w-11 h-11 mx-auto',
-              route.path.startsWith(item.to)
+                isItemActive(item.to)
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                 : 'text-gray-300 hover:bg-gray-800 hover:text-white',
             ]"
@@ -89,4 +121,5 @@ const toggleHidden = () => (isHidden.value = !isHidden.value)
       </ul>
     </nav>
   </aside>
+</div>
 </template>

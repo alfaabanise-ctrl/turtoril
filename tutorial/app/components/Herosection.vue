@@ -224,7 +224,7 @@ const stats = [
       <Container>
 
         <div
-          class="px-6 py-20 sm:px-10 lg:px-12"
+          class=" py-20 sm:px-10 lg:px-12"
         >
 
           <!-- Section heading -->
@@ -265,7 +265,7 @@ const stats = [
               v-for="(product, index) in products"
               :key="product.title"
               :to="product.link"
-              class="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fafc] p-7 transition-all duration-500 hover:-translate-y-2 hover:border-cyan-200 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/70"
+              class="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fafc] p-2 sm:p-7 transition-all duration-500 hover:-translate-y-2 hover:border-cyan-200 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/70"
             >
 
               <!-- Background number -->
@@ -353,13 +353,13 @@ const stats = [
       <Container>
 
         <div
-          class="px-6 py-20 sm:px-10 lg:px-12"
+          class="py-20  sm:px-10 lg:px-12"
         >
 
           <div
-            class="relative overflow-hidden rounded-[32px] bg-[#0794bd] px-8 py-14 text-center shadow-xl sm:px-12"
+            class="relative overflow-hidden bg-[url('./images/01-min.jpeg')] bg-no-repeat rounded-[32px] shadow-xl "
           >
-
+          <div class="bg-[#051f27]/70 sm:px-12  px-8 py-14 text-center   w-full h-full">
             <div
               class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-2xl"
             ></div>
@@ -407,7 +407,7 @@ const stats = [
             </div>
 
           </div>
-
+          </div>
         </div>
 
       </Container>

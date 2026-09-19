@@ -865,7 +865,7 @@ const retryPayment = (
           class="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
         >
           <Icon name="i-heroicons-plus" class="h-4 w-4" />
-          Record Payment {{ totalPages }} fffffff
+          Record Payment {{ totalPages }} 
         </button>
       </div>
     </div>

@@ -659,7 +659,7 @@ onMounted(async () => {
               class="text-xl font-bold text-gray-900 dark:text-white"
             >
               Welcome back,
-              {{ auth.user.firstName }}! 👋
+              {{ auth?.user?.firstName }}! 👋
             </h2>
 
             <p
