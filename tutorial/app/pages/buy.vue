@@ -46,11 +46,11 @@
           <div class="mt-6 grid grid-cols-1 gap-8 sm:grid-cols-2">
             <!-- GT Bank -->
             <div>
-              <h3 class="mb-3 font-bold text-gray-900">GT Bank</h3>
+              <h3 class="mb-3 font-bold text-gray-900">Wema Bank</h3>
               <ul class="space-y-2 text-sm text-gray-700">
-                <li><span class="font-semibold">Account Name:</span> IAF SAWII Limited - ExamTips</li>
-                <li><span class="font-semibold">Account Number:</span> 0227300274</li>
-                <li><span class="font-semibold">Account Type:</span> Current</li>
+                <li><span class="font-semibold">Account Name:</span> Waheed Ambali - ExamTips</li>
+                <li><span class="font-semibold">Account Number:</span> 022349006</li>
+               
               </ul>
             </div>
 

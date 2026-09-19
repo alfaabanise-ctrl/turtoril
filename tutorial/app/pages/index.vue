@@ -13,7 +13,7 @@ const benefit = [
     description:
       "Turn every practice session into a step toward exam success. ExamTips gives you access to past and carefully crafted model questions in a realistic exam environment. Focus on specific topics, set your own time limits, and practice under conditions that prepare you for the real exam. Powerful search makes it easy to find questions by keywords, while clear answers and explanations help you understand the why behind every question. Track your performance, discover your strengths, identify areas for improvement, and study smarter with every attempt.",
 
-    image: "/images/cbt.png",
+    image: "/images/examtips-cbt-modern.webp",
   },
 
   {
@@ -24,7 +24,7 @@ const benefit = [
     description:
       "Everything you need to learn, all in one place. The Classroom brings together structured study materials, PDF notes, educational videos, and exercises across your subjects, all aligned with the curriculum. Learn at your own pace, complete exercises to reinforce your understanding, and watch your progress grow in real time. With a clear learning path and progress tracking, you always know what you have mastered and what to tackle next.",
 
-    image: "/images/learning-tools.png",
+    image: "/images/learning-top.png",
   },
 
   {
@@ -35,7 +35,7 @@ const benefit = [
     description:
       "Make learning exciting, interactive, and memorable. Turn questions from our extensive question bank into fun educational games and engaging quizzes. Challenge yourself, test your knowledge, reinforce what you have learned, and improve your skills without the pressure of traditional studying. Every game is an opportunity to learn, grow, and have fun while preparing for success.",
 
-    image: "/images/games.png",
+    image: "/images/game.png",
   },
 ];
 
