@@ -171,6 +171,7 @@ export const useNavItems = () => {
         "student",
         "teacher",
         "admin",
+        "superadmin",
       ],
     },
   ];

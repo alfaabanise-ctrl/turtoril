@@ -8,7 +8,7 @@ export default defineNuxtConfig({
   },
 
   modules: [
-    "@nuxt/icon","@nuxt/fonts",
+    "@nuxt/icon","@nuxt/fonts", "@vueuse/nuxt"
   ],
 
   // Tauri application

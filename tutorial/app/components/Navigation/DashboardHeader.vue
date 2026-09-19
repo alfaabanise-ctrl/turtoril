@@ -187,7 +187,7 @@ onUnmounted(() => {
               type="button"
               aria-label="Toggle navigation"
               @click="toggleHidden"
-              class="relative mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-900 border border-gray-800 text-gray-300 shadow-xl transition-all duration-300 ease-in-out hover:bg-gray-800 hover:text-white"
+              class="relative mr-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-900 border border-gray-800 text-gray-300 shadow-xl transition-all duration-300 ease-in-out hover:bg-gray-800 hover:text-white"
             >
               <Icon
                 name="i-heroicons-bars-3"
