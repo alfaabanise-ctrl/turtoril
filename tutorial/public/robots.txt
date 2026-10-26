@@ -1,2 +1,5 @@
-User-Agent: *
-Disallow:
+
+User-agent: *
+Allow: /
+
+Sitemap: https://www.examtips.abanise.com/sitemap.xml

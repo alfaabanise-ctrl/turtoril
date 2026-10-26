@@ -8,57 +8,61 @@ export default defineNuxtConfig({
     enabled: false,
   },
 
-  // Nuxt modules
   modules: [
     "@nuxt/icon",
     "@nuxt/fonts",
     "@nuxtjs/sitemap",
     "@vueuse/nuxt",
   ],
+
   optimizeDeps: {
-    include: [
-      "@meforma/vue-toaster",
-    ],
+    include: ["@meforma/vue-toaster"],
   },
 
-  // Website metadata and SEO
+  // SEO and website metadata
+  site: {
+    url: "https://www.examtips.abanise.com",
+    name: "ExamTips",
+  },
+
   app: {
-    baseURL: "./",
+    // Root URL for the hosted website.
+    // Use a separate config for offline/relative-path builds if needed.
+    baseURL: "/",
 
     head: {
-    title: "ExamTips | JAMB & WAEC Past Questions",
-    titleTemplate: "%s | ExamTips",
+      title: "ExamTips | JAMB & WAEC Past Questions",
+      titleTemplate: "%s | ExamTips",
 
-    htmlAttrs: {
-      lang: "en",
+      htmlAttrs: {
+        lang: "en",
+      },
+
+      link: [
+        {
+          rel: "icon",
+          type: "image/png",
+          href: "/images/icons.png",
+        },
+        {
+          rel: "apple-touch-icon",
+          href: "/images/icons.png",
+        },
+      ],
+
+      meta: [
+        { charset: "utf-8" },
+        {
+          name: "viewport",
+          content: "width=device-width, initial-scale=1",
+        },
+        {
+          name: "description",
+          content:
+            "Prepare for JAMB and WAEC with ExamTips. Practise past questions, take CBT mock exams, and study exam-focused lessons.",
+        },
+      ],
     },
-
-    link: [
-      {
-        rel: "icon",
-        type: "image/png",
-        href: "/images/icons.png",
-      },
-      {
-        rel: "apple-touch-icon",
-        href: "/images/icons.png",
-      },
-    ],
-
-    meta: [
-      { charset: "utf-8" },
-      {
-        name: "viewport",
-        content: "width=device-width, initial-scale=1",
-      },
-      {
-        name: "description",
-        content:
-          "Prepare for JAMB and WAEC with ExamTips. Practise past questions, take CBT mock exams, and study exam-focused lessons.",
-      },
-    ],
-  },
-
 
     pageTransition: {
       name: "page-sheet",
@@ -66,30 +70,29 @@ export default defineNuxtConfig({
     },
   },
 
-  // Sitemap configuration
+  // XML sitemap
   sitemap: {
-    // Replace with your real production domain
-    siteUrl: "https://www.examtips.abanise.com",
-
-    discoverImages: false,
-
     exclude: [
-     
       "/super-admin/**",
       "/admin/**",
       "/student/**",
     ],
 
-    // Add additional public routes here if needed.
-    // The module can also discover Nuxt page routes.
-    urls: async () => [],
+    discoverImages: false,
+
+    // Add real dynamic page URLs here if needed.
+    // Static Nuxt pages are discovered automatically.
+    urls: [],
   },
 
-  // Tauri / static SPA configuration
+  // SPA / static deployment
   ssr: false,
 
   nitro: {
     preset: "static",
+    prerender: {
+      routes: ["/", "/sitemap.xml", "/robots.txt"],
+    },
   },
 
   css: ["~/assets/css/main.css"],
@@ -101,7 +104,10 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       projectName: "ExamTips",
-      paystackPublicKey: process.env.NUXT_PAYSTACK_API_URL,
+
+      paystackPublicKey:
+        process.env.NUXT_PAYSTACK_API_URL,
+
       apiUrl:
         process.env.NUXT_PUBLIC_API_URL ||
         "http://localhost:5000",
