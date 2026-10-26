@@ -69,7 +69,7 @@ async function loadPayments() {
 
     // NOTE: the response itself holds { payments, summary }.
     // The old code used response.data, which does not exist on this type.
-    paymentsData.value = response.data;
+    paymentsData.value = response.data;  
   } catch (err: any) {
     console.error("Failed to load payments:", err);
 

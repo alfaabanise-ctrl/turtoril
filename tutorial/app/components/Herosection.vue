@@ -11,7 +11,7 @@ const downloads = [
     description:
       "Download the ExamTips desktop application for a faster and more reliable examination experience on your Windows computer.",
     icon: "lucide:monitor-down",
-    link: "/downloads/desktop",
+    link: "https://drive.google.com/file/d/15eeFQ-R2l8vILnSnf7yGnNR0D-e1n0YI/view?usp=drivesdk",
     button: "Download for Desktop",
   },
 
@@ -21,7 +21,7 @@ const downloads = [
     description:
       "Take your practice questions and CBT exams with you anywhere. Download the ExamTips Android application on your phone.",
     icon: "lucide:smartphone",
-    link: "/downloads/android",
+    link: "https://drive.google.com/file/d/1Z0HQcYOePN7MGWRIMNdbfuGiqUY6ihL-/view?usp=drivesdk",
     button: "Download Android App",
   },
 ];
@@ -252,10 +252,10 @@ const stats = [
             class="mx-auto mt-14 grid max-w-5xl gap-6 md:grid-cols-2"
           >
 
-            <NuxtLink
+            <a
               v-for="(download, index) in downloads"
               :key="download.title"
-              :to="download.link"
+              :href="download.link"
               class="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fafc] p-7 transition-all duration-500 hover:-translate-y-2 hover:border-cyan-200 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/70 sm:p-9"
             >
 
@@ -324,7 +324,7 @@ const stats = [
 
               </div>
 
-            </NuxtLink>
+            </a>
 
           </div>
 
