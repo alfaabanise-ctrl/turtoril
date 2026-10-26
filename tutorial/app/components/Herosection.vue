@@ -11,7 +11,7 @@ const downloads = [
     description:
       "Download the ExamTips desktop application for a faster and more reliable examination experience on your Windows computer.",
     icon: "lucide:monitor-down",
-    link: "https://drive.google.com/file/d/15eeFQ-R2l8vILnSnf7yGnNR0D-e1n0YI/view?usp=drivesdk",
+    link: "https://drive.google.com/file/d/1w8bfz7ICxqkZLgYQoCT6Li8YfVFn2oO4/view",
     button: "Download for Desktop",
   },
 
@@ -21,7 +21,7 @@ const downloads = [
     description:
       "Take your practice questions and CBT exams with you anywhere. Download the ExamTips Android application on your phone.",
     icon: "lucide:smartphone",
-    link: "https://drive.google.com/file/d/1Z0HQcYOePN7MGWRIMNdbfuGiqUY6ihL-/view?usp=drivesdk",
+    link: "https://drive.google.com/file/d/145jCsVssLBh-43M0zX9yLPa9AN0iWHM7/view?usp=drivesdk",
     button: "Download Android App",
   },
 ];
@@ -140,8 +140,8 @@ const stats = [
               class="mt-9 flex flex-col gap-3 sm:flex-row"
             >
 
-              <NuxtLink
-                to="/downloads"
+              <a
+                href="https://drive.google.com/file/d/145jCsVssLBh-43M0zX9yLPa9AN0iWHM7/view"
                 class="group inline-flex items-center justify-center gap-3 rounded-xl bg-[#0794bd] px-7 py-4 text-sm font-semibold text-white shadow-xl shadow-cyan-950/20 transition duration-300 hover:-translate-y-1 hover:bg-[#0685aa]"
               >
 
@@ -152,7 +152,7 @@ const stats = [
                   class="h-4 w-4 transition-transform duration-300 group-hover:translate-y-0.5"
                 />
 
-              </NuxtLink>
+          </a>
 
               <NuxtLink
                 to="/about"
@@ -388,8 +388,8 @@ const stats = [
                 </p>
 
 
-                <NuxtLink
-                  to="/downloads"
+                <a
+                  href="https://drive.google.com/file/d/145jCsVssLBh-43M0zX9yLPa9AN0iWHM7/view"
                   class="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-7 py-4 text-sm font-semibold text-[#0794bd] shadow-lg transition hover:-translate-y-1 hover:bg-slate-50"
                 >
 
@@ -400,7 +400,7 @@ const stats = [
                     class="h-4 w-4"
                   />
 
-                </NuxtLink>
+              </a>
 
               </div>
 
