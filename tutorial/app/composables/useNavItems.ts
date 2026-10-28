@@ -65,6 +65,13 @@ export const useNavItems = () => {
       to: "/super-admin/ledger",
       roles: ["superadmin"],
     },
+     {
+      label: "Download",
+    
+     icon: "i-heroicons-arrow-down-tray",
+      to: "/super-admin/download",
+      roles: ["superadmin"],
+    },
 
     
 
@@ -87,6 +94,7 @@ export const useNavItems = () => {
       roles: ["admin"],
     },
 
+    
     {
       label: "Students",
       icon: "i-heroicons-academic-cap",

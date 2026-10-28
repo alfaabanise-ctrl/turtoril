@@ -1,10 +1,24 @@
+
 <script setup lang="ts">
+const { downloadSoftware } = useSoftwareDownloads();
 
 /* ================================================================
  * DOWNLOAD OPTIONS
  * ================================================================ */
 
-const downloads = [
+type DownloadPlatform = "windows" | "android";
+
+interface DownloadOption {
+  title: string;
+  subtitle: string;
+  description: string;
+  icon: string;
+  link: string;
+  button: string;
+  platform: DownloadPlatform;
+}
+
+const downloads: DownloadOption[] = [
   {
     title: "Desktop Software",
     subtitle: "Windows Application",
@@ -13,8 +27,8 @@ const downloads = [
     icon: "lucide:monitor-down",
     link: "https://drive.google.com/file/d/1w8bfz7ICxqkZLgYQoCT6Li8YfVFn2oO4/view",
     button: "Download for Desktop",
+    platform: "windows",
   },
-
   {
     title: "Android App",
     subtitle: "Mobile Application",
@@ -23,30 +37,51 @@ const downloads = [
     icon: "lucide:smartphone",
     link: "https://drive.google.com/file/d/145jCsVssLBh-43M0zX9yLPa9AN0iWHM7/view?usp=drivesdk",
     button: "Download Android App",
+    platform: "android",
   },
 ];
+
+/* ================================================================
+ * STATISTICS
+ * ================================================================ */
 
 const stats = [
   {
     value: "50K+",
     label: "Practice Questions",
   },
-
   {
     value: "10K+",
     label: "Students",
   },
-
   {
     value: "20+",
     label: "Subjects",
   },
 ];
 
+/* ================================================================
+ * TRACK DOWNLOADS
+ * ================================================================ */
+
+/**
+ * Records a download click using your existing composable
+ * and then redirects the visitor to Google Drive.
+ *
+ * The composable handles analytics failures and redirects
+ * even when the tracking request fails.
+ */
+function handleDownload(
+  platform: DownloadPlatform,
+  link: string
+) {
+  console.log('rrrrrrrrrrrrrr');
+  
+  void downloadSoftware(platform, link);
+}
 </script>
 
 <template>
-
   <main class="min-h-screen bg-[#f8fafc] font-[Poppins] text-slate-900">
 
     <!-- =========================================================
@@ -57,7 +92,6 @@ const stats = [
       class="relative min-h-[720px] overflow-hidden bg-cover bg-center bg-no-repeat"
       style="background-image: url('/images/slider5.jpg')"
     >
-
       <!-- Dark overlay -->
       <div class="absolute inset-0 bg-slate-950/75"></div>
 
@@ -71,21 +105,14 @@ const stats = [
       ></div>
 
       <Container class="relative z-10">
-
-        <div
-          class="flex min-h-[720px] items-center"
-        >
-
+        <div class="flex min-h-[720px] items-center">
           <div class="w-full max-w-4xl py-20">
 
             <!-- Badge -->
-
             <div
               class="mb-7 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur-md"
             >
-
               <span class="relative flex h-2.5 w-2.5">
-
                 <span
                   class="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-60"
                 ></span>
@@ -93,19 +120,15 @@ const stats = [
                 <span
                   class="relative inline-flex h-2.5 w-2.5 rounded-full bg-cyan-400"
                 ></span>
-
               </span>
 
               Smarter way to prepare for exams
-
             </div>
 
             <!-- Heading -->
-
             <h1
               class="max-w-4xl text-5xl font-bold leading-[1.08] tracking-[-0.035em] text-white sm:text-6xl lg:text-7xl"
             >
-
               Prepare.
 
               <span class="text-[#18b8e5]">
@@ -115,15 +138,12 @@ const stats = [
               <br />
 
               Pass with confidence.
-
             </h1>
 
             <!-- Description -->
-
             <p
               class="mt-7 max-w-2xl text-base font-normal leading-8 text-slate-200 sm:text-lg"
             >
-
               Your all-in-one examination preparation platform for
 
               <span class="font-semibold text-white">
@@ -131,56 +151,47 @@ const stats = [
               </span>
 
               and other professional and academic examinations.
-
             </p>
 
             <!-- Buttons -->
+            <div class="mt-9 flex flex-col gap-3 sm:flex-row">
 
-            <div
-              class="mt-9 flex flex-col gap-3 sm:flex-row"
-            >
-
-              <a
-                href="https://drive.google.com/file/d/145jCsVssLBh-43M0zX9yLPa9AN0iWHM7/view"
+              <!-- Android download with analytics -->
+              <button
+                type="button"
+                @click="handleDownload('android', downloads[1].link)"
                 class="group inline-flex items-center justify-center gap-3 rounded-xl bg-[#0794bd] px-7 py-4 text-sm font-semibold text-white shadow-xl shadow-cyan-950/20 transition duration-300 hover:-translate-y-1 hover:bg-[#0685aa]"
               >
-
                 Download App
 
                 <Icon
                   name="lucide:download"
                   class="h-4 w-4 transition-transform duration-300 group-hover:translate-y-0.5"
                 />
-
-          </a>
+              </button>
 
               <NuxtLink
                 to="/about"
                 class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-7 py-4 text-sm font-semibold text-white backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:bg-white/15"
               >
-
                 <Icon
                   name="lucide:play-circle"
                   class="h-4 w-4"
                 />
 
                 How it works
-
               </NuxtLink>
 
             </div>
 
             <!-- Stats -->
-
             <div
               class="mt-14 flex flex-wrap gap-x-12 gap-y-7 border-t border-white/15 pt-8"
             >
-
               <div
                 v-for="stat in stats"
                 :key="stat.label"
               >
-
                 <p
                   class="text-2xl font-bold tracking-tight text-white"
                 >
@@ -192,38 +203,24 @@ const stats = [
                 >
                   {{ stat.label }}
                 </p>
-
               </div>
-
             </div>
 
           </div>
-
         </div>
-
       </Container>
-
     </section>
-
 
     <!-- =========================================================
          DOWNLOAD APPS
     ========================================================== -->
 
     <section class="bg-white">
-
       <Container>
-
-        <div
-          class="py-20 sm:px-10 lg:px-12"
-        >
+        <div class="py-20 sm:px-10 lg:px-12">
 
           <!-- Section heading -->
-
-          <div
-            class="mx-auto max-w-3xl text-center"
-          >
-
+          <div class="mx-auto max-w-3xl text-center">
             <p
               class="text-xs font-bold uppercase tracking-[0.2em] text-[#0794bd]"
             >
@@ -242,121 +239,90 @@ const stats = [
               Download ExamTips on your computer or Android phone and
               enjoy a faster, more convenient examination experience.
             </p>
-
           </div>
 
-
           <!-- Download Cards -->
-
           <div
             class="mx-auto mt-14 grid max-w-5xl gap-6 md:grid-cols-2"
           >
-
             <a
               v-for="(download, index) in downloads"
               :key="download.title"
               :href="download.link"
+              @click.prevent="handleDownload(download.platform, download.link)"
               class="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fafc] p-7 transition-all duration-500 hover:-translate-y-2 hover:border-cyan-200 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/70 sm:p-9"
             >
-
               <!-- Background number -->
-
               <span
                 class="absolute right-5 top-3 text-7xl font-extrabold text-slate-100 transition-colors duration-500 group-hover:text-cyan-50"
               >
                 {{ String(index + 1).padStart(2, "0") }}
               </span>
 
-
               <!-- Icon -->
-
               <div
                 class="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0794bd]/10 text-[#0794bd] transition duration-300 group-hover:bg-[#0794bd] group-hover:text-white"
               >
-
                 <Icon
                   :name="download.icon"
                   class="h-8 w-8"
                 />
-
               </div>
 
-
               <!-- Subtitle -->
-
               <p
                 class="relative mt-7 text-xs font-bold uppercase tracking-[0.12em] text-[#0794bd]"
               >
                 {{ download.subtitle }}
               </p>
 
-
               <!-- Title -->
-
               <h3
                 class="relative mt-2 text-2xl font-bold text-slate-950"
               >
                 {{ download.title }}
               </h3>
 
-
               <!-- Description -->
-
               <p
                 class="relative mt-4 text-sm leading-7 text-slate-500"
               >
                 {{ download.description }}
               </p>
 
-
-              <!-- Download button -->
-
+              <!-- Download button appearance -->
               <div
                 class="relative mt-7 inline-flex items-center gap-2 rounded-xl bg-[#0794bd] px-5 py-3 text-sm font-semibold text-white transition duration-300 group-hover:bg-[#0685aa]"
               >
-
                 <Icon
                   name="lucide:download"
                   class="h-4 w-4"
                 />
 
                 {{ download.button }}
-
               </div>
-
             </a>
-
           </div>
 
         </div>
-
       </Container>
-
     </section>
 
-
     <!-- =========================================================
-         CTA
+         CALL TO ACTION
     ========================================================== -->
 
     <section class="bg-[#f8fafc]">
-
       <Container>
-
-        <div
-          class="py-20 sm:px-10 lg:px-12"
-        >
+        <div class="py-20 sm:px-10 lg:px-12">
 
           <div
             class="relative overflow-hidden rounded-[32px] bg-[url('/images/01-min.jpeg')] bg-cover bg-center bg-no-repeat shadow-xl"
           >
-
             <div
-              class="h-full w-full bg-[#051f27]/70 px-8 py-14 text-center sm:px-12"
+              class="relative h-full w-full overflow-hidden bg-[#051f27]/70 px-8 py-14 text-center sm:px-12"
             >
-
               <!-- Decorative glow -->
-
               <div
                 class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-2xl"
               ></div>
@@ -365,9 +331,7 @@ const stats = [
                 class="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-blue-900/20 blur-2xl"
               ></div>
 
-
               <div class="relative">
-
                 <p
                   class="text-xs font-bold uppercase tracking-[0.2em] text-cyan-100"
                 >
@@ -387,33 +351,26 @@ const stats = [
                   your questions wherever you are.
                 </p>
 
-
-                <a
-                  href="https://drive.google.com/file/d/145jCsVssLBh-43M0zX9yLPa9AN0iWHM7/view"
+                <!-- Android download with analytics -->
+                <button
+                  type="button"
+                  @click="handleDownload('android', downloads[1].link)"
                   class="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-7 py-4 text-sm font-semibold text-[#0794bd] shadow-lg transition hover:-translate-y-1 hover:bg-slate-50"
                 >
-
                   Download Now
 
                   <Icon
                     name="lucide:download"
                     class="h-4 w-4"
                   />
-
-              </a>
-
+                </button>
               </div>
-
             </div>
-
           </div>
 
         </div>
-
       </Container>
-
     </section>
 
   </main>
-
 </template>

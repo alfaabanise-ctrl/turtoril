@@ -15,19 +15,13 @@ export default defineNuxtConfig({
     "@vueuse/nuxt",
   ],
 
-  optimizeDeps: {
-    include: ["@meforma/vue-toaster"],
-  },
-
-  // SEO and website metadata
+  // Website metadata and SEO
   site: {
     url: "https://www.examtips.abanise.com",
     name: "ExamTips",
   },
 
   app: {
-    // Root URL for the hosted website.
-    // Use a separate config for offline/relative-path builds if needed.
     baseURL: "/",
 
     head: {
@@ -51,7 +45,9 @@ export default defineNuxtConfig({
       ],
 
       meta: [
-        { charset: "utf-8" },
+        {
+          charset: "utf-8",
+        },
         {
           name: "viewport",
           content: "width=device-width, initial-scale=1",
@@ -77,11 +73,7 @@ export default defineNuxtConfig({
       "/admin/**",
       "/student/**",
     ],
-
     discoverImages: false,
-
-    // Add real dynamic page URLs here if needed.
-    // Static Nuxt pages are discovered automatically.
     urls: [],
   },
 
@@ -91,22 +83,34 @@ export default defineNuxtConfig({
   nitro: {
     preset: "static",
     prerender: {
-      routes: ["/", "/sitemap.xml", "/robots.txt"],
+      routes: [
+        "/",
+        "/sitemap.xml",
+        "/robots.txt",
+      ],
     },
   },
 
   css: ["~/assets/css/main.css"],
 
+  // Vite configuration
+  // Let Nuxt manage the dev server and HMR WebSocket automatically.
   vite: {
     plugins: [tailwindcss()],
+
+    optimizeDeps: {
+      include: ["@meforma/vue-toaster"],
+    },
   },
 
+  // Public runtime configuration
   runtimeConfig: {
     public: {
       projectName: "ExamTips",
 
+      // Confirm that this environment variable contains your Paystack PUBLIC key.
       paystackPublicKey:
-        process.env.NUXT_PAYSTACK_API_URL,
+        process.env.NUXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "",
 
       apiUrl:
         process.env.NUXT_PUBLIC_API_URL ||
@@ -114,6 +118,7 @@ export default defineNuxtConfig({
     },
   },
 
+  // Google Fonts
   fonts: {
     families: [
       {
