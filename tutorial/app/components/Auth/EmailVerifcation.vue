@@ -94,7 +94,20 @@ const verifyCode = async () => {
     if(props.redirect){
     setTimeout(() => {
       console.log('otp processed');
-      router.push('/user/dashboard')
+
+      const role = auth.value.user?.role;
+      console.log(role, 'role');
+      
+  if (role === "admin" ) {
+    router.push("/admin");
+  } else if (role === "teacher") {
+    router.push("/teacher");
+  }  else if (role === "superadmin") {
+    router.push("/super-admin");
+  }  else if (role === "student") {
+    router.push("/student");
+  }
+    
     }, 800)
     
     }else{
