@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { downloadSoftware } = useSoftwareDownloads();
+const { downloadSoftware, trackInstallClick } = useSoftwareDownloads();
 const { platform, isInstalled, showIosHelp } = useInstallPrompt();
 
 /* ================================================================
@@ -23,18 +23,22 @@ const stats = [
 ];
 
 /* ================================================================
- * ACTIONS (one per device)
+ * ACTIONS (one per device, every one is tracked)
  * ================================================================ */
 
+/** Android: records the click, then starts the download */
 function downloadAndroid() {
   void downloadSoftware("android", ANDROID_LINK);
 }
 
+/** Windows: records the click, then starts the download */
 function downloadDesktop() {
   void downloadSoftware("windows", WINDOWS_LINK);
 }
 
+/** iPhone / iPad: record the click, then open the step-by-step guide */
 function openIosGuide() {
+  trackInstallClick("ios");
   showIosHelp.value = true;
 }
 
@@ -218,11 +222,11 @@ const mainLabel = computed(() => {
           <div class="mx-auto mt-14 min-h-[320px] max-w-xl">
 
             <!-- ANDROID -->
-            <a
+            <button
               v-if="platform === 'android'"
-              :href="ANDROID_LINK"
-              @click.prevent="downloadAndroid"
-              class="group relative block overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fafc] p-7 transition-all duration-500 hover:-translate-y-2 hover:border-cyan-200 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/70 sm:p-9"
+              type="button"
+              @click="downloadAndroid"
+              class="group relative block w-full overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fafc] p-7 text-left transition-all duration-500 hover:-translate-y-2 hover:border-cyan-200 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/70 sm:p-9"
             >
               <div
                 class="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0794bd]/10 text-[#0794bd] transition duration-300 group-hover:bg-[#0794bd] group-hover:text-white"
@@ -251,14 +255,14 @@ const mainLabel = computed(() => {
                 <Icon name="lucide:download" class="h-4 w-4" />
                 Download Android App
               </div>
-            </a>
+            </button>
 
             <!-- IPHONE / IPAD -->
-            <a
+            <button
               v-else-if="platform === 'ios' && !isInstalled"
-              href="#"
-              @click.prevent="openIosGuide"
-              class="group relative block overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fafc] p-7 transition-all duration-500 hover:-translate-y-2 hover:border-cyan-200 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/70 sm:p-9"
+              type="button"
+              @click="openIosGuide"
+              class="group relative block w-full overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fafc] p-7 text-left transition-all duration-500 hover:-translate-y-2 hover:border-cyan-200 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/70 sm:p-9"
             >
               <div
                 class="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0794bd]/10 text-[#0794bd] transition duration-300 group-hover:bg-[#0794bd] group-hover:text-white"
@@ -288,14 +292,14 @@ const mainLabel = computed(() => {
                 <Icon name="lucide:plus-square" class="h-4 w-4" />
                 Install on iPhone
               </div>
-            </a>
+            </button>
 
             <!-- DESKTOP -->
-            <a
+            <button
               v-else-if="platform === 'desktop'"
-              :href="WINDOWS_LINK"
-              @click.prevent="downloadDesktop"
-              class="group relative block overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fafc] p-7 transition-all duration-500 hover:-translate-y-2 hover:border-cyan-200 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/70 sm:p-9"
+              type="button"
+              @click="downloadDesktop"
+              class="group relative block w-full overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fafc] p-7 text-left transition-all duration-500 hover:-translate-y-2 hover:border-cyan-200 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/70 sm:p-9"
             >
               <div
                 class="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0794bd]/10 text-[#0794bd] transition duration-300 group-hover:bg-[#0794bd] group-hover:text-white"
@@ -325,7 +329,7 @@ const mainLabel = computed(() => {
                 <Icon name="lucide:download" class="h-4 w-4" />
                 Download for Desktop
               </div>
-            </a>
+            </button>
 
           </div>
 

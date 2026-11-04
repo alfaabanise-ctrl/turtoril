@@ -21,26 +21,38 @@ interface Step {
 const steps: Step[] = [
   {
     title: "Open the app in Safari",
-    text: "Tap the blue Start download button below. The app opens in a new tab. Do the next steps on that tab.",
+    text: "Tap the blue Start download button below. The app opens in a new Safari tab. Do the next steps on that tab.",
     image: "/images/ios/step-1.png",
     icon: "lucide:compass",
   },
   {
-    title: "Tap the Share button",
-    text: "At the bottom of Safari (or top right on iPad), tap the Share icon, the square with an arrow pointing up.",
+    title: "Tap the menu icon",
+    text: "When the login page appears, tap the menu icon (three lines) at the left of the address bar at the bottom.",
     image: "/images/ios/step-2.png",
+    icon: "lucide:menu",
+  },
+  {
+    title: "Tap Share",
+    text: "In the menu that opens, tap Share at the top.",
+    image: "/images/ios/step-3.png",
     icon: "lucide:share",
   },
   {
-    title: "Choose Add to Home Screen",
-    text: "Scroll down the list and tap Add to Home Screen.",
-    image: "/images/ios/step-3.png",
+    title: "Tap View More",
+    text: "In the share sheet, tap View More (the arrow at the bottom right) to show all options.",
+    image: "/images/ios/step-4.png",
+    icon: "lucide:chevron-down",
+  },
+  {
+    title: "Tap Add to Home Screen",
+    text: "Find Add to Home Screen in the list and tap it. Scroll down a little if you do not see it.",
+    image: "/images/ios/step-5.png",
     icon: "lucide:plus-square",
   },
   {
-    title: "Tap Add",
-    text: "If you see Open as Web App, leave it switched on. Then tap Add in the top right corner. ExamTips now appears on your Home Screen.",
-    image: "/images/ios/step-4.png",
+    title: "Keep Web App on, then tap Add",
+    text: "Leave Open as Web App switched on, then tap Add in the top right corner. ExamTips now appears on your Home Screen.",
+    image: "/images/ios/step-6.png",
     icon: "lucide:check-circle-2",
   },
 ];
@@ -80,7 +92,7 @@ onBeforeUnmount(() => {
   <ClientOnly>
   <Teleport to="body">
     <div
-    
+      v-if="showIosHelp"
       class="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/70 backdrop-blur-sm sm:items-center sm:p-6"
       role="dialog"
       aria-modal="true"
@@ -99,11 +111,11 @@ onBeforeUnmount(() => {
               id="ios-guide-title"
               class="text-xl font-bold tracking-tight text-slate-950"
             >
-              Install ExamTips on your iPhone
+              Install ExamTips ddd on your iPhone
             </h2>
 
             <p class="mt-1 text-sm text-slate-500">
-              Follow these 4 steps. It takes about 10 seconds.
+              Follow these 6 steps. It takes about 20 seconds.
             </p>
           </div>
 
@@ -163,7 +175,7 @@ onBeforeUnmount(() => {
                   :src="step.image"
                   :alt="`Step ${index + 1}: ${step.title}`"
                   loading="lazy"
-                  class="mx-auto max-h-72 w-full object-contain"
+                  class="mx-auto max-h-[32rem] w-auto object-contain"
                   @error="failed[step.image] = true"
                 />
 
