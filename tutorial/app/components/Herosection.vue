@@ -1,84 +1,57 @@
-
 <script setup lang="ts">
 const { downloadSoftware } = useSoftwareDownloads();
+const { platform, isInstalled, showIosHelp } = useInstallPrompt();
 
 /* ================================================================
- * DOWNLOAD OPTIONS
+ * DOWNLOAD LINKS
  * ================================================================ */
 
-type DownloadPlatform = "windows" | "android";
+const WINDOWS_LINK =
+  "https://drive.google.com/file/d/1w8bfz7ICxqkZLgYQoCT6Li8YfVFn2oO4/view";
 
-interface DownloadOption {
-  title: string;
-  subtitle: string;
-  description: string;
-  icon: string;
-  link: string;
-  button: string;
-  platform: DownloadPlatform;
-}
-
-const downloads: DownloadOption[] = [
-  {
-    title: "Desktop Software",
-    subtitle: "Windows Application",
-    description:
-      "Download the ExamTips desktop application for a faster and more reliable examination experience on your Windows computer.",
-    icon: "lucide:monitor-down",
-    link: "https://drive.google.com/file/d/1w8bfz7ICxqkZLgYQoCT6Li8YfVFn2oO4/view",
-    button: "Download for Desktop",
-    platform: "windows",
-  },
-  {
-    title: "Android App",
-    subtitle: "Mobile Application",
-    description:
-      "Take your practice questions and CBT exams with you anywhere. Download the ExamTips Android application on your phone.",
-    icon: "lucide:smartphone",
-    link: "https://drive.google.com/file/d/145jCsVssLBh-43M0zX9yLPa9AN0iWHM7/view?usp=drivesdk",
-    button: "Download Android App",
-    platform: "android",
-  },
-];
+const ANDROID_LINK =
+  "https://drive.google.com/file/d/145jCsVssLBh-43M0zX9yLPa9AN0iWHM7/view?usp=drivesdk";
 
 /* ================================================================
  * STATISTICS
  * ================================================================ */
 
 const stats = [
-  {
-    value: "50K+",
-    label: "Practice Questions",
-  },
-  {
-    value: "10K+",
-    label: "Students",
-  },
-  {
-    value: "20+",
-    label: "Subjects",
-  },
+  { value: "50K+", label: "Practice Questions" },
+  { value: "10K+", label: "Students" },
+  { value: "20+", label: "Subjects" },
 ];
 
 /* ================================================================
- * TRACK DOWNLOADS
+ * ACTIONS (one per device)
  * ================================================================ */
 
-/**
- * Records a download click using your existing composable
- * and then redirects the visitor to Google Drive.
- *
- * The composable handles analytics failures and redirects
- * even when the tracking request fails.
- */
-function handleDownload(
-  platform: DownloadPlatform,
-  link: string
-) {
-  console.log('rrrrrrrrrrrrrr');
-  
-  void downloadSoftware(platform, link);
+function downloadAndroid() {
+  void downloadSoftware("android", ANDROID_LINK);
 }
+
+function downloadDesktop() {
+  void downloadSoftware("windows", WINDOWS_LINK);
+}
+
+function openIosGuide() {
+  showIosHelp.value = true;
+}
+
+/** Hero and CTA buttons: do the right thing for the visitor's device */
+function handleMainAction() {
+  if (platform.value === "ios") return openIosGuide();
+  if (platform.value === "android") return downloadAndroid();
+  return downloadDesktop();
+}
+
+/** Label of the hero and CTA buttons */
+const mainLabel = computed(() => {
+  if (platform.value === "ios") return "Install on iPhone";
+  if (platform.value === "android") return "Download for Android";
+  if (platform.value === "desktop") return "Download for Desktop";
+  return "Download App";
+});
 </script>
 
 <template>
@@ -156,13 +129,14 @@ function handleDownload(
             <!-- Buttons -->
             <div class="mt-9 flex flex-col gap-3 sm:flex-row">
 
-              <!-- Android download with analytics -->
+              <!-- Main button: changes with the visitor's device -->
               <button
+                v-if="!isInstalled"
                 type="button"
-                @click="handleDownload('android', downloads[1].link)"
+                @click="handleMainAction"
                 class="group inline-flex items-center justify-center gap-3 rounded-xl bg-[#0794bd] px-7 py-4 text-sm font-semibold text-white shadow-xl shadow-cyan-950/20 transition duration-300 hover:-translate-y-1 hover:bg-[#0685aa]"
               >
-                Download App
+                {{ mainLabel }}
 
                 <Icon
                   name="lucide:download"
@@ -212,7 +186,7 @@ function handleDownload(
     </section>
 
     <!-- =========================================================
-         DOWNLOAD APPS
+         DOWNLOAD APP (only the visitor's own device is shown)
     ========================================================== -->
 
     <section class="bg-white">
@@ -236,72 +210,123 @@ function handleDownload(
             <p
               class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-500 sm:text-base"
             >
-              Download ExamTips on your computer or Android phone and
-              enjoy a faster, more convenient examination experience.
+              Get ExamTips for your device and enjoy a faster, more
+              convenient examination experience.
             </p>
           </div>
 
-          <!-- Download Cards -->
-          <div
-            class="mx-auto mt-14 grid max-w-5xl gap-6 md:grid-cols-2"
-          >
-            <a
-              v-for="(download, index) in downloads"
-              :key="download.title"
-              :href="download.link"
-              @click.prevent="handleDownload(download.platform, download.link)"
-              class="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fafc] p-7 transition-all duration-500 hover:-translate-y-2 hover:border-cyan-200 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/70 sm:p-9"
-            >
-              <!-- Background number -->
-              <span
-                class="absolute right-5 top-3 text-7xl font-extrabold text-slate-100 transition-colors duration-500 group-hover:text-cyan-50"
-              >
-                {{ String(index + 1).padStart(2, "0") }}
-              </span>
+          <div class="mx-auto mt-14 min-h-[320px] max-w-xl">
 
-              <!-- Icon -->
+            <!-- ANDROID -->
+            <a
+              v-if="platform === 'android'"
+              :href="ANDROID_LINK"
+              @click.prevent="downloadAndroid"
+              class="group relative block overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fafc] p-7 transition-all duration-500 hover:-translate-y-2 hover:border-cyan-200 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/70 sm:p-9"
+            >
               <div
                 class="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0794bd]/10 text-[#0794bd] transition duration-300 group-hover:bg-[#0794bd] group-hover:text-white"
               >
-                <Icon
-                  :name="download.icon"
-                  class="h-8 w-8"
-                />
+                <Icon name="lucide:smartphone" class="h-8 w-8" />
               </div>
 
-              <!-- Subtitle -->
               <p
                 class="relative mt-7 text-xs font-bold uppercase tracking-[0.12em] text-[#0794bd]"
               >
-                {{ download.subtitle }}
+                Mobile Application
               </p>
 
-              <!-- Title -->
-              <h3
-                class="relative mt-2 text-2xl font-bold text-slate-950"
-              >
-                {{ download.title }}
+              <h3 class="relative mt-2 text-2xl font-bold text-slate-950">
+                Android App
               </h3>
 
-              <!-- Description -->
-              <p
-                class="relative mt-4 text-sm leading-7 text-slate-500"
-              >
-                {{ download.description }}
+              <p class="relative mt-4 text-sm leading-7 text-slate-500">
+                Take your practice questions and CBT exams with you anywhere.
+                Download the ExamTips Android application on your phone.
               </p>
 
-              <!-- Download button appearance -->
               <div
                 class="relative mt-7 inline-flex items-center gap-2 rounded-xl bg-[#0794bd] px-5 py-3 text-sm font-semibold text-white transition duration-300 group-hover:bg-[#0685aa]"
               >
-                <Icon
-                  name="lucide:download"
-                  class="h-4 w-4"
-                />
-
-                {{ download.button }}
+                <Icon name="lucide:download" class="h-4 w-4" />
+                Download Android App
               </div>
             </a>
+
+            <!-- IPHONE / IPAD -->
+            <a
+              v-else-if="platform === 'ios' && !isInstalled"
+              href="#"
+              @click.prevent="openIosGuide"
+              class="group relative block overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fafc] p-7 transition-all duration-500 hover:-translate-y-2 hover:border-cyan-200 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/70 sm:p-9"
+            >
+              <div
+                class="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0794bd]/10 text-[#0794bd] transition duration-300 group-hover:bg-[#0794bd] group-hover:text-white"
+              >
+                <Icon name="lucide:smartphone" class="h-8 w-8" />
+              </div>
+
+              <p
+                class="relative mt-7 text-xs font-bold uppercase tracking-[0.12em] text-[#0794bd]"
+              >
+                Install from Safari
+              </p>
+
+              <h3 class="relative mt-2 text-2xl font-bold text-slate-950">
+                iPhone &amp; iPad
+              </h3>
+
+              <p class="relative mt-4 text-sm leading-7 text-slate-500">
+                Add ExamTips to your Home Screen for a full-screen, app-like
+                experience on your iPhone or iPad. It takes less than 10
+                seconds.
+              </p>
+
+              <div
+                class="relative mt-7 inline-flex items-center gap-2 rounded-xl bg-[#0794bd] px-5 py-3 text-sm font-semibold text-white transition duration-300 group-hover:bg-[#0685aa]"
+              >
+                <Icon name="lucide:plus-square" class="h-4 w-4" />
+                Install on iPhone
+              </div>
+            </a>
+
+            <!-- DESKTOP -->
+            <a
+              v-else-if="platform === 'desktop'"
+              :href="WINDOWS_LINK"
+              @click.prevent="downloadDesktop"
+              class="group relative block overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fafc] p-7 transition-all duration-500 hover:-translate-y-2 hover:border-cyan-200 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/70 sm:p-9"
+            >
+              <div
+                class="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0794bd]/10 text-[#0794bd] transition duration-300 group-hover:bg-[#0794bd] group-hover:text-white"
+              >
+                <Icon name="lucide:monitor-down" class="h-8 w-8" />
+              </div>
+
+              <p
+                class="relative mt-7 text-xs font-bold uppercase tracking-[0.12em] text-[#0794bd]"
+              >
+                Windows Application
+              </p>
+
+              <h3 class="relative mt-2 text-2xl font-bold text-slate-950">
+                Desktop Software
+              </h3>
+
+              <p class="relative mt-4 text-sm leading-7 text-slate-500">
+                Download the ExamTips desktop application for a faster and
+                more reliable examination experience on your Windows
+                computer.
+              </p>
+
+              <div
+                class="relative mt-7 inline-flex items-center gap-2 rounded-xl bg-[#0794bd] px-5 py-3 text-sm font-semibold text-white transition duration-300 group-hover:bg-[#0685aa]"
+              >
+                <Icon name="lucide:download" class="h-4 w-4" />
+                Download for Desktop
+              </div>
+            </a>
+
           </div>
 
         </div>
@@ -351,13 +376,14 @@ function handleDownload(
                   your questions wherever you are.
                 </p>
 
-                <!-- Android download with analytics -->
+                <!-- Main button: changes with the visitor's device -->
                 <button
+                  v-if="!isInstalled"
                   type="button"
-                  @click="handleDownload('android', downloads[1].link)"
+                  @click="handleMainAction"
                   class="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-7 py-4 text-sm font-semibold text-[#0794bd] shadow-lg transition hover:-translate-y-1 hover:bg-slate-50"
                 >
-                  Download Now
+                  {{ mainLabel }}
 
                   <Icon
                     name="lucide:download"
@@ -371,6 +397,9 @@ function handleDownload(
         </div>
       </Container>
     </section>
+
+    <!-- iOS install guide (components/IosInstallGuide.vue) -->
+    <IosInstallGuide />
 
   </main>
 </template>
