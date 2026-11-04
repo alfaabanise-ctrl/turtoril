@@ -4,7 +4,7 @@ const { showIosHelp, isInAppBrowser } = useInstallPrompt();
 /* ================================================================
  * CHANGE THIS to the address where your app is hosted
  * ================================================================ */
-const APP_URL = "https://app.examtips.abanise.com";
+const APP_URL = "https://www.app.examtips.abanise.com";
 
 /* ================================================================
  * STEPS
