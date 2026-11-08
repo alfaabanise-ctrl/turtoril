@@ -1,5 +1,11 @@
 // composables/useSoftwareDownloads.ts
-export type SoftwarePlatform = "windows" | "android" | "ios";
+export type SoftwarePlatform =
+  | "windows"
+  | "android"
+  | "ios"
+  | "macos"
+  | "linux"
+  | "other";
 
 export const useSoftwareDownloads = () => {
   const config = useRuntimeConfig();

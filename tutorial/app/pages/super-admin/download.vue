@@ -7,16 +7,43 @@ definePageMeta({
 });
 
 interface DownloadStats {
-  totalDownloads: number;
-  windowsDownloads: number;
-  androidDownloads: number;
+  downloadClicks: {
+    total: number;
+    byPlatform: Record<string, number>;
+  };
+  confirmedInstalls: {
+    total: number;
+    byPlatform: Record<string, number>;
+  };
+  accountsCreated: {
+    total: number;
+    byPlatform: Record<string, number>;
+  };
 }
 
-const stats = ref<DownloadStats>({
-  totalDownloads: 0,
-  windowsDownloads: 0,
-  androidDownloads: 0,
+const emptyPlatformCounts = () => ({
+  windows: 0,
+  android: 0,
+  ios: 0,
+  macos: 0,
+  linux: 0,
+  other: 0,
 });
+
+const stats = ref<DownloadStats>({
+  downloadClicks: { total: 0, byPlatform: emptyPlatformCounts() },
+  confirmedInstalls: { total: 0, byPlatform: emptyPlatformCounts() },
+  accountsCreated: { total: 0, byPlatform: emptyPlatformCounts() },
+});
+
+const platforms = [
+  { id: "windows", name: "Windows", icon: "lucide:monitor" },
+  { id: "android", name: "Android", icon: "lucide:smartphone" },
+  { id: "ios", name: "iPhone / iPad", icon: "lucide:smartphone" },
+  { id: "macos", name: "macOS", icon: "lucide:monitor" },
+  { id: "linux", name: "Linux", icon: "lucide:monitor" },
+  { id: "other", name: "Other", icon: "lucide:monitor" },
+];
 
 const isLoading = ref(false);
 const errorMessage = ref("");
@@ -37,14 +64,51 @@ async function fetchDownloadStats() {
       );
     }
 
-    const data = response?.data?.data ?? response;
-    console.log(data);
-    
-    stats.value = {
-      totalDownloads: Number(data.totalDownloads ?? 0),
-      windowsDownloads: Number(data.windowsDownloads ?? 0),
-      androidDownloads: Number(data.androidDownloads ?? 0),
-    };
+    const data = response?.data?.data ?? response?.data ?? response;
+    const normalizeCounts = (counts: Record<string, unknown> = {}) => ({
+      windows: Number(counts.windows ?? 0),
+      android: Number(counts.android ?? 0),
+      ios: Number(counts.ios ?? 0),
+      macos: Number(counts.macos ?? 0),
+      linux: Number(counts.linux ?? 0),
+      other: Number(counts.other ?? 0),
+    });
+
+    stats.value = data.downloadClicks
+      ? {
+          downloadClicks: {
+            total: Number(data.downloadClicks.total ?? 0),
+            byPlatform: normalizeCounts(data.downloadClicks.byPlatform),
+          },
+          confirmedInstalls: {
+            total: Number(data.confirmedInstalls?.total ?? 0),
+            byPlatform: normalizeCounts(
+              data.confirmedInstalls?.byPlatform,
+            ),
+          },
+          accountsCreated: {
+            total: Number(data.accountsCreated?.total ?? 0),
+            byPlatform: normalizeCounts(data.accountsCreated?.byPlatform),
+          },
+        }
+      : {
+          downloadClicks: {
+            total: Number(data.totalDownloads ?? 0),
+            byPlatform: {
+              ...emptyPlatformCounts(),
+              windows: Number(data.windowsDownloads ?? 0),
+              android: Number(data.androidDownloads ?? 0),
+            },
+          },
+          confirmedInstalls: {
+            total: 0,
+            byPlatform: emptyPlatformCounts(),
+          },
+          accountsCreated: {
+            total: 0,
+            byPlatform: emptyPlatformCounts(),
+          },
+        };
   } catch (error: any) {
     console.error("Download statistics error:", error);
     errorMessage.value =
@@ -65,7 +129,7 @@ onMounted(fetchDownloadStats);
           Software Downloads
         </h1>
         <p class="mt-1 text-sm text-gray-500">
-          Track ExamTips Windows and Android download clicks.
+          Track download-button clicks, confirmed app opens, and account creation by device.
         </p>
       </div>
 
@@ -86,22 +150,22 @@ onMounted(fetchDownloadStats);
       <div
         v-for="item in [
           {
-            title: 'Total Downloads',
-            value: stats.totalDownloads,
+            title: 'Download Button Clicks',
+            value: stats.downloadClicks.total,
             icon: 'lucide:download',
             color: 'bg-indigo-100 text-indigo-600',
           },
           {
-            title: 'Windows Downloads',
-            value: stats.windowsDownloads,
-            icon: 'lucide:monitor',
-            color: 'bg-blue-100 text-blue-600',
+            title: 'Confirmed App Opens',
+            value: stats.confirmedInstalls.total,
+            icon: 'lucide:badge-check',
+            color: 'bg-emerald-100 text-emerald-600',
           },
           {
-            title: 'Android Downloads',
-            value: stats.androidDownloads,
-            icon: 'lucide:smartphone',
-            color: 'bg-emerald-100 text-emerald-600',
+            title: 'Accounts Created',
+            value: stats.accountsCreated.total,
+            icon: 'lucide:users',
+            color: 'bg-blue-100 text-blue-600',
           },
         ]"
         :key="item.title"
@@ -129,5 +193,50 @@ onMounted(fetchDownloadStats);
         </p>
       </div>
     </div>
+
+    <section class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+      <div class="border-b border-gray-200 px-5 py-4 dark:border-gray-800">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Device breakdown
+        </h2>
+        <p class="mt-1 text-sm text-gray-500">
+          Clicks are unique browser visitors per device type. A confirmed app open means the app launched after installation.
+        </p>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[640px] text-left text-sm">
+          <thead class="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800">
+            <tr>
+              <th class="px-5 py-3">Device</th>
+              <th class="px-5 py-3">Button clicks</th>
+              <th class="px-5 py-3">Confirmed app opens</th>
+              <th class="px-5 py-3">Accounts created</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="platform in platforms"
+              :key="platform.id"
+              class="border-t border-gray-100 dark:border-gray-800"
+            >
+              <th class="flex items-center gap-2 px-5 py-3 font-medium text-gray-800 dark:text-gray-200">
+                <Icon :name="platform.icon" class="h-4 w-4 text-gray-500" />
+                {{ platform.name }}
+              </th>
+              <td class="px-5 py-3 text-gray-600 dark:text-gray-300">
+                {{ stats.downloadClicks.byPlatform[platform.id].toLocaleString() }}
+              </td>
+              <td class="px-5 py-3 text-gray-600 dark:text-gray-300">
+                {{ stats.confirmedInstalls.byPlatform[platform.id].toLocaleString() }}
+              </td>
+              <td class="px-5 py-3 text-gray-600 dark:text-gray-300">
+                {{ stats.accountsCreated.byPlatform[platform.id].toLocaleString() }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </Container>
 </template>
