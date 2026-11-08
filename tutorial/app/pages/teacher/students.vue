@@ -35,7 +35,7 @@ type AccountStatus = "Active" | "Suspended" | "Inactive";
 
 interface SoftwareToken {
   _id: string;
-  token?: string | null;
+  maskedToken?: string | null;
   status: "unused" | "active" | "used" | "expired" | "revoked";
   owner?: string | Person | null;
   activatedBy?: string | Person | null;
@@ -44,6 +44,8 @@ interface SoftwareToken {
   features?: string[];
   deviceLimit?: number;
   deviceCount?: number;
+  deviceBound?: boolean;
+  deviceBindingLockedUntil?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -84,12 +86,14 @@ interface Student {
 
   tokenStatus: TokenStatus;
 
-  token: string | null;
+  maskedToken: string | null;
   tokenActivatedAt: string | null;
   tokenExpiresAt: string | null;
 
   deviceCount: number;
   deviceLimit: number;
+  deviceBound: boolean;
+  deviceBindingLockedUntil: string | null;
 
   features: string[];
 
@@ -128,6 +132,7 @@ interface StudentsApiResponse {
 
       studentsWithToken?: number;
       studentsWithoutToken?: number;
+      deviceBindingAttention?: number;
     };
 
     pagination?: {
@@ -182,6 +187,8 @@ const revokedTokens = ref(0);
 
 const studentsWithToken = ref(0);
 const studentsWithoutToken = ref(0);
+const deviceBindingAttention = ref(0);
+const resettingDeviceToken = ref<string | null>(null);
 
 /*
 |--------------------------------------------------------------------------
@@ -346,7 +353,7 @@ function mapStudent(student: ApiStudent): Student {
      * Backend should ideally return a masked token,
      * not the full secret token.
      */
-    token: softwareToken?.token || null,
+    maskedToken: softwareToken?.maskedToken || null,
 
     tokenActivatedAt: softwareToken?.activatedAt || null,
 
@@ -355,6 +362,11 @@ function mapStudent(student: ApiStudent): Student {
     deviceCount: softwareToken?.deviceCount || 0,
 
     deviceLimit: softwareToken?.deviceLimit || 1,
+
+    deviceBound: Boolean(softwareToken?.deviceBound),
+
+    deviceBindingLockedUntil:
+      softwareToken?.deviceBindingLockedUntil || null,
 
     features: softwareToken?.features || [],
 
@@ -492,6 +504,8 @@ async function fetchStudents() {
     studentsWithToken.value = apiData?.summary?.studentsWithToken || 0;
 
     studentsWithoutToken.value = apiData?.summary?.studentsWithoutToken || 0;
+    deviceBindingAttention.value =
+      apiData?.summary?.deviceBindingAttention || 0;
 
     /*
     |--------------------------------------------------------------------------
@@ -703,7 +717,37 @@ const stats = computed(() => [
     value: expiredTokens.value,
     icon: "i-heroicons-clock",
   },
+  {
+    label: "Device Lockouts",
+    value: deviceBindingAttention.value,
+    icon: "i-heroicons-exclamation-triangle",
+  },
 ]);
+
+async function resetDeviceBinding(item: Student) {
+  const tokenId = item.softwareToken?._id;
+  if (!tokenId || resettingDeviceToken.value) return;
+  if (!window.confirm(`Reset the device binding for ${item.name}? They will need to activate the license again.`)) {
+    return;
+  }
+
+  resettingDeviceToken.value = tokenId;
+  try {
+    const response = await useApiFetch<{ success: boolean; message?: string }>(
+      `/teacher/software/${encodeURIComponent(tokenId)}/reset-device`,
+      { method: "POST" },
+    );
+    if (!response.success || !response.data?.success) {
+      throw new Error(response.message || response.data?.message || "Unable to reset the device binding.");
+    }
+    window.alert(response.data.message || "Device binding reset successfully.");
+    await fetchStudents();
+  } catch (error) {
+    window.alert(error instanceof Error ? error.message : "Unable to reset the device binding.");
+  } finally {
+    resettingDeviceToken.value = null;
+  }
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -878,6 +922,13 @@ function displayToken(token?: string | null) {
   }
 
   return token;
+}
+
+function isDeviceBindingLocked(item: Student) {
+  return Boolean(
+    item.deviceBindingLockedUntil &&
+      new Date(item.deviceBindingLockedUntil).getTime() > Date.now(),
+  );
 }
 </script>
 
@@ -1245,8 +1296,15 @@ function displayToken(token?: string | null) {
             {{ tokenStatusLabel(item.tokenStatus) }}
           </span>
 
-          <span v-if="item.token" class="text-[11px] text-gray-400 font-mono">
-            {{ displayToken(item.token) }}
+          <span v-if="item.maskedToken" class="text-[11px] text-gray-400 font-mono">
+            {{ displayToken(item.maskedToken) }}
+          </span>
+          <span
+            v-if="isDeviceBindingLocked(item)"
+            class="inline-flex w-fit items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700"
+          >
+            <Icon name="i-heroicons-lock-closed" class="h-3 w-3" />
+            Device locked
           </span>
         </div>
       </template>
@@ -1398,6 +1456,17 @@ function displayToken(token?: string | null) {
             <Icon name="i-heroicons-key" class="w-4 h-4" />
           </button>
 
+          <button
+            v-if="item.softwareToken && item.deviceBound"
+            type="button"
+            class="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors ml-1 disabled:opacity-50"
+            :title="isDeviceBindingLocked(item) ? 'Reset locked device binding' : 'Reset device binding'"
+            :disabled="resettingDeviceToken === item.softwareToken._id"
+            @click="resetDeviceBinding(item)"
+          >
+            <Icon name="i-heroicons-arrow-path" class="w-4 h-4" />
+          </button>
+
           <!-- DELETE -->
 
           <button
@@ -1476,4 +1545,3 @@ function displayToken(token?: string | null) {
     </div>
   </div>
 </template>
-
