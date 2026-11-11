@@ -1,5 +1,24 @@
 <script setup lang="ts">
 
+useSeoMeta({
+  title: "JAMB & WAEC Past Questions and CBT Practice",
+  description:
+    "Prepare for JAMB and WAEC with free past questions, CBT practice tests, explanations, and interactive lessons from ExamTips.",
+  ogTitle: "JAMB & WAEC Past Questions and CBT Practice | ExamTips",
+  ogDescription:
+    "Practise JAMB and WAEC past questions, take realistic CBT mock exams, and study with interactive lessons on ExamTips.",
+  ogUrl: "https://www.examtips.abanise.com/",
+});
+
+useHead({
+  link: [
+    {
+      rel: "canonical",
+      href: "https://www.examtips.abanise.com/",
+    },
+  ],
+});
+
 /* ================================================================
  * BENEFITS
  * ================================================================ */

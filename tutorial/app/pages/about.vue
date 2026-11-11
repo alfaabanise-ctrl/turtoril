@@ -147,7 +147,20 @@
 
 
 useHead({
-  title: 'About Us — Examtips',
+  title: 'About Us: JAMB & WAEC Learning Resources',
+  meta: [
+    {
+      name: 'description',
+      content:
+        'Learn about ExamTips and our mission to make exam preparation easier with JAMB and WAEC practice, study tools, and learning resources.',
+    },
+  ],
+  link: [
+    {
+      rel: 'canonical',
+      href: 'https://www.examtips.abanise.com/about',
+    },
+  ],
 })
 
 // Requires @nuxt/icon module registered in nuxt.config.ts:

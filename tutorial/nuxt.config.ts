@@ -69,22 +69,36 @@ export default defineNuxtConfig({
   // XML sitemap
   sitemap: {
     exclude: [
-      "/super-admin/**",
+      "/auth",
+      "/buy",
+      "/payments",
+      "/settings",
+      "/wallet",
+      "/users",
+      "/users/**",
+      "/teacher",
+      "/teacher/**",
+      "/admin",
       "/admin/**",
+      "/student",
       "/student/**",
+      "/super-admin",
+      "/super-admin/**",
     ],
     discoverImages: false,
     urls: [],
   },
 
-  // SPA / static deployment
-  ssr: false,
-
+  // Render the public landing pages as HTML so search engines can index them.
   nitro: {
     preset: "static",
     prerender: {
+      crawlLinks: false,
       routes: [
         "/",
+        "/about",
+        "/contact",
+        "/privacy-policy",
         "/sitemap.xml",
         "/robots.txt",
       ],

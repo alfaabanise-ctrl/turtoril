@@ -9,7 +9,7 @@
 <script setup>
 
 useSeoMeta({
-  title: "ExamTips | JAMB & WAEC Past Questions, CBT Practice and Lessons",
+  title: "JAMB & WAEC Past Questions, CBT Practice and Lessons",
 
   description:
     "Prepare for JAMB and WAEC with ExamTips. Practise past questions, take CBT mock exams, study interactive lessons, and improve your exam performance.",
@@ -23,8 +23,6 @@ useSeoMeta({
   ogImage: "https://www.examtips.abanise.com/images/ogimage.png",
 
   ogType: "website",
-
-  ogUrl: "https://www.examtips.abanise.com",
 
   twitterCard: "summary_large_image",
 

@@ -11,9 +11,9 @@
     <div class="max-w-6xl mx-auto">
       <!-- Page heading -->
       <div class="text-center mb-10">
-        <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900">
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900">
           Get in Touch
-        </h1>
+        </h2>
         <p class="mt-3 text-gray-600 max-w-xl mx-auto">
           Questions, feedback, or just want to say hello? Send us a
           message and we'll get back to you as soon as we can.
@@ -253,7 +253,20 @@
 
 <script setup lang="ts">
 useHead({
-  title: 'Contact Us — Examtips',
+  title: 'Contact Us',
+  meta: [
+    {
+      name: 'description',
+      content:
+        'Contact ExamTips with questions, feedback, or support requests about JAMB and WAEC past questions, CBT practice, and learning resources.',
+    },
+  ],
+  link: [
+    {
+      rel: 'canonical',
+      href: 'https://www.examtips.abanise.com/contact',
+    },
+  ],
 })
 
 const form = reactive({

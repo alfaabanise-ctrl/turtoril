@@ -89,7 +89,20 @@
 
 <script setup lang="ts">
 useHead({
-  title: 'Privacy Policy — Examtips',
+  title: 'Privacy Policy',
+  meta: [
+    {
+      name: 'description',
+      content:
+        'Read the ExamTips privacy policy to understand how information is collected, used, and protected when you use our learning services.',
+    },
+  ],
+  link: [
+    {
+      rel: 'canonical',
+      href: 'https://www.examtips.abanise.com/privacy-policy',
+    },
+  ],
 })
 
 type Block =
