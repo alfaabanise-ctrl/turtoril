@@ -30,6 +30,13 @@ export const useNavItems = () => {
       to: "/super-admin/teachers",
       roles: ["superadmin"],
     },
+    {
+      label: "Teachers",
+      icon: "i-heroicons-user-group",
+      to: "/super-admin/teachers",
+      roles: ["superadmin"],
+    },
+    
 
     {
       label: "Students",
@@ -100,6 +107,13 @@ export const useNavItems = () => {
       icon: "i-heroicons-academic-cap",
       to: "/admin/students",
       roles: ["admin"],
+    },
+
+    {
+      label: "Exam papers",
+      icon: "i-heroicons-document-text",
+      to: "/admin/cbt/list",
+      roles: ["admin", "superadmin"],
     },
 
 

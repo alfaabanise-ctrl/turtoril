@@ -1,3 +1,5 @@
+import type { AuthUser } from '~/composables/useAuth'
+
 export default defineNuxtPlugin(async () => {
   const config = useRuntimeConfig()
    const route = useRoute()
@@ -17,11 +19,11 @@ if (route.path.startsWith('/ogProfile')) {
   if (auth.value.checked) return
 
   try {
-    const headers = process.server
+    const headers = import.meta.server
       ? useRequestHeaders(['cookie'])
       : undefined
 
-    const response = await $fetch(
+    const response = await $fetch<{ data?: AuthUser }>(
       `${config.public.apiUrl}/auth/protected`,
       {
         credentials: 'include',

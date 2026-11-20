@@ -90,19 +90,24 @@ export default defineNuxtConfig({
   },
 
   // Render the public landing pages as HTML so search engines can index them.
-  nitro: {
-    preset: "static",
-    prerender: {
-      crawlLinks: false,
-      routes: [
-        "/",
-        "/about",
-        "/contact",
-        "/privacy-policy",
-        "/sitemap.xml",
-        "/robots.txt",
-      ],
-    },
+ nitro: {
+  preset: "node-server",
+
+  prerender: {
+    crawlLinks: false,
+    routes: [
+      "/",
+      "/about",
+      "/contact",
+      "/privacy-policy",
+      "/sitemap.xml",
+      "/robots.txt",
+    ],
+  },
+},
+
+  routeRules: {
+    "/admin/**": { ssr: false },
   },
 
   css: ["~/assets/css/main.css"],
@@ -119,6 +124,7 @@ export default defineNuxtConfig({
 
   // Public runtime configuration
   runtimeConfig: {
+    geminiApiKey: process.env.GEMINI_API_KEY,
     public: {
       projectName: "ExamTips",
 
