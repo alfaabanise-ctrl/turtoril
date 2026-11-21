@@ -90,6 +90,14 @@ export async function getCbtSubject(id: string) {
   return response.data
 }
 
+export async function getCbtSubjectByAccessCode(id: string) {
+  if (!id.trim()) throw new Error("Exam paper id is required.")
+  const response = await cbtApiFetch<{ success: boolean; data: CbtSubject }>(
+    `/api/cbt/subjects/access/${encodeURIComponent(id)}`
+  )
+  return response.data
+}
+
 export async function updateCbtSubject(id: string, subject: CbtSubject) {
   if (!id.trim()) throw new Error("Exam paper id is required.")
   return await cbtApiFetch<{ success: boolean; message: string; data: CbtSubject }>(
