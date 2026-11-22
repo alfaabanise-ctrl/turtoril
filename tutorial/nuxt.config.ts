@@ -1,12 +1,14 @@
-
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
- devServer: { port: 3001 },
+  devServer: { port: 3001 },
   devtools: {
     enabled: false,
   },
+
+  // Render pages on the server so search engines can index them
+  ssr: true,
 
   modules: [
     "@nuxt/icon",
@@ -89,31 +91,32 @@ export default defineNuxtConfig({
     urls: [],
   },
 
-  // Render the public landing pages as HTML so search engines can index them.
- nitro: {
-  preset: "node-server",
-
-  prerender: {
-    crawlLinks: false,
-    routes: [
-      "/",
-      "/about",
-      "/contact",
-      "/privacy-policy",
-      "/sitemap.xml",
-      "/robots.txt",
-    ],
+  // No "preset" here: Nuxt detects Vercel automatically
+  nitro: {
+    prerender: {
+      crawlLinks: false,
+      routes: [
+        "/",
+        "/about",
+        "/contact",
+        "/privacy-policy",
+        "/sitemap.xml",
+        "/robots.txt",
+      ],
+    },
   },
-},
 
+  // Private pages do not need server rendering or SEO
   routeRules: {
     "/admin/**": { ssr: false },
+    "/super-admin/**": { ssr: false },
+    "/teacher/**": { ssr: false },
+    "/student/**": { ssr: false },
   },
 
   css: ["~/assets/css/main.css"],
 
   // Vite configuration
-  // Let Nuxt manage the dev server and HMR WebSocket automatically.
   vite: {
     plugins: [tailwindcss()],
 
@@ -122,13 +125,15 @@ export default defineNuxtConfig({
     },
   },
 
-  // Public runtime configuration
+  // Runtime configuration
   runtimeConfig: {
+    // Private, server only
     geminiApiKey: process.env.GEMINI_API_KEY,
+
+    // Public, available in the browser
     public: {
       projectName: "ExamTips",
 
-      // Confirm that this environment variable contains your Paystack PUBLIC key.
       paystackPublicKey:
         process.env.NUXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "",
 
