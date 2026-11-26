@@ -36,6 +36,13 @@ export const useNavItems = () => {
       to: "/super-admin/teachers",
       roles: ["superadmin"],
     },
+
+     {
+      label: "App Releases",
+      icon: "i-heroicons-user-group",
+      to: "/super-admin/app-releases",
+      roles: ["superadmin"],
+    },
     
 
     {
